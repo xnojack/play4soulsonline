@@ -1,16 +1,21 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json tsconfig.json ./
-RUN npm install
-COPY src ./src
-RUN npm run build
+# Copy root lockfile and workspace manifest alongside the package manifest so
+# npm ci can install from the single monorepo lockfile reproducibly.
+COPY package-lock.json package.json ./
+COPY packages/server/package.json ./packages/server/
+RUN npm ci --workspace=packages/server
+COPY packages/server/src ./packages/server/src
+COPY packages/server/tsconfig.json ./packages/server/
+RUN npm run build --workspace=packages/server
 
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json ./
-RUN npm install --production
-COPY --from=builder /app/dist ./dist
-COPY public ./public
+COPY package-lock.json package.json ./
+COPY packages/server/package.json ./packages/server/
+RUN npm ci --workspace=packages/server --omit=dev
+COPY --from=builder /app/packages/server/dist ./dist
+COPY packages/server/public ./public
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production

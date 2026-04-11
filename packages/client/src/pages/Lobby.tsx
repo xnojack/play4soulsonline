@@ -5,6 +5,7 @@ import { connectSocket, getSocket } from '../socket/client';
 import { Button } from '../components/ui/Button';
 import { AttributionFooter } from '../components/ui/AttributionFooter';
 import { useIsHost } from '../hooks/useMyPlayer';
+import { SERVER_URL } from '../config';
 
 /** Join the room via socket, returns an error string or null on success */
 function emitJoin(
@@ -176,8 +177,7 @@ export function Lobby() {
 
   // Fetch available sets from server and default to all selected
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_SERVER_URL || '';
-    fetch(`${serverUrl}/api/sets`)
+    fetch(`${SERVER_URL}/api/sets`)
       .then((r) => r.json())
       .then((data: { sets: string[] }) => {
         const sets = data.sets.filter(Boolean);

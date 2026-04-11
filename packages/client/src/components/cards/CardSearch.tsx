@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { SERVER_URL } from '../../config';
 
 interface CardData {
   id: string;
@@ -29,7 +30,7 @@ export function CardSearch() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
   const LIMIT = 20;
 
   const search = async (newOffset = 0) => {

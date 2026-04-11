@@ -1,10 +1,11 @@
 import React from 'react';
 import { ClientCard, CardInPlay, useGameStore } from '../../store/gameStore';
 import { Modal } from '../ui/Modal';
+import { SERVER_URL } from '../../config';
 
 export function CardModal() {
   const { modalCard, setModalCard } = useGameStore();
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
 
   return (
     <Modal isOpen={!!modalCard} onClose={() => setModalCard(null)} wide>

@@ -3,7 +3,9 @@ import { useGameStore } from '../../store/gameStore';
 import { useCard } from './CardResolver';
 import { getSocket } from '../../socket/client';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+import { SERVER_URL } from '../../config';
+
+const serverUrl = SERVER_URL;
 
 /** Single selectable card for the Eden pick UI */
 function EdenCardChoice({ cardId, onPick }: { cardId: string; onPick: (id: string) => void }) {

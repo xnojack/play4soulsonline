@@ -5,6 +5,7 @@ import { getSocket } from '../../socket/client';
 import { useHasPriority, useIsMyTurn } from '../../hooks/useMyPlayer';
 import { Button } from '../ui/Button';
 import { useCard } from '../board/CardResolver';
+import { SERVER_URL } from '../../config';
 
 /** Resolve sourceCardInstanceId to a DB cardId for image lookup.
  *  For loot the sourceCardInstanceId is the cardId itself.
@@ -39,7 +40,7 @@ function resolveStackCardId(item: StackItem, game: GameState): string | null {
 function StackCardThumb({ cardId }: { cardId: string }) {
   const card = useCard(cardId);
   const setModalCard = useGameStore((s) => s.setModalCard);
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
   const [showTip, setShowTip] = React.useState(false);
 
   if (!card) return <div className="w-10 h-14 bg-fs-darker border border-fs-gold/20 rounded flex-shrink-0" />;

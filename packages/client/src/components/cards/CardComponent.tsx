@@ -5,6 +5,7 @@ import { CardTooltip } from './CardTooltip';
 import { useGameStore } from '../../store/gameStore';
 import { Tooltip } from '../ui/Tooltip';
 import { getSocket } from '../../socket/client';
+import { SERVER_URL } from '../../config';
 
 export interface CardAction {
   label: string;
@@ -86,7 +87,7 @@ export function CardComponent({
     }
   };
 
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
 
   return (
     <Tooltip

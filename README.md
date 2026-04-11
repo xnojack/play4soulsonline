@@ -4,7 +4,7 @@ An unofficial self-hostable web companion for playing The Binding of Isaac: Four
 
 ## Disclaimer
 
-This project is vibe coded. Not because AI is great, but because I don't have the time to write and maintain another passion project when my other coding projects are all dead. It works well enough. PRs welcome.
+This project is 100% vibe coded. Not because I love AI, or think AI is great, but because I don't have the time to write and maintain another passion project when my other coding projects are all currently dead. My friends and I just want to play 4 souls online outside of TTS.
 
 ## Quick Start
 

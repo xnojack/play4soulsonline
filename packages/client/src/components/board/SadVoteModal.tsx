@@ -3,7 +3,9 @@ import { useGameStore } from '../../store/gameStore';
 import { useCard } from './CardResolver';
 import { getSocket } from '../../socket/client';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+import { SERVER_URL } from '../../config';
+
+const serverUrl = SERVER_URL;
 
 /** Character card display for a single player during the vote */
 function PlayerVoteCard({

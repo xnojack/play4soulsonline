@@ -3,6 +3,7 @@ import { ClientCard, CardInPlay, useGameStore } from '../../store/gameStore';
 import { CardComponent, CardAction } from '../cards/CardComponent';
 import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
+import { SERVER_URL } from '../../config';
 
 // Card data cache
 const cardCache = new Map<string, ClientCard>();
@@ -28,7 +29,7 @@ async function fetchCard(cardId: string, serverUrl: string): Promise<ClientCard 
 /** Hook to resolve a cardId to card data */
 export function useCard(cardId: string | undefined): ClientCard | null {
   const [card, setCard] = useState<ClientCard | null>(cardId ? cardCache.get(cardId) ?? null : null);
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
 
   useEffect(() => {
     if (!cardId) return;

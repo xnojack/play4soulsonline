@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal';
 import { useGameStore } from '../../store/gameStore';
 import { useCard } from './CardResolver';
 import { getSocket } from '../../socket/client';
+import { SERVER_URL } from '../../config';
 
 type DeckType = 'loot' | 'treasure' | 'monster' | 'room' | 'eternal';
 type TabKey = DeckType | `discard_${DeckType}`;
@@ -44,7 +45,7 @@ function DeckCardRow({
   onMoveBottom?: () => void;
 }) {
   const card = useCard(cardId);
-  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const serverUrl = SERVER_URL;
 
   return (
     <div className="flex items-center gap-2 px-2 py-1 hover:bg-fs-darker/40 rounded group">
