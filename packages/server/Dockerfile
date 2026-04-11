@@ -15,7 +15,9 @@ COPY package-lock.json package.json ./
 COPY packages/server/package.json ./packages/server/
 RUN npm ci --workspace=packages/server --omit=dev
 COPY --from=builder /app/packages/server/dist ./dist
-COPY packages/server/public ./public
+# Copy local dev card images if present (populated by the scraper for local dev).
+# In CI the directory won't exist — the volume mount supplies images at runtime.
+COPY packages/server/public* ./public/
 RUN mkdir -p /app/data
 
 ENV NODE_ENV=production
