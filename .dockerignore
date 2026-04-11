@@ -1,0 +1,36 @@
+# Version control
+.git
+.gitignore
+
+# Environment / secrets
+.env
+.env.*
+
+# Dependencies (rebuilt in Docker)
+node_modules
+
+# Build outputs (rebuilt in Docker)
+packages/server/dist
+packages/client/dist
+
+# Runtime data (volume-mounted, not baked into images)
+data
+
+# CI/CD
+.github
+
+# Editor / OS
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker dev (broken, not used)
+docker-compose.dev.yml

@@ -17,6 +17,7 @@ const io = new Server(httpServer, {
     origin: ALLOWED_ORIGIN || false,
     methods: ['GET', 'POST'],
   },
+  maxHttpBufferSize: 50 * 1024, // 50 KB — prevent oversized payloads
 });
 
 // ─── Middleware ───────────────────────────────────────────────────────────────

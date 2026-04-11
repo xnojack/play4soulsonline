@@ -145,8 +145,11 @@ export class GameRoom {
       const effectiveHp = p.baseHp + p.hpCounters - p.currentDamage;
       const effectiveAtk = p.baseAtk + p.atkCounters;
 
+      // Destructure to exclude reconnectToken at runtime (Omit is compile-time only)
+      const { reconnectToken: _token, ...safePlayer } = p;
+
       return {
-        ...p,
+        ...safePlayer,
         handCardIds: canSeeHand ? p.handCardIds : [],
         handCount: p.handCardIds.length,
         effectiveHp,

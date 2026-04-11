@@ -87,6 +87,96 @@ import { drawFromDeck, createCardInPlay } from '../game/decks';
 import { getCardById } from '../db/cards';
 import { createLogEntry } from '../game/GameRoom';
 
+// ─── Safe handler wrapper ─────────────────────────────────────────────────────
+// Wraps every socket event callback in try/catch to prevent unhandled exceptions
+// from crashing the server process.
+
+function safeHandler<T>(
+  socket: Socket,
+  handler: (payload: T) => void
+): (payload: T) => void {
+  return (payload: T) => {
+    try {
+      handler(payload);
+    } catch (err) {
+      console.error(`[handlers] Unhandled error in socket ${socket.id}:`, err);
+      sendError(socket, 'Internal server error');
+    }
+  };
+}
+
+// ─── Per-socket rate limiter ──────────────────────────────────────────────────
+// Tracks event counts per socket in a sliding window. Returns true if the event
+// should be rejected (rate exceeded).
+
+const RATE_LIMIT_WINDOW_MS = 1000;  // 1 second window
+const RATE_LIMIT_MAX_EVENTS = 30;   // max 30 events per second per socket
+
+const socketEventCounts = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(socketId: string): boolean {
+  const now = Date.now();
+  let entry = socketEventCounts.get(socketId);
+  if (!entry || now - entry.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    entry = { count: 1, windowStart: now };
+    socketEventCounts.set(socketId, entry);
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT_MAX_EVENTS;
+}
+
+function cleanupRateLimit(socketId: string): void {
+  socketEventCounts.delete(socketId);
+}
+
+// ─── Payload validation helpers ───────────────────────────────────────────────
+
+function isString(val: unknown): val is string {
+  return typeof val === 'string';
+}
+
+function isNonEmptyString(val: unknown): val is string {
+  return typeof val === 'string' && val.length > 0;
+}
+
+function isNumber(val: unknown): val is number {
+  return typeof val === 'number' && Number.isFinite(val);
+}
+
+function isBoolean(val: unknown): val is boolean {
+  return typeof val === 'boolean';
+}
+
+function isObject(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
+function isStringArray(val: unknown): val is string[] {
+  return Array.isArray(val) && val.every((v) => typeof v === 'string');
+}
+
+/** Validate a payload is an object and optionally check required string/number fields.
+ *  Returns a type predicate that narrows to `any` so callers can cast freely
+ *  after validation. Runtime checks guarantee the required fields exist. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function validatePayload(
+  payload: unknown,
+  requiredStrings: string[] = [],
+  requiredNumbers: string[] = []
+): payload is any {
+  if (!isObject(payload)) return false;
+  for (const key of requiredStrings) {
+    if (!isString(payload[key])) return false;
+  }
+  for (const key of requiredNumbers) {
+    if (!isNumber(payload[key])) return false;
+  }
+  return true;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 // Map from socket.id → { roomId, playerId }
 const socketPlayerMap = new Map<string, { roomId: string; playerId: string }>();
 
@@ -115,10 +205,33 @@ function sendError(socket: Socket, message: string): void {
   socket.emit('game:error', { message });
 }
 
+/** Get the player context for a socket, or null if not in a room */
+function getCtx(socket: Socket) {
+  return socketPlayerMap.get(socket.id) ?? null;
+}
+
+/** Check if the calling player is a spectator. Returns true (and sends error) if spectator. */
+function rejectIfSpectator(socket: Socket, ctx: { roomId: string; playerId: string }): boolean {
+  const room = gameStore.get(ctx.roomId);
+  if (!room) return true;
+  const player = room.getState().players.find((p) => p.id === ctx.playerId);
+  if (player?.isSpectator) {
+    sendError(socket, 'Spectators cannot perform this action');
+    return true;
+  }
+  return false;
+}
+
+// ─── Handler registration ─────────────────────────────────────────────────────
+
 export function registerHandlers(io: Server, socket: Socket): void {
   // ─── Join / create room ─────────────────────────────────────────────────────
 
-  socket.on('action:join', (payload: JoinPayload) => {
+  socket.on('action:join', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['roomId', 'name'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as JoinPayload;
+
     const roomId = (payload.roomId || '').toUpperCase().trim();
     const name = (payload.name || '').trim().slice(0, 32);
     if (!name) return sendError(socket, 'Name is required');
@@ -140,9 +253,12 @@ export function registerHandlers(io: Server, socket: Socket): void {
     gameStore.cancelCleanup(roomId);
 
     broadcastState(io, roomId);
-  });
+  }));
 
-  socket.on('action:create_room', (payload: { name?: string } = {}) => {
+  socket.on('action:create_room', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: { name?: string } = isObject(raw) ? raw as any : {};
+
     if (!gameStore.canCreate()) return sendError(socket, 'Server at capacity');
     const roomId = generateRoomCode();
     // Use socket.id as hostPlayerId so it matches when the host joins
@@ -152,7 +268,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     gameStore.scheduleCleanup(roomId, ROOM_TIMEOUT_CREATED_MS);
 
     // Auto-add the host as the first player if a name is provided
-    const name = (payload?.name || '').trim().slice(0, 32);
+    const name = (typeof payload?.name === 'string' ? payload.name : '').trim().slice(0, 32);
     if (name) {
       const result = room.addPlayer(socket.id, name, false);
       if (!('error' in result)) {
@@ -168,42 +284,50 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     socket.emit('room:created', { roomId });
     if (name) broadcastState(io, roomId);
-  });
+  }));
 
   // ─── Lobby ──────────────────────────────────────────────────────────────────
 
-  socket.on('action:set_active_sets', (payload: SetActiveSetsPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:set_active_sets', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return sendError(socket, 'Not in a room');
     const room = gameStore.get(ctx.roomId);
     if (!room) return sendError(socket, 'Room not found');
     if (room.getState().hostPlayerId !== ctx.playerId)
       return sendError(socket, 'Only the host can change settings');
-    room.setActiveSets((payload.sets ?? []).slice(0, 50));
+    const payload = isObject(raw) ? raw : {};
+    const sets = isStringArray((payload as Record<string, unknown>).sets)
+      ? ((payload as Record<string, unknown>).sets as string[]).slice(0, 50)
+      : [];
+    room.setActiveSets(sets);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:start_game', (payload: StartGamePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:start_game', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
     if (room.getState().hostPlayerId !== ctx.playerId)
       return sendError(socket, 'Only the host can start the game');
 
+    const payload: StartGamePayload = isObject(raw) ? raw as any : {} as any;
     const err = room.startGame({
-      activeSets: payload.activeSets ?? [],
-      includeBonusSouls: payload.includeBonusSouls ?? true,
-      bonusSoulCount: payload.bonusSoulCount,
-      includeRooms: payload.includeRooms ?? false,
+      activeSets: isStringArray(payload.activeSets) ? payload.activeSets : [],
+      includeBonusSouls: isBoolean(payload.includeBonusSouls) ? payload.includeBonusSouls : true,
+      bonusSoulCount: isNumber(payload.bonusSoulCount) ? payload.bonusSoulCount : undefined,
+      includeRooms: isBoolean(payload.includeRooms) ? payload.includeRooms : false,
     });
     if (err) return sendError(socket, err);
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:restart_game', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:restart_game', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
@@ -212,12 +336,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.resetToLobby();
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Eden starting-item pick ─────────────────────────────────────────────────
 
-  socket.on('action:eden_pick', (payload: EdenPickPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:eden_pick', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as EdenPickPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
@@ -293,12 +421,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(state);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Saddest character vote ──────────────────────────────────────────────────
 
-  socket.on('action:sad_vote', (payload: SadVotePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:sad_vote', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['targetPlayerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as SadVotePayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
@@ -341,10 +473,11 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(state);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:sad_vote_skip', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:sad_vote_skip', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
@@ -363,13 +496,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
     });
     room.setState(resolved);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Priority / Stack ───────────────────────────────────────────────────────
 
-  socket.on('action:pass_priority', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:pass_priority', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -390,12 +525,14 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(state);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Active player forcibly resolves the top of the stack without waiting for all to pass */
-  socket.on('action:resolve_top', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:resolve_top', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -408,24 +545,31 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const { newState } = resolveTopOfStack(state);
     room.setState(resetPriority(newState));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:cancel_stack_item', (payload: CancelStackItemPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:cancel_stack_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['stackItemId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CancelStackItemPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     const newState = cancelStackItem(room.getState(), payload.stackItemId);
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Turn actions ────────────────────────────────────────────────────────────
 
-  socket.on('action:end_turn', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:end_turn', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -437,14 +581,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(endTurn(state));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Loot ────────────────────────────────────────────────────────────────────
 
   /** Grant the active player one additional loot play this turn */
-  socket.on('action:grant_loot_play', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:grant_loot_play', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -457,11 +603,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
       turn: { ...state.turn, lootPlaysRemaining: state.turn.lootPlaysRemaining + 1 },
     });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:play_loot', (payload: PlayLootPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:play_loot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as PlayLootPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -476,37 +627,55 @@ export function registerHandlers(io: Server, socket: Socket): void {
       state,
       ctx.playerId,
       payload.cardId,
-      payload.targets ?? []
+      isStringArray(payload.targets) ? payload.targets : []
     );
     if (error) return sendError(socket, error);
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:draw_loot', (payload: DrawLootPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:draw_loot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: DrawLootPayload = isObject(raw) ? raw as any : {} as any;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(drawLoot(room.getState(), ctx.playerId, clampInt(payload.count, 1, 10, 1)));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:discard_loot', (payload: DiscardLootPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:discard_loot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as DiscardLootPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(discardLoot(room.getState(), ctx.playerId, payload.cardId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:return_to_deck', (payload: ReturnToDeckPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:return_to_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId', 'deckType', 'position'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as ReturnToDeckPayload;
+
+    // Validate deckType and position values
+    if (!['loot', 'treasure', 'monster'].includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
+    if (!['top', 'bottom'].includes(payload.position)) return sendError(socket, 'Invalid position');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -521,30 +690,41 @@ export function registerHandlers(io: Server, socket: Socket): void {
       )
     );
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Attacks ─────────────────────────────────────────────────────────────────
 
-  socket.on('action:declare_attack', (payload: DeclareAttackPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:declare_attack', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: DeclareAttackPayload = isObject(raw) ? raw as any : {} as any;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     const { newState, error } = declareAttack(
       room.getState(),
       ctx.playerId,
-      payload.targetSlotIndex ?? 0
+      isNumber(payload.targetSlotIndex) ? payload.targetSlotIndex : 0
     );
     if (error) return sendError(socket, error);
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:roll_dice', (payload: RollDicePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:roll_dice', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: RollDicePayload = isObject(raw) ? raw as any : {} as any;
+    if (!isString(payload.context) || !['attack', 'ability', 'manual'].includes(payload.context))
+      return sendError(socket, 'Invalid dice context');
+    if (!isString(payload.rollId)) return sendError(socket, 'Invalid rollId');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -608,13 +788,18 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Purchases ───────────────────────────────────────────────────────────────
 
-  socket.on('action:purchase', (payload: PurchasePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:purchase', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, [], ['slotIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as PurchasePayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -627,22 +812,31 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:gain_treasure', (payload: GainTreasurePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_treasure', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: GainTreasurePayload = isObject(raw) ? raw as any : {} as any;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(gainTreasure(room.getState(), ctx.playerId, clampInt(payload.count, 1, 10, 1)));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Draw the top card of the eternal deck into a player's items */
-  socket.on('action:gain_eternal', (payload: { playerId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_eternal', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['playerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { playerId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -673,23 +867,33 @@ export function registerHandlers(io: Server, socket: Socket): void {
       log: [...state.log, log],
     });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Items ───────────────────────────────────────────────────────────────────
 
-  socket.on('action:charge_item', (payload: { instanceId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:charge_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { instanceId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(chargeItem(room.getState(), ctx.playerId, payload.instanceId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:deactivate_item', (payload: { instanceId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:deactivate_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { instanceId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -717,31 +921,46 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:move_item', (payload: MoveItemPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:move_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'], ['toIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as MoveItemPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(moveItem(room.getState(), ctx.playerId, payload.instanceId, payload.toIndex));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:destroy_card', (payload: DestroyCardPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:destroy_card', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as DestroyCardPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(destroyCard(room.getState(), payload.instanceId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:gain_soul', (payload: GainSoulPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_soul', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId', 'playerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as GainSoulPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -760,12 +979,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Claim an unclaimed bonus soul card */
-  socket.on('action:gain_bonus_soul', (payload: { cardId: string; playerId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_bonus_soul', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId', 'playerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { cardId: string; playerId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -822,18 +1046,20 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Grant yourself a generic soul (worth 1 soul point, no backing card) */
-  socket.on('action:gain_generic_soul', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_generic_soul', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     const state = room.getState();
     const player = state.players.find((p) => p.id === ctx.playerId);
-    if (!player || player.isSpectator) return sendError(socket, 'Cannot gain soul');
+    if (!player) return sendError(socket, 'Cannot gain soul');
 
     const soulInstance = {
       instanceId: `generic-soul-${ctx.playerId}-${Date.now()}`,
@@ -867,12 +1093,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
       gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
     }
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Remove a soul from your own souls array (misclick recovery) */
-  socket.on('action:remove_soul', (payload: { instanceId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:remove_soul', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { instanceId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -895,11 +1126,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
       log: [...state.log, log],
     });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:cover_monster', (payload: CoverMonsterPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:cover_monster', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId'], ['slotIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CoverMonsterPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -913,33 +1149,48 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Players ──────────────────────────────────────────────────────────────────
 
-  socket.on('action:gain_coins', (payload: CoinChangePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:gain_coins', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['playerId'], ['amount'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CoinChangePayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(changeCoins(room.getState(), payload.playerId, clampInt(payload.amount, 1, 999, 1)));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:spend_coins', (payload: CoinChangePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:spend_coins', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['playerId'], ['amount'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CoinChangePayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(changeCoins(room.getState(), payload.playerId, -clampInt(payload.amount, 1, 999, 1)));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:set_base_hp', (payload: { playerId: string; delta: number }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:set_base_hp', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['playerId'], ['delta'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { playerId: string; delta: number };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -954,11 +1205,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
       ),
     });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:set_base_atk', (payload: { playerId: string; delta: number }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:set_base_atk', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['playerId'], ['delta'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { playerId: string; delta: number };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -973,19 +1229,25 @@ export function registerHandlers(io: Server, socket: Socket): void {
       ),
     });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:apply_damage', (payload: ApplyDamagePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:apply_damage', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!isObject(raw)) return sendError(socket, 'Invalid payload');
+    const payload = raw as any as ApplyDamagePayload;
+    if (!isNumber(payload.amount)) return sendError(socket, 'Invalid amount');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     let state = room.getState();
     const amount = clampInt(payload.amount, 1, 999, 1);
-    if (payload.targetPlayerId) {
+    if (isString(payload.targetPlayerId) && payload.targetPlayerId) {
       state = applyDamageToPlayer(state, payload.targetPlayerId, amount);
-    } else if (payload.targetInstanceId) {
+    } else if (isString(payload.targetInstanceId) && payload.targetInstanceId) {
       // Find which slot has this instance
       const slotIdx = state.monsterSlots.findIndex((s) =>
         s.stack.some((c) => c.instanceId === payload.targetInstanceId)
@@ -1008,19 +1270,25 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:heal', (payload: HealPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:heal', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!isObject(raw)) return sendError(socket, 'Invalid payload');
+    const payload = raw as any as HealPayload;
+    if (!isNumber(payload.amount)) return sendError(socket, 'Invalid amount');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     let state = room.getState();
     const amount = clampInt(payload.amount, 1, 999, 1);
-    if (payload.targetPlayerId) {
+    if (isString(payload.targetPlayerId) && payload.targetPlayerId) {
       state = healPlayer(state, payload.targetPlayerId, amount);
-    } else if (payload.targetInstanceId) {
+    } else if (isString(payload.targetInstanceId) && payload.targetInstanceId) {
       const slotIdx = state.monsterSlots.findIndex((s) =>
         s.stack.some((c) => c.instanceId === payload.targetInstanceId)
       );
@@ -1031,33 +1299,48 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(state);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:share_hand', (payload: ShareHandPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:share_hand', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['withPlayerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as ShareHandPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(shareHand(room.getState(), ctx.playerId, payload.withPlayerId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:revoke_hand_share', (payload: RevokeHandSharePayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:revoke_hand_share', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['withPlayerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as RevokeHandSharePayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(revokeHandShare(room.getState(), ctx.playerId, payload.withPlayerId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Counters ─────────────────────────────────────────────────────────────────
 
-  socket.on('action:add_counter', (payload: CounterPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:add_counter', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId', 'counterType'], ['amount'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CounterPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1065,11 +1348,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
       addCounter(room.getState(), payload.instanceId, payload.counterType, clampInt(payload.amount, 1, 999, 1))
     );
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
-  socket.on('action:remove_counter', (payload: CounterPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:remove_counter', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId', 'counterType'], ['amount'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CounterPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1077,26 +1365,33 @@ export function registerHandlers(io: Server, socket: Socket): void {
       removeCounter(room.getState(), payload.instanceId, payload.counterType, clampInt(payload.amount, 1, 999, 1))
     );
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Room ──────────────────────────────────────────────────────────────────────
 
-  socket.on('action:discard_room', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:discard_room', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
     room.setState(discardRoom(room.getState()));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Deck browser ──────────────────────────────────────────────────────────────
 
   /** Give the player-curse card in a slot to a target player */
-  socket.on('action:give_curse', (payload: { slotIndex: number; toPlayerId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:give_curse', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['toPlayerId'], ['slotIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { slotIndex: number; toPlayerId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1105,12 +1400,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Resolve/discard an event or curse from the top of a monster slot */
-  socket.on('action:resolve_event', (payload: ResolveEventPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:resolve_event', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, [], ['slotIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as ResolveEventPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1119,12 +1419,18 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Add an extra monster or shop slot */
-  socket.on('action:add_slot', (payload: AddSlotPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:add_slot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['slotType'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as AddSlotPayload;
+    if (!['monster', 'shop', 'room'].includes(payload.slotType)) return sendError(socket, 'Invalid slot type');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1166,12 +1472,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Move an item (from player's items or shop) into the room area */
-  socket.on('action:place_in_room', (payload: PlaceInRoomPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:place_in_room', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as PlaceInRoomPayload;
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1202,12 +1513,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     });
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Remove a card from the room area (discard it) */
-  socket.on('action:discard_room_slot', (payload: { instanceId: string }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:discard_room_slot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { instanceId: string };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1218,12 +1534,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(discardRoomSlot(state, payload.instanceId));
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Attack the top of the monster deck — flips it into a slot */
-  socket.on('action:attack_monster_deck', (payload: { slotIndex: number }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:attack_monster_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload: { slotIndex: number } = isObject(raw) ? raw as any : { slotIndex: 0 };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1241,7 +1561,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const newInstance = createCardInPlay(drawn[0]);
     const flippedCard = getCardById(drawn[0]);
 
-    const slotIndex = payload.slotIndex ?? 0;
+    const slotIndex = isNumber(payload.slotIndex) ? payload.slotIndex : 0;
     const slot = state.monsterSlots[slotIndex] ?? state.monsterSlots[0];
     const resolvedSlotIndex = slot?.slotIndex ?? 0;
 
@@ -1278,12 +1598,14 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }));
 
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Buy the top card of the treasure deck (blind purchase) */
-  socket.on('action:buy_top_treasure', () => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:buy_top_treasure', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1326,12 +1648,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Update the cost of a shop slot (for discounts) */
-  socket.on('action:set_shop_cost', (payload: { slotIndex: number; cost: number }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:set_shop_cost', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, [], ['slotIndex', 'cost'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { slotIndex: number; cost: number };
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1343,12 +1670,23 @@ export function registerHandlers(io: Server, socket: Socket): void {
     );
     room.setState({ ...state, shopSlots: updatedSlots });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Send the full ordered deck contents to the requesting player only */
-  socket.on('action:peek_deck', (payload: { deckType: 'loot' | 'treasure' | 'monster' | 'room' | 'eternal' | 'discard_loot' | 'discard_treasure' | 'discard_monster' | 'discard_room' | 'discard_eternal'; count?: number }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:peek_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['deckType'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { deckType: string; count?: number };
+
+    const validDeckTypes = [
+      'loot', 'treasure', 'monster', 'room', 'eternal',
+      'discard_loot', 'discard_treasure', 'discard_monster', 'discard_room', 'discard_eternal',
+    ];
+    if (!validDeckTypes.includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1368,7 +1706,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     // If a count limit is specified, only return that many (top X cards)
-    const limit = payload.count && payload.count > 0 ? payload.count : undefined;
+    const limit = isNumber(payload.count) && payload.count > 0 ? payload.count : undefined;
     const limited = limit ? cardIds.slice(0, limit) : cardIds;
 
     // Log the peek action (for non-discard peeks with a count limit)
@@ -1386,16 +1724,20 @@ export function registerHandlers(io: Server, socket: Socket): void {
     }
 
     socket.emit('deck:contents', { deckType: payload.deckType, cardIds: limited });
-  });
+  }));
 
   /** Move a card within a deck or from discard back to deck */
-  socket.on('action:reorder_deck', (payload: {
-    deckType: 'loot' | 'treasure' | 'monster';
-    cardId: string;
-    position: 'top' | 'bottom';
-  }) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:reorder_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['deckType', 'cardId', 'position'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { deckType: string; cardId: string; position: string };
+
+    if (!['loot', 'treasure', 'monster'].includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
+    if (!['top', 'bottom'].includes(payload.position)) return sendError(socket, 'Invalid position');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1415,12 +1757,20 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState({ ...state, [deckKey]: newDeck });
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   /** Trade a card (item or hand card) to another player */
-  socket.on('action:trade_card', (payload: TradeCardPayload) => {
-    const ctx = socketPlayerMap.get(socket.id);
+  socket.on('action:trade_card', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['toPlayerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as TradeCardPayload;
+    // instanceId or cardId must be present
+    if (!isString(payload.instanceId) && !isString(payload.cardId))
+      return sendError(socket, 'Must provide instanceId or cardId');
+
+    const ctx = getCtx(socket);
     if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
@@ -1436,12 +1786,14 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     room.setState(newState);
     broadcastState(io, ctx.roomId);
-  });
+  }));
 
   // ─── Disconnect ────────────────────────────────────────────────────────────────
 
   socket.on('disconnect', () => {
     const ctx = socketPlayerMap.get(socket.id);
+    cleanupRateLimit(socket.id);
+
     if (!ctx) return;
 
     const room = gameStore.get(ctx.roomId);

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { gameStore } from '../game/GameStore';
 import { generateRoomCode } from '../game/RoomCode';
 import { getAllSets, searchCards } from '../db/cards';
@@ -6,8 +7,28 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
+// ─── Rate limiting ──────────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 100,              // 100 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+// Stricter limiter for room creation to prevent abuse
+const createRoomLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 5,                // 5 room creations per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many room creation requests' },
+});
+
+router.use(apiLimiter);
+
 /** Create a new game room */
-router.post('/rooms', (req: Request, res: Response) => {
+router.post('/rooms', createRoomLimiter, (req: Request, res: Response) => {
   if (!gameStore.canCreate()) {
     return res.status(503).json({ error: 'Server is at maximum room capacity' });
   }
