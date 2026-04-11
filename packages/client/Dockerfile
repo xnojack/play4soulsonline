@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 # Copy root lockfile and workspace manifest alongside the package manifest so
 # npm ci can install from the single monorepo lockfile reproducibly.
