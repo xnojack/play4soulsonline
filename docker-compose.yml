@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  server:
+    build:
+      context: ./packages/server
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVER_PORT:-3001}:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MAX_ROOMS=${MAX_ROOMS:-10}
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./packages/client
+      dockerfile: Dockerfile
+      args:
+        - VITE_SERVER_URL=${VITE_SERVER_URL:-}
+        - VITE_PUBLIC_URL=${VITE_PUBLIC_URL:-}
+    ports:
+      - "${CLIENT_PORT:-3000}:80"
+    depends_on:
+      - server
+    restart: unless-stopped

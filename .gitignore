@@ -1,0 +1,9 @@
+.env
+node_modules/
+packages/*/node_modules/
+packages/*/dist/
+packages/server/data/*.db
+packages/server/public/cards/
+data/
+*.log
+AGENTS.md

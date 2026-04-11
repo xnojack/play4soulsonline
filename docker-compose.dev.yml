@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  server:
+    build:
+      context: ./packages/server
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/server/src:/app/src
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MAX_ROOMS=10
+
+  client:
+    build:
+      context: ./packages/client
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/client/src:/app/src
+    environment:
+      - VITE_SERVER_URL=http://localhost:3001
+    depends_on:
+      - server
