@@ -731,6 +731,13 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const state = room.getState();
 
     if (payload.context === 'attack') {
+      // Block the roll if the attack declaration is still on the stack
+      const declarationPending = state.stack.some(
+        (item) => item.type === 'attack_declaration' && !item.isCanceled
+      );
+      if (declarationPending)
+        return sendError(socket, 'Resolve the attack declaration on the stack first');
+
       const { newState, roll, error } = rollAttackDice(state, ctx.playerId);
       if (error) return sendError(socket, error);
 
@@ -1588,13 +1595,23 @@ export function registerHandlers(io: Server, socket: Socket): void {
       teamUpRolls: {},
     };
 
-    room.setState(resetPriority({
+    // Push attack_declaration onto the stack so players can respond before the roll.
+    // pushStack() handles priority reset from the attacker's seat position.
+    const stateWithAttack = {
       ...state,
       monsterDeck: newDeck,
       monsterDiscard: newDiscard,
       monsterSlots: updatedSlots,
       turn: { ...state.turn, attacksDeclared: state.turn.attacksDeclared + 1, currentAttack: newAttack },
       log: [...state.log, log],
+    };
+    room.setState(pushStack(stateWithAttack, {
+      type: 'attack_declaration',
+      sourceCardInstanceId: newInstance.instanceId,
+      sourcePlayerId: ctx.playerId,
+      description: `${player?.name ?? ctx.playerId} attacks ${flippedCard?.name ?? 'monster'} (flipped from deck)`,
+      targets: [newInstance.instanceId],
+      data: { slotIndex: resolvedSlotIndex, monsterId: drawn[0] },
     }));
 
     broadcastState(io, ctx.roomId);

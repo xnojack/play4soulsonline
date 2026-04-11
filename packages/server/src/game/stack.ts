@@ -109,6 +109,16 @@ export function resolveTopOfStack(state: GameState): {
     }
   }
 
+  // If the attack declaration was canceled, void the attack
+  if (resolved.type === 'attack_declaration' && resolved.isCanceled) {
+    const cancelLog = createLogEntry('attack', 'Attack was canceled', resolved.sourcePlayerId);
+    newState = {
+      ...newState,
+      turn: { ...newState.turn, currentAttack: null },
+      log: [...newState.log, cancelLog],
+    };
+  }
+
   return {
     resolved,
     newState,

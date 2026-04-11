@@ -2,7 +2,7 @@ import { GameState, CardInPlay, MonsterSlot } from '../types';
 import { createLogEntry } from '../GameRoom';
 import { drawFromDeck, createCardInPlay } from '../decks';
 import { getCardById } from '../../db/cards';
-import { resetPriority } from '../stack';
+import { resetPriority, pushStack } from '../stack';
 
 /** Declare an attack on a monster slot */
 export function declareAttack(
@@ -43,10 +43,19 @@ export function declareAttack(
     },
   };
 
-  return {
-    newState: resetPriority({ ...state, turn: newTurn, log: [...state.log, log] }),
-    error: null,
-  };
+  // Push attack_declaration onto the stack so players can respond before the roll.
+  // pushStack() handles priority reset from the attacker's seat position.
+  const stateWithAttack = { ...state, turn: newTurn, log: [...state.log, log] };
+  const newState = pushStack(stateWithAttack, {
+    type: 'attack_declaration',
+    sourceCardInstanceId: monsterInstance.instanceId,
+    sourcePlayerId: attackerId,
+    description: `${player?.name ?? attackerId} attacks ${monster?.name ?? 'monster'}`,
+    targets: [monsterInstance.instanceId],
+    data: { slotIndex, monsterId: monsterInstance.cardId },
+  });
+
+  return { newState, error: null };
 }
 
 /** Roll a d6 for the current attack */

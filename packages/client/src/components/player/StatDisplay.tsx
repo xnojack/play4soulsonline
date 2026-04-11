@@ -15,7 +15,12 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
   const game = useGameStore((s) => s.game);
   const isInAttack = isMe && isMyTurn && !!game?.turn.currentAttack;
   const attackPhase = game?.turn.currentAttack?.phase;
-  const showAttackDice = isInAttack && (attackPhase === 'declared' || attackPhase === 'rolling');
+  // Hide the roll button while the attack declaration is still on the stack
+  // (waiting for players to respond with loot/items before the roll happens)
+  const hasAttackDeclarationOnStack =
+    game?.stack.some((i) => i.type === 'attack_declaration' && !i.isCanceled) ?? false;
+  const showAttackDice =
+    isInAttack && !hasAttackDeclarationOnStack && (attackPhase === 'declared' || attackPhase === 'rolling');
 
   const changeCoins = (amount: number) => {
     getSocket().emit(amount > 0 ? 'action:gain_coins' : 'action:spend_coins', {

@@ -85,7 +85,8 @@ export type StackItemType =
   | 'activated_ability'
   | 'triggered_ability'
   | 'dice_roll'
-  | 'attack_roll';
+  | 'attack_roll'
+  | 'attack_declaration';
 
 export interface StackItem {
   id: string;
