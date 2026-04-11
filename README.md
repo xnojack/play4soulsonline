@@ -6,13 +6,66 @@ An unofficial self-hostable web companion for playing The Binding of Isaac: Four
 
 This project is 100% vibe coded. Not because I love AI, or think AI is great, but because I don't have the time to write and maintain another passion project when my other coding projects are all currently dead. My friends and I just want to play 4 souls online outside of TTS.
 
-## Quick Start
+---
+
+## Running with Docker
+
+The easiest way to self-host. No Node.js required — just Docker and Docker Compose.
+
+### 1. Create a `docker-compose.yml`
+
+```yaml
+services:
+  server:
+    image: ghcr.io/xnojack/play4soulsonline/server:latest
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - MAX_ROOMS=10
+    restart: unless-stopped
+
+  client:
+    image: ghcr.io/xnojack/play4soulsonline/client:latest
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_SERVER_URL=       # leave empty — nginx proxies to the server internally
+      - VITE_PUBLIC_URL=       # optional: your public URL for OG/social previews
+    depends_on:
+      - server
+    restart: unless-stopped
+```
+
+### 2. Scrape card data
+
+This downloads all 1081+ card images and data from [foursouls.com](https://foursouls.com) into a local SQLite database. Only needs to be run once. Takes 10–20 minutes (rate-limited to be polite to their servers). If interrupted, re-run the same command — the scraper is incremental.
+
+```bash
+docker run --rm -v ./data:/app/data ghcr.io/xnojack/play4soulsonline/scraper:latest
+```
+
+Card images are saved to `./data/cards/` and the database to `./data/cards.db`.
+
+### 3. Start
+
+```bash
+docker compose up -d
+```
+
+Open http://localhost:3000.
+
+---
+
+## Building Locally
+
+For contributors or anyone who wants to run from source.
 
 ### Prerequisites
 
-- Node.js 18+  
-- npm 9+  
-- (Optional) Docker + Docker Compose for containerized deployment
+- Node.js 18+
+- npm 9+
 
 ### 1. Install dependencies
 
@@ -22,14 +75,10 @@ npm install
 
 ### 2. Scrape card data
 
-This downloads all 1081+ card images and data from [foursouls.com](https://foursouls.com) into a local SQLite database. Takes 10–20 minutes (rate-limited to be polite to their servers). Only needs to be run once.
-
 ```bash
 make setup
 # or: npm run scrape
 ```
-
-Card images are saved to `data/cards/` and the database to `data/cards.db`.
 
 ### 3. Start development servers
 
@@ -38,39 +87,40 @@ make dev
 # or: npm run dev
 ```
 
-- Client: http://localhost:3000  
+- Client: http://localhost:3000
 - Server API: http://localhost:3001
 
-### 4. Production with Docker Compose
+### Building production images locally
 
 ```bash
 cp .env.example .env
-# Edit .env if needed (ports, max rooms, etc.)
-make setup        # scrape cards first
-make up-build     # docker compose up --build
+# Edit .env if needed
+make up-build   # docker compose up --build
 ```
-
-- Client: http://localhost:3000  
-- Server: http://localhost:3001
 
 ---
 
 ## Configuration
 
-Copy `.env.example` to `.env` and adjust:
+Set these as environment variables in your `docker-compose.yml` or `.env` file.
 
 | Variable | Default | Description |
 |---|---|---|
-| `SERVER_PORT` | `3001` | Port for the game server |
-| `CLIENT_PORT` | `3000` | Port for the web client |
+| `SERVER_PORT` | `3001` | Host port for the game server |
+| `CLIENT_PORT` | `3000` | Host port for the web client |
 | `MAX_ROOMS` | `10` | Max concurrent game rooms |
-| `VITE_SERVER_URL` | `http://localhost:3001` | URL the browser uses to reach the server |
+| `VITE_SERVER_URL` | _(empty)_ | URL the browser uses to reach the server. Leave empty when using the default Docker Compose setup — nginx proxies internally. Only set this if the server is on a different domain. |
+| `VITE_PUBLIC_URL` | _(empty)_ | Your public-facing URL. Used for OG/Twitter social preview meta tags only. |
+| `ROOM_TIMEOUT_LOBBY_MS` | `300000` | How long to keep a room alive after all players disconnect in the lobby (5 min) |
+| `ROOM_TIMEOUT_ACTIVE_MS` | `1800000` | How long to keep a room alive after all players disconnect mid-game (30 min) |
+| `ROOM_TIMEOUT_ENDED_MS` | `600000` | How long to keep a room alive after the game ends (10 min) |
+| `ROOM_TIMEOUT_CREATED_MS` | `1800000` | How long to keep a room alive if nobody ever joins (30 min) |
 
 ---
 
 ## How to Play
 
-1. One player clicks **Create Game** and shares the 5-letter room code.
+1. One player clicks **Create Game** and shares the 6-character room code.
 2. Other players click **Join Game** and enter the code + their name.
 3. Spectators can join with "Join as spectator" checked.
 4. The host selects which card sets to include and clicks **Start Game**.
@@ -118,6 +168,10 @@ Priority passes around the table. Any player with priority can play a loot, acti
 To add new card sets or refresh card data:
 
 ```bash
+# Docker
+docker run --rm -v ./data:/app/data ghcr.io/xnojack/play4soulsonline/scraper:latest
+
+# Local
 npm run scrape
 ```
 
@@ -127,4 +181,4 @@ The scraper is incremental — it skips cards already in the database and only d
 
 ## License
 
-MIT. Card art and game content belong to Maestro Media / Edmund McMillen.
+GPL-3.0. Card art and game content belong to Maestro Media / Edmund McMillen.

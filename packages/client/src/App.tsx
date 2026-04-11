@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Lobby } from './pages/Lobby';
 import { Game } from './pages/Game';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsOfService } from './pages/TermsOfService';
 import { useGameSocket } from './hooks/useGameSocket';
 
 function AppInner() {
@@ -14,6 +16,8 @@ function AppInner() {
         <Route path="/" element={<Home />} />
         <Route path="/lobby/:roomId" element={<Lobby />} />
         <Route path="/game/:roomId" element={<Game />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
