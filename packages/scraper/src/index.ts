@@ -98,6 +98,7 @@ async function main() {
         threePlayerOnly: false,
         isEternal: false,
         origin: 'Unknown',
+        printStatus: 'unknown',
       });
     }
 
