@@ -1,6 +1,6 @@
 # Four Souls Online
 
-A self-hostable web companion for playing The Binding of Isaac: Four Souls tabletop game online. Players connect to a shared game room and play with a fully synchronized board — cards, decks, the stack, priority, health trackers, and more.
+An unofficial self-hostable web companion for playing The Binding of Isaac: Four Souls tabletop game online. Players connect to a shared game room and play with a fully synchronized board — cards, decks, the stack, priority, health trackers, and more.
 
 ## Disclaimer
 

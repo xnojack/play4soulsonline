@@ -2,6 +2,7 @@
   "name": "@four-souls/scraper",
   "version": "1.0.0",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

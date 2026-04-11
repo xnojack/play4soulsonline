@@ -1,6 +1,7 @@
 {
   "name": "four-souls-online",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "workspaces": [
     "packages/*"
   ],
