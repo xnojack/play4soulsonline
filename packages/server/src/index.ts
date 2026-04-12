@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
-import { PORT, NODE_ENV, ALLOWED_ORIGIN } from './config';
+import { PORT, NODE_ENV, ALLOWED_ORIGIN, DATA_DIR } from './config';
 import apiRouter from './routes/api';
 import { registerHandlers } from './socket/handlers';
 import { getDb } from './db/connection';
@@ -29,12 +29,8 @@ app.use(express.json());
 const publicDir = path.join(__dirname, '..', 'public');
 app.use('/cards', express.static(path.join(publicDir, 'cards')));
 
-// Also serve from data/cards if it exists
-const dataCardsDir = path.join(
-  process.env.DATA_DIR ?? path.join(__dirname, '..', '..', '..', 'data'),
-  'cards'
-);
-app.use('/cards', express.static(dataCardsDir));
+// Also serve from data/cards — DATA_DIR defaults to /app/data (absolute path)
+app.use('/cards', express.static(path.join(DATA_DIR, 'cards')));
 
 // ─── REST API ─────────────────────────────────────────────────────────────────
 app.use('/api', apiRouter);
