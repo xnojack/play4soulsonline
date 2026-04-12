@@ -171,7 +171,7 @@ export function Lobby() {
   const [includeBonusSouls, setIncludeBonusSouls] = useState(true);
   const [bonusSoulCount, setBonusSoulCount] = useState(3);
   const [includeRooms, setIncludeRooms] = useState(true);
-  const [excludeNeverPrinted, setExcludeNeverPrinted] = useState(false);
+  const [excludeNeverPrinted, setExcludeNeverPrinted] = useState(true);
   const [starting, setStarting] = useState(false);
   const inRoom = game?.roomId === roomId;
 
