@@ -30,6 +30,12 @@ export interface Card {
   origin: string;
   /** 'in_print' | 'not_in_print' | 'never_printed' | 'planned' | 'unknown' */
   printStatus: string;
+  /**
+   * For Character cards: the card ID of their eternal starting item scraped from
+   * foursouls.com's #CharitemBox. null = character picks from treasure deck (Eden).
+   * undefined / null for non-character cards.
+   */
+  startingItemId: string | null;
 }
 
 // ============================================================

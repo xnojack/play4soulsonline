@@ -49,12 +49,19 @@ export async function downloadImages(
     const entry = entries[i];
     const id = entry.url.replace(/\/$/, '').split('/').pop() || entry.url;
 
-    process.stdout.write(`  [${i + 1}/${entries.length}] Downloading image for ${id}...`);
+    const id2 = entry.url.replace(/\/$/, '').split('/').pop() || entry.url;
+    const ext2 = path.extname(new URL(entry.imageUrl).pathname) || '.png';
+    const alreadyExists = fs.existsSync(path.join(outputDir, `${id2}${ext2}`));
+
+    if (!alreadyExists) {
+      process.stdout.write(`  [${i + 1}/${entries.length}] Downloading image for ${id}...`);
+    }
     const localPath = await downloadImage(entry, outputDir);
     map.set(id, localPath);
-    console.log(` ${localPath}`);
-
-    await new Promise((r) => setTimeout(r, delayMs));
+    if (!alreadyExists) {
+      console.log(` ${localPath}`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
 
   return map;

@@ -319,6 +319,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       includeBonusSouls: isBoolean(payload.includeBonusSouls) ? payload.includeBonusSouls : true,
       bonusSoulCount: isNumber(payload.bonusSoulCount) ? payload.bonusSoulCount : undefined,
       includeRooms: isBoolean(payload.includeRooms) ? payload.includeRooms : false,
+      excludeNeverPrinted: isBoolean(payload.excludeNeverPrinted) ? payload.excludeNeverPrinted : true,
     });
     if (err) return sendError(socket, err);
 

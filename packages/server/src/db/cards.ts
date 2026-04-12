@@ -20,6 +20,7 @@ interface DbRow {
   is_eternal: number;
   origin: string;
   print_status: string;
+  starting_item_id: string | null;
 }
 
 function rowToCard(row: DbRow): Card {
@@ -41,6 +42,7 @@ function rowToCard(row: DbRow): Card {
     isEternal: row.is_eternal === 1,
     origin: row.origin || 'Unknown',
     printStatus: row.print_status || 'unknown',
+    startingItemId: row.starting_item_id ?? null,
   };
 }
 

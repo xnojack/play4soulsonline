@@ -29,21 +29,28 @@ export function seedDatabase(cards: ScrapedCard[], dbPath: string): void {
       is_eternal INTEGER NOT NULL DEFAULT 0,
       origin TEXT,
       print_status TEXT NOT NULL DEFAULT 'unknown',
+      starting_item_id TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+  // Migrate existing DBs that predate the starting_item_id column
+  try {
+    db.exec(`ALTER TABLE cards ADD COLUMN starting_item_id TEXT;`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO cards (
       id, name, source_url, image_url, local_image_path,
       card_type, sub_type, set_name, hp, atk, evasion,
       soul_value, reward_text, ability_text,
-      three_player_only, is_eternal, origin, print_status
+      three_player_only, is_eternal, origin, print_status, starting_item_id
     ) VALUES (
       @id, @name, @sourceUrl, @imageUrl, @localImagePath,
       @cardType, @subType, @set, @hp, @atk, @evasion,
       @soulValue, @rewardText, @abilityText,
-      @threePlayerOnly, @isEternal, @origin, @printStatus
+      @threePlayerOnly, @isEternal, @origin, @printStatus, @startingItemId
     )
   `);
 
@@ -68,6 +75,7 @@ export function seedDatabase(cards: ScrapedCard[], dbPath: string): void {
         isEternal: card.isEternal ? 1 : 0,
         origin: card.origin,
         printStatus: card.printStatus ?? 'unknown',
+        startingItemId: card.startingItemId ?? null,
       });
     }
   });

@@ -18,6 +18,28 @@ function parseStatValue(text: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+/**
+ * Decode common HTML entities that can survive Cheerio's .text() calls
+ * when they appear in text nodes (e.g. &amp; in attribute values copied to text).
+ */
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#8217;/g, '\u2019') // right single quote
+    .replace(/&#8216;/g, '\u2018') // left single quote
+    .replace(/&#8220;/g, '\u201c') // left double quote
+    .replace(/&#8221;/g, '\u201d') // right double quote
+    .replace(/&#8211;/g, '\u2013') // en dash
+    .replace(/&#8212;/g, '\u2014') // em dash
+    .replace(/\u00a0/g, ' ')       // non-breaking space → regular space
+    .replace(/  +/g, ' ')          // collapse multiple spaces
+    .trim();
+}
+
 function inferCardType(
   raw: string
 ): { cardType: string; subType: string } {
@@ -57,6 +79,37 @@ function inferCardType(
   return { cardType: 'Unknown', subType: '' };
 }
 
+/**
+ * Extract clean text from an .effectOutcome element.
+ * - Replaces inline icons with [alt] bracketed text first.
+ * - Converts <li> elements to newline-prefixed bullet lines so list structure
+ *   is preserved in plain text (rather than all items being concatenated).
+ * - Returns the cleaned, entity-decoded string.
+ */
+function extractEffectText($: cheerio.CheerioAPI, el: cheerio.Element): string {
+  const elem = $(el);
+
+  // Replace inline icons with bracketed alt text
+  elem.find('img.inlineIcon, img.effectIcon').each((_j, img) => {
+    const alt = $(img).attr('alt') || '';
+    $(img).replaceWith(`[${alt}]`);
+  });
+
+  // Convert <li> elements to newline-prefixed lines before extracting text,
+  // so "Choose one-\n- Play an additional loot card..." is readable.
+  elem.find('li').each((_j, li) => {
+    const liText = $(li).text().trim();
+    $(li).replaceWith(`\n- ${liText}`);
+  });
+
+  // Remove now-empty <ul>/<ol> wrappers (they'd leave stray whitespace)
+  elem.find('ul, ol').each((_j, list) => {
+    $(list).replaceWith($(list).text());
+  });
+
+  return decodeEntities(elem.text().trim());
+}
+
 export async function scrapeCardDetail(
   entry: CardListEntry
 ): Promise<Omit<ScrapedCard, 'localImagePath'>> {
@@ -93,7 +146,7 @@ export async function scrapeCardDetail(
   // </div>
   const originSetDiv = $('#OriginSet');
   const paragraphs = originSetDiv.find('p');
-  const origin = paragraphs.first().text().trim();
+  const origin = decodeEntities(paragraphs.first().text().trim());
   // If there are 2+ paragraphs, second is the type; if only 1, no explicit type
   const rawType = paragraphs.length >= 2 ? paragraphs.last().text().trim() : '';
 
@@ -124,29 +177,27 @@ export async function scrapeCardDetail(
   });
 
   // --- Ability text ---
-  // .effectOutcome contains the ability text (may contain inline icons)
+  // .effectOutcome contains the ability text (may contain inline icons and lists)
   const effectOutcomes: string[] = [];
   $('.effectOutcome').each((_i, el) => {
-    // Replace inline icons with their alt text in brackets
-    $(el).find('img.inlineIcon, img.effectIcon').each((_j, img) => {
-      const alt = $(img).attr('alt') || '';
-      $(img).replaceWith(`[${alt}]`);
-    });
-    const txt = $(el).text().trim();
+    const txt = extractEffectText($, el);
     if (txt) effectOutcomes.push(txt);
   });
   const abilityText = effectOutcomes.join('\n');
 
-  // --- Quote / flavor text ---
-  const quoteText = $('.quoteText').first().text().trim();
+  // --- Quote / flavor text (fallback if no ability text) ---
+  const quoteText = decodeEntities($('.quoteText').first().text().trim());
 
   // --- Reward text (monsters) ---
-  // "Potential Rewards" section within #CardInfo
+  // Target the #CardInfo text, but use a targeted selector for the rewards
+  // section rather than a broad regex over the whole block.
   let rewardText = '';
-  const cardInfoText = $('#CardInfo').text();
-  const rewardMatch = cardInfoText.match(/Potential Rewards(.*?)(?:$|\n)/s);
+  const cardInfoEl = $('#CardInfo');
+  // The reward text follows the label "Potential Rewards" in the card info
+  const cardInfoText = cardInfoEl.text();
+  const rewardMatch = cardInfoText.match(/Potential Rewards[:\s]*([\s\S]*?)(?:\n\n|$)/);
   if (rewardMatch) {
-    rewardText = rewardMatch[1].trim();
+    rewardText = decodeEntities(rewardMatch[1].trim());
   }
 
   // Soul value from rewards section for monsters
@@ -178,10 +229,33 @@ export async function scrapeCardDetail(
   }
 
   // --- Flags ---
-  const isEternal = !!$('#CharitemBox').length;
+  const charitemBox = $('#CharitemBox');
+  const isEternal = !!charitemBox.length;
   const threePlayerOnly =
     $('#CardInfo').text().toLowerCase().includes('3+ player') ||
     $('#CardInfo').text().toLowerCase().includes('3p+');
+
+  // --- Starting item (characters only) ---
+  // #CharitemBox contains a link to the character's eternal starting item.
+  // If #CharitemBox exists but has no /cards/ link, the character has no fixed
+  // item (Eden variants — they choose from the treasure deck), so startingItemId = null.
+  // For non-character cards, startingItemId is undefined (field omitted).
+  let startingItemId: string | null | undefined = undefined;
+  if (resolvedCardType === 'Character') {
+    if (charitemBox.length) {
+      // Find the first /cards/ link inside the box — that's the starting item
+      const itemLink = charitemBox.find('a[href*="/cards/"]').first().attr('href');
+      if (itemLink) {
+        startingItemId = extractId(itemLink);
+      } else {
+        // CharitemBox exists but no card link — treat as Eden (no fixed item)
+        startingItemId = null;
+      }
+    } else {
+      // No CharitemBox at all on a character page — Eden or similar (no fixed item)
+      startingItemId = null;
+    }
+  }
 
   return {
     id,
@@ -201,5 +275,6 @@ export async function scrapeCardDetail(
     isEternal,
     origin: origin || 'Unknown',
     printStatus,
+    startingItemId,
   };
 }

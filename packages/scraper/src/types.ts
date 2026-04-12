@@ -18,4 +18,11 @@ export interface ScrapedCard {
   origin: string;
   /** 'in_print' | 'not_in_print' | 'never_printed' | 'planned' | 'unknown' */
   printStatus: string;
+  /**
+   * For Character cards: the card ID of their eternal starting item, as linked
+   * in #CharitemBox on foursouls.com. null if the character has no fixed starting
+   * item (Eden variants who choose from the treasure deck). undefined / absent for
+   * non-character cards.
+   */
+  startingItemId?: string | null;
 }

@@ -13,7 +13,8 @@ const IMAGES_DIR = path.join(DATA_DIR, 'cards');
 // Also write images to server's public dir if it exists
 const SERVER_IMAGES_DIR = path.resolve(__dirname, '../../server/public/cards');
 
-const DETAIL_DELAY_MS = 1000;
+const DETAIL_DELAY_MS = 300;
+const CHECKPOINT_INTERVAL = 50; // Write cards.json every N cards to allow resumption
 
 async function main() {
   console.log('=== Four Souls Card Scraper ===\n');
@@ -99,7 +100,14 @@ async function main() {
         isEternal: false,
         origin: 'Unknown',
         printStatus: 'unknown',
+        startingItemId: undefined,
       });
+    }
+
+    // Checkpoint: write progress to JSON every N cards so interrupted runs can resume
+    if ((i + 1) % CHECKPOINT_INTERVAL === 0) {
+      writeJson([...existingCards, ...newCards], JSON_PATH);
+      process.stdout.write(`  [checkpoint saved at ${i + 1}]\n`);
     }
 
     await new Promise((r) => setTimeout(r, DETAIL_DELAY_MS));
