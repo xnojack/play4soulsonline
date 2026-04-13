@@ -61,6 +61,7 @@ export class GameRoom {
     const emptyTurn: TurnState = {
       activePlayerId: '',
       phase: 'start',
+      lootDrawn: false,
       lootPlaysRemaining: 1,
       purchasesMade: 0,
       attacksDeclared: 0,
@@ -535,6 +536,7 @@ export class GameRoom {
       turn: {
         activePlayerId: firstPlayer.id,
         phase: 'start',
+        lootDrawn: false,
         lootPlaysRemaining: 1,
         purchasesMade: 0,
         attacksDeclared: 0,
@@ -692,6 +694,7 @@ export class GameRoom {
     const emptyTurn: TurnState = {
       activePlayerId: '',
       phase: 'start',
+      lootDrawn: false,
       lootPlaysRemaining: 1,
       purchasesMade: 0,
       attacksDeclared: 0,

@@ -26,7 +26,9 @@ export function TurnActionBar() {
 
   const stackLength = game.stack.length;
   const turn = game.turn;
+  const lootDrawn = turn.lootDrawn;
   const lootPlaysRemaining = turn.lootPlaysRemaining;
+  const lootPlayed = lootPlaysRemaining < 1;
   const hasAttacked = turn.attacksDeclared > 0;
   const hasPurchased = turn.purchasesMade > 0;
   const inAttack = !!turn.currentAttack;
@@ -116,25 +118,11 @@ export function TurnActionBar() {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3">
-          {/* Left: Turn indicator + loot plays */}
+          {/* Left: Turn indicator */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
               Your Turn
             </span>
-            <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
-              lootPlaysRemaining > 0
-                ? 'bg-fs-gold/20 text-fs-gold'
-                : 'bg-fs-darker text-fs-parchment/30'
-            }`}>
-              {lootPlaysRemaining} loot play{lootPlaysRemaining !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={handleGrantLootPlay}
-              className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-              title="Grant yourself an extra loot play this turn"
-            >
-              +1
-            </button>
           </div>
 
           {/* Center: Turn phase breadcrumbs */}
@@ -143,21 +131,20 @@ export function TurnActionBar() {
             <PhaseButton
               label="Draw Loot"
               icon="🃏"
-              active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
-              done={false}
+              active={!lootDrawn && stackEmpty && !inAttack}
+              done={lootDrawn}
               onClick={handleDrawLoot}
-              disabled={lootPlaysRemaining <= 0 || !stackEmpty}
+              disabled={!stackEmpty}
             />
             <PhaseArrow />
 
-            {/* Attack */}
+            {/* Play Loot */}
             <PhaseButton
-              label="Attack"
-              icon="⚔"
-              active={!inAttack && !hasAttacked && stackEmpty}
-              done={hasAttacked}
-              disabled={inAttack || !stackEmpty}
-              hint={inAttack ? 'In combat' : undefined}
+              label="Play Loot"
+              icon="✋"
+              active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
+              done={lootPlayed}
+              hint={lootPlaysRemaining > 0 ? `${lootPlaysRemaining} play${lootPlaysRemaining !== 1 ? 's' : ''} remaining` : 'Loot played'}
             />
             <PhaseArrow />
 
@@ -169,6 +156,17 @@ export function TurnActionBar() {
               done={hasPurchased}
               disabled={inAttack || !stackEmpty}
               hint={hasPurchased ? `${turn.purchasesMade} bought` : undefined}
+            />
+            <PhaseArrow />
+
+            {/* Attack */}
+            <PhaseButton
+              label="Attack"
+              icon="⚔"
+              active={!inAttack && !hasAttacked && stackEmpty}
+              done={hasAttacked}
+              disabled={inAttack || !stackEmpty}
+              hint={inAttack ? 'In combat' : undefined}
             />
             <PhaseArrow />
 
@@ -187,9 +185,16 @@ export function TurnActionBar() {
             </button>
           </div>
 
-          {/* Right: Dice + Stack actions */}
+          {/* Right: Dice + loot play grant + Stack actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
+            <button
+              onClick={handleGrantLootPlay}
+              className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
+              title="Grant yourself an extra loot play this turn"
+            >
+              +1 Play
+            </button>
 
             {/* Priority/Stack controls */}
             {hasPriority && stackLength > 0 && (

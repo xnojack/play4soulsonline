@@ -100,6 +100,7 @@ export interface ClientPlayer {
 export interface TurnState {
   activePlayerId: string;
   phase: 'start' | 'action' | 'end';
+  lootDrawn: boolean;
   lootPlaysRemaining: number;
   purchasesMade: number;
   attacksDeclared: number;

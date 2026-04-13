@@ -141,10 +141,11 @@ export interface AttackState {
 export interface TurnState {
   activePlayerId: string;
   phase: TurnPhase;
-  lootPlaysRemaining: number; // starts at 1
-  purchasesMade: number; // max 1 normally
+  lootDrawn: boolean;           // true once the active player has drawn their starting loot
+  lootPlaysRemaining: number;   // starts at 1
+  purchasesMade: number;        // max 1 normally
   attacksDeclared: number;
-  attacksRequired: number; // 1 normally; ambush etc. can increase
+  attacksRequired: number;      // 1 normally; ambush etc. can increase
   currentAttack: AttackState | null;
   // Track which players have passed priority since last stack push
   passedPriority: Set<string>;

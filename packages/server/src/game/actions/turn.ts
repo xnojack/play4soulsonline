@@ -9,6 +9,7 @@ export function beginActionPhase(state: GameState): GameState {
   const newTurn: TurnState = {
     ...state.turn,
     phase: 'action',
+    lootDrawn: false,
     lootPlaysRemaining: 1,
     purchasesMade: 0,
     attacksDeclared: 0,
@@ -54,6 +55,7 @@ export function endTurn(state: GameState): GameState {
   const newTurn: TurnState = {
     activePlayerId: nextPlayer.id,
     phase: 'start',
+    lootDrawn: false,
     lootPlaysRemaining: 1,
     purchasesMade: 0,
     attacksDeclared: 0,
@@ -120,6 +122,12 @@ export function drawLoot(
       : p
   );
 
+  // Mark the turn's loot draw as done when the active player draws
+  const isActivePlayer = state.turn.activePlayerId === playerId;
+  const newTurn = isActivePlayer && !state.turn.lootDrawn
+    ? { ...state.turn, lootDrawn: true }
+    : state.turn;
+
   const log = createLogEntry(
     'card_play',
     `${playerName} looted ${drawn.length} card${drawn.length !== 1 ? 's' : ''}`,
@@ -129,6 +137,7 @@ export function drawLoot(
   return {
     ...state,
     players,
+    turn: newTurn,
     lootDeck: newDeck,
     lootDiscard: newDiscard,
     log: [...state.log, log],
