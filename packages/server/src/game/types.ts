@@ -36,6 +36,10 @@ export interface Card {
    * undefined / null for non-character cards.
    */
   startingItemId: string | null;
+  /** URL of the back-face image (for dual-sided / flip cards). null = not a flip card. */
+  backImageUrl: string | null;
+  /** Name of the back face (e.g. "amginE ehT"). null = not a flip card. */
+  flipSideName: string | null;
 }
 
 // ============================================================
@@ -51,6 +55,7 @@ export interface CardInPlay {
   atkCounters: number; // ATK counter type (each = +1 ATK)
   genericCounters: number;
   namedCounters: Record<string, number>; // named counter type → count
+  flipped: boolean; // true = showing back face (flip cards only)
 }
 
 // ============================================================
@@ -442,4 +447,8 @@ export interface EdenPickPayload {
 
 export interface SadVotePayload {
   targetPlayerId: string; // the player ID being voted as the saddest character
+}
+
+export interface FlipCardPayload {
+  instanceId: string; // the CardInPlay instanceId to flip
 }

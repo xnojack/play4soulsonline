@@ -91,13 +91,29 @@ export function ResolvedCard({
       </div>
     );
   }
+
+  // Inject a generic "Flip" action for dual-sided cards
+  const flipAction: CardAction | null = card.backImageUrl
+    ? {
+        label: instance.flipped ? 'Flip to front' : 'Flip',
+        onClick: () => {
+          getSocket().emit('action:flip_card', { instanceId: instance.instanceId });
+        },
+        variant: 'ghost',
+      }
+    : null;
+
+  const mergedActions = flipAction
+    ? [flipAction, ...(actions ?? [])]
+    : actions;
+
   return (
     <CardComponent
       card={card}
       instance={instance}
       size={size}
       showCounters={showCounters}
-      actions={actions}
+      actions={mergedActions}
       onClick={onClick}
       selected={selected}
       className={className}

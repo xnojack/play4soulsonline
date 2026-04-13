@@ -19,6 +19,10 @@ export interface ClientCard {
   isEternal: boolean;
   /** 'in_print' | 'not_in_print' | 'never_printed' | 'planned' | 'unknown' */
   printStatus: string;
+  /** URL of the back-face image (for dual-sided / flip cards). null = not a flip card. */
+  backImageUrl: string | null;
+  /** Name of the back face (e.g. "amginE ehT"). null = not a flip card. */
+  flipSideName: string | null;
 }
 
 export interface CardInPlay {
@@ -30,6 +34,7 @@ export interface CardInPlay {
   atkCounters: number;
   genericCounters: number;
   namedCounters: Record<string, number>;
+  flipped: boolean;
 }
 
 export interface MonsterSlot {

@@ -21,9 +21,16 @@ interface DbRow {
   origin: string;
   print_status: string;
   starting_item_id: string | null;
+  back_image_url: string | null;
+  back_local_image_path: string | null;
+  flip_side_name: string | null;
 }
 
 function rowToCard(row: DbRow): Card {
+  // Prefer the local back image path (served as /cards/{id}_back.png); fall back to remote URL
+  const backImageUrl = row.back_local_image_path
+    ? `/cards/${row.id}_back.png`
+    : row.back_image_url ?? null;
   return {
     id: row.id,
     name: row.name,
@@ -43,6 +50,8 @@ function rowToCard(row: DbRow): Card {
     origin: row.origin || 'Unknown',
     printStatus: row.print_status || 'unknown',
     startingItemId: row.starting_item_id ?? null,
+    backImageUrl,
+    flipSideName: row.flip_side_name ?? null,
   };
 }
 

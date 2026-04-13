@@ -55,6 +55,7 @@ export function createCardInPlay(cardId: string, charged = true): CardInPlay {
     atkCounters: 0,
     genericCounters: 0,
     namedCounters: {},
+    flipped: false,
   };
 }
 

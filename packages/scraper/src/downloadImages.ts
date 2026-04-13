@@ -36,6 +36,44 @@ export async function downloadImage(
   }
 }
 
+/**
+ * Download the back face image for a dual-sided card.
+ * Returns the local path (e.g. /cards/r-the_enigma_back.png) or null on failure.
+ */
+export async function downloadBackImage(
+  cardId: string,
+  backImageUrl: string,
+  outputDir: string,
+  delayMs = 300
+): Promise<string | null> {
+  const ext = path.extname(new URL(backImageUrl).pathname) || '.png';
+  const filename = `${cardId}_back${ext}`;
+  const localPath = path.join(outputDir, filename);
+
+  if (fs.existsSync(localPath)) {
+    return `/cards/${filename}`;
+  }
+
+  try {
+    process.stdout.write(`  Downloading back image for ${cardId}...`);
+    const response = await axios.get(backImageUrl, {
+      responseType: 'arraybuffer',
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FourSoulsOnlineScraper/1.0)',
+        Referer: 'https://foursouls.com/',
+      },
+    });
+    fs.writeFileSync(localPath, Buffer.from(response.data as ArrayBuffer));
+    console.log(` /cards/${filename}`);
+    await new Promise((r) => setTimeout(r, delayMs));
+    return `/cards/${filename}`;
+  } catch (err) {
+    console.warn(`  Failed to download back image for ${cardId}: ${err}`);
+    return null;
+  }
+}
+
 export async function downloadImages(
   entries: CardListEntry[],
   outputDir: string,

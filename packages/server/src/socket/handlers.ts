@@ -40,6 +40,7 @@ import {
   ReturnRoomCardPayload,
   EdenPickPayload,
   SadVotePayload,
+  FlipCardPayload,
 } from '../game/types';
 import {
   passPriority,
@@ -1019,6 +1020,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       atkCounters: 0,
       genericCounters: 0,
       namedCounters: {} as Record<string, number>,
+      flipped: false,
     };
 
     const log = createLogEntry(
@@ -1079,6 +1081,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       atkCounters: 0,
       genericCounters: 0,
       namedCounters: {} as Record<string, number>,
+      flipped: false,
     };
 
     const log = createLogEntry('soul_gain', `${player.name} gains a soul`, ctx.playerId);
@@ -1816,6 +1819,120 @@ export function registerHandlers(io: Server, socket: Socket): void {
       : [cardId, ...withoutCard];
 
     room.setState({ ...state, [deckKey]: newDeck });
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Flip a dual-sided card between its front and back face */
+  socket.on('action:flip_card', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as FlipCardPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    const instanceId = payload.instanceId;
+
+    // Helper to toggle flipped on a CardInPlay
+    const toggle = (c: import('../game/types').CardInPlay) =>
+      c.instanceId === instanceId ? { ...c, flipped: !c.flipped } : c;
+
+    // Shared areas (monsters, shop, room): any non-spectator can flip.
+    // Player-owned areas (items, character, starting item): only the owner.
+    const inMonster = state.monsterSlots.some((s) => s.stack.some((c) => c.instanceId === instanceId));
+    const inShop = state.shopSlots.some((s) => s.card?.instanceId === instanceId);
+    const inRoom = state.roomSlots.some((c) => c.instanceId === instanceId);
+    const inBonusSoul = state.bonusSouls.some((b) => b.instance.instanceId === instanceId);
+    const ownerPlayer = state.players.find(
+      (p) =>
+        p.items.some((c) => c.instanceId === instanceId) ||
+        p.souls.some((c) => c.instanceId === instanceId) ||
+        p.curses.some((c) => c.instanceId === instanceId) ||
+        p.kills.some((c) => c.instanceId === instanceId) ||
+        p.characterInstanceId === instanceId ||
+        p.startingItemInstanceId === instanceId
+    );
+    const inCharacterCards = instanceId in state.characterCards;
+    const inStartingItemCards = instanceId in state.startingItemCards;
+
+    const isShared = inMonster || inShop || inRoom || inBonusSoul;
+    const isOwned = !!ownerPlayer || inCharacterCards || inStartingItemCards;
+
+    if (!isShared && !isOwned) return sendError(socket, 'Card instance not found');
+
+    if (!isShared && ownerPlayer && ownerPlayer.id !== ctx.playerId)
+      return sendError(socket, 'You can only flip your own cards');
+
+    let newState = { ...state };
+
+    if (inMonster) {
+      newState = {
+        ...newState,
+        monsterSlots: newState.monsterSlots.map((s) => ({
+          ...s,
+          stack: s.stack.map(toggle),
+        })),
+      };
+    }
+    if (inShop) {
+      newState = {
+        ...newState,
+        shopSlots: newState.shopSlots.map((s) =>
+          s.card?.instanceId === instanceId ? { ...s, card: toggle(s.card!) } : s
+        ),
+      };
+    }
+    if (inRoom) {
+      newState = { ...newState, roomSlots: newState.roomSlots.map(toggle) };
+    }
+    if (inBonusSoul) {
+      newState = {
+        ...newState,
+        bonusSouls: newState.bonusSouls.map((b) =>
+          b.instance.instanceId === instanceId ? { ...b, instance: toggle(b.instance) } : b
+        ),
+      };
+    }
+    if (ownerPlayer) {
+      newState = {
+        ...newState,
+        players: newState.players.map((p) =>
+          p.id === ownerPlayer.id
+            ? {
+                ...p,
+                items: p.items.map(toggle),
+                souls: p.souls.map(toggle),
+                curses: p.curses.map(toggle),
+                kills: p.kills.map(toggle),
+              }
+            : p
+        ),
+      };
+    }
+    if (inCharacterCards) {
+      newState = {
+        ...newState,
+        characterCards: {
+          ...newState.characterCards,
+          [instanceId]: toggle(newState.characterCards[instanceId]),
+        },
+      };
+    }
+    if (inStartingItemCards) {
+      newState = {
+        ...newState,
+        startingItemCards: {
+          ...newState.startingItemCards,
+          [instanceId]: toggle(newState.startingItemCards[instanceId]),
+        },
+      };
+    }
+
+    room.setState(newState);
     broadcastState(io, ctx.roomId);
   }));
 

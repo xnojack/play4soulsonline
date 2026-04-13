@@ -12,9 +12,11 @@ function extractId(url: string): string {
 
 function parseStatValue(text: string): number | null {
   // Strip leading ": " prefix that the site uses
-  const cleaned = text.trim().replace(/^:\s*/, '').replace(/[^0-9\-]/g, '');
+  const cleaned = text.trim().replace(/^:\s*/, '').replace(/[^0-9\/\-]/g, '');
   if (cleaned === '' || cleaned === '-') return null;
-  const n = parseInt(cleaned, 10);
+  // Dual-sided cards show stats as "front/back" (e.g. "4/6") — take the front (first) value
+  const front = cleaned.split('/')[0];
+  const n = parseInt(front, 10);
   return isNaN(n) ? null : n;
 }
 
@@ -49,7 +51,7 @@ function inferCardType(
   if (lower.includes('bonus soul')) return { cardType: 'BonusSoul', subType: '' };
   if (lower.includes('room')) return { cardType: 'Room', subType: '' };
 
-  // Monster subtypes
+  // Monster subtypes — check before generic "monster" so specifics win
   if (lower.includes('epic boss')) return { cardType: 'Monster', subType: 'Epic Boss' };
   if (lower.includes('boss')) return { cardType: 'Monster', subType: 'Boss' };
   if (lower.includes('curse')) return { cardType: 'Monster', subType: 'Curse' };
@@ -125,7 +127,7 @@ export async function scrapeCardDetail(
   const $ = cheerio.load(res.data as string);
   const id = extractId(entry.url);
 
-  // --- Card image ---
+  // --- Card image (front face) ---
   // The page uses lazy loading: real URL is in data-src on .cardFront img
   let imageUrl = entry.imageUrl;
   const cardFrontImg = $('img.cardFront').first();
@@ -136,6 +138,34 @@ export async function scrapeCardDetail(
     if (chosen && !chosen.startsWith('data:')) {
       imageUrl = chosen.startsWith('http') ? chosen : `${BASE_URL}${chosen}`;
     }
+  }
+
+  // --- Back face image (dual-sided / flip cards only) ---
+  // Dual-sided cards have a second card image in #CardRight with alt="Alternate Card Back".
+  // The back image is in data-src (lazy-loaded), falling back to src.
+  let backImageUrl: string | null = null;
+  const backImg = $('#CardRight img.cardFront[alt="Alternate Card Back"]');
+  if (backImg.length) {
+    const dataSrc = backImg.attr('data-src') || '';
+    const src = backImg.attr('src') || '';
+    const chosen = dataSrc || src;
+    if (chosen && !chosen.startsWith('data:')) {
+      backImageUrl = chosen.startsWith('http') ? chosen : `${BASE_URL}${chosen}`;
+    }
+  }
+
+  // --- Flip side name ---
+  // The scraper list entry stores dual-sided card names as "Front/Back Card Back".
+  // Extract the back name (between "/" and " Card Back") and clean the front name.
+  let flipSideName: string | null = null;
+  let cleanName = entry.name;
+  const flipMatch = entry.name.match(/^(.+?)\/(.+?)\s+Card Back$/i);
+  if (flipMatch) {
+    cleanName = flipMatch[1].trim();
+    flipSideName = flipMatch[2].trim();
+  } else if (entry.name.endsWith(' Card Back')) {
+    // Fallback: strip " Card Back" suffix alone
+    cleanName = entry.name.replace(/\s+Card Back$/i, '').trim();
   }
 
   // --- Set and card type ---
@@ -154,6 +184,7 @@ export async function scrapeCardDetail(
 
   // --- Stats from #StatTable ---
   // Each row: <tr><td><img alt="HP" ...></td><td class="value">: 2</td></tr>
+  // Dual-sided cards show slash-separated stats (e.g. "4/6") — parseStatValue takes the front value.
   let hp: number | null = null;
   let atk: number | null = null;
   let evasion: number | null = null;
@@ -268,7 +299,7 @@ export async function scrapeCardDetail(
 
   return {
     id,
-    name: entry.name,
+    name: cleanName,
     sourceUrl: entry.url,
     imageUrl,
     cardType: resolvedCardType,
@@ -285,5 +316,8 @@ export async function scrapeCardDetail(
     origin: origin || 'Unknown',
     printStatus,
     startingItemId,
+    backImageUrl: backImageUrl || null,
+    backLocalImagePath: null, // populated by downloadImages after downloading
+    flipSideName: flipSideName || null,
   };
 }

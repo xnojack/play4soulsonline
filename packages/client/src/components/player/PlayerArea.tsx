@@ -240,6 +240,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
                   atkCounters: 0,
                   genericCounters: 0,
                   namedCounters: {},
+                  flipped: false,
                 }
               }
               size="sm"

@@ -25,4 +25,13 @@ export interface ScrapedCard {
    * non-character cards.
    */
   startingItemId?: string | null;
+  /**
+   * For dual-sided (flip) cards: the CDN URL of the back face image.
+   * null for single-sided cards.
+   */
+  backImageUrl?: string | null;
+  /** Local path for the back face image (e.g. /cards/r-the_enigma_back.png). */
+  backLocalImagePath?: string | null;
+  /** Display name of the back face (e.g. "amginE ehT"). null for single-sided cards. */
+  flipSideName?: string | null;
 }

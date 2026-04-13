@@ -20,6 +20,8 @@ interface CardData {
   isEternal: boolean;
   threePlayerOnly: boolean;
   printStatus: string;
+  backImageUrl: string | null;
+  flipSideName: string | null;
 }
 
 export function CardSearch() {

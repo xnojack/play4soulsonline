@@ -61,8 +61,13 @@ export function CardComponent({
   const { setModalCard, setHoveredCard } = useGameStore();
   const dim = CARD_SIZES[size];
   const isSpent = instance?.charged === false;
+  const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // When flipped, substitute the back-face image and name
+  const displayImageUrl = isFlipped && card.backImageUrl ? card.backImageUrl : card.imageUrl;
+  const displayName = isFlipped && card.flipSideName ? card.flipSideName : card.name;
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -110,8 +115,8 @@ export function CardComponent({
           whileHover={{ scale: 1.05, zIndex: 10 }}
         >
           <img
-            src={faceDown ? '/card-back.png' : `${serverUrl}${card.imageUrl}`}
-            alt={faceDown ? 'Card' : card.name}
+            src={faceDown ? '/card-back.png' : `${serverUrl}${displayImageUrl}`}
+            alt={faceDown ? 'Card' : displayName}
             className={`w-full h-full object-cover rounded-sm card-shadow ${
               selected ? 'ring-2 ring-fs-gold-light ring-offset-1 ring-offset-fs-darker' : ''
             } ${isSpent ? 'card-spent' : ''}`}
@@ -151,6 +156,16 @@ export function CardComponent({
             </div>
           )}
 
+          {/* Flip card indicator badge */}
+          {card.backImageUrl && !faceDown && (
+            <div
+              className="absolute top-0 left-0 w-4 h-4 bg-fs-dark/80 border border-fs-gold/40 rounded-sm text-fs-gold text-xs flex items-center justify-center leading-none shadow"
+              title="Dual-sided card"
+            >
+              ↕
+            </div>
+          )}
+
           {/* "Has actions" indicator */}
           {(alwaysPopover || (actions && actions.length > 0)) && !faceDown && (
             <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-0.5 pointer-events-none">
@@ -187,7 +202,7 @@ export function CardComponent({
             >
               {/* Card name header */}
               <div className="text-sm text-fs-gold font-display font-semibold px-1 pb-1 mb-1 border-b border-fs-gold/20 truncate">
-                {card.name}
+                {displayName}
               </div>
               <div className="flex flex-col gap-0.5">
                 {(actions ?? []).map((action, i) => (

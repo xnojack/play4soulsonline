@@ -178,6 +178,7 @@ function HandCardSlot({
         atkCounters: 0,
         genericCounters: 0,
         namedCounters: {},
+        flipped: false,
       }}
       size="sm"
       actions={actions}

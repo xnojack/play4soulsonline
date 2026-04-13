@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { scrapeCardList } from './scrapeCardList';
 import { scrapeCardDetail } from './scrapeCardDetail';
-import { downloadImages } from './downloadImages';
+import { downloadImages, downloadBackImage } from './downloadImages';
 import { seedDatabase, writeJson } from './seedDatabase';
 import { ScrapedCard } from './types';
 
@@ -48,7 +48,7 @@ async function main() {
   });
   console.log(`  New cards to scrape: ${newEntries.length}\n`);
 
-  // Step 2: Download images
+  // Step 2: Download front-face images for new cards
   console.log('Step 2: Downloading card images...');
   const imageMap = await downloadImages(newEntries, IMAGES_DIR, 300);
   // Also copy to server public dir
@@ -101,6 +101,9 @@ async function main() {
         origin: 'Unknown',
         printStatus: 'unknown',
         startingItemId: undefined,
+        backImageUrl: null,
+        backLocalImagePath: null,
+        flipSideName: null,
       });
     }
 
@@ -115,8 +118,34 @@ async function main() {
 
   const allCards = [...existingCards, ...newCards];
 
+  // Step 3b: Download back-face images for flip cards (all cards, not just new ones)
+  // This handles the case where cards.json already existed but back images weren't downloaded yet.
+  console.log('\nStep 3b: Downloading flip card back images...');
+  let backDownloaded = 0;
+  for (const card of allCards) {
+    if (!card.backImageUrl) continue;
+    const localPath = await downloadBackImage(card.id, card.backImageUrl, IMAGES_DIR, 300);
+    if (localPath && card.backLocalImagePath !== localPath) {
+      card.backLocalImagePath = localPath;
+      backDownloaded++;
+      // Also copy to server public dir
+      if (fs.existsSync(SERVER_IMAGES_DIR)) {
+        const filename = path.basename(localPath);
+        const src = path.join(IMAGES_DIR, filename);
+        const dst = path.join(SERVER_IMAGES_DIR, filename);
+        if (fs.existsSync(src) && !fs.existsSync(dst)) {
+          fs.copyFileSync(src, dst);
+        }
+      }
+    }
+  }
+  if (backDownloaded === 0) {
+    console.log('  No new back images to download.');
+  }
+  console.log();
+
   // Step 4: Write JSON
-  console.log('\nStep 4: Writing cards.json...');
+  console.log('Step 4: Writing cards.json...');
   writeJson(allCards, JSON_PATH);
 
   // Step 5: Seed database
