@@ -217,23 +217,17 @@ export function CardComponent({
               ↕
             </div>
           )}
-        </motion.div>
 
-        {/* Print status badge */}
-        {!faceDown && card.printStatus === 'not_in_print' && (
-          <div className="absolute -bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-            <span className="text-xs px-1 py-0.5 rounded bg-gray-600/80 text-gray-300 leading-none whitespace-nowrap">
-              Not in Print
-            </span>
-          </div>
-        )}
-        {!faceDown && card.printStatus === 'never_printed' && (
-          <div className="absolute -bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-            <span className="text-xs px-1 py-0.5 rounded bg-red-900/80 text-red-300 leading-none whitespace-nowrap">
-              Never Printed
-            </span>
-          </div>
-        )}
+          {/* Eternal badge */}
+          {!faceDown && card.isEternal && (
+            <div
+              className="absolute bottom-0 left-0 px-1 py-0.5 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-xs leading-none pointer-events-none"
+              title="Eternal — cannot be destroyed"
+            >
+              ETR
+            </div>
+          )}
+        </motion.div>
 
         {/* Action popover — shown on hover (desktop) or tap (touch) */}
         <AnimatePresence>

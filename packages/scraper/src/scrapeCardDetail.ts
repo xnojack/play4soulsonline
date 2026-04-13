@@ -91,8 +91,8 @@ function inferCardType(
 function extractEffectText($: cheerio.CheerioAPI, el: cheerio.Element): string {
   const elem = $(el);
 
-  // Replace inline icons with bracketed alt text
-  elem.find('img.inlineIcon, img.effectIcon').each((_j, img) => {
+  // Replace ALL inline images with bracketed alt text (catches any class, not just inlineIcon/effectIcon)
+  elem.find('img').each((_j, img) => {
     const alt = $(img).attr('alt') || '';
     $(img).replaceWith(`[${alt}]`);
   });
