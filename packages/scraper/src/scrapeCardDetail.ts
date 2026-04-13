@@ -319,5 +319,6 @@ export async function scrapeCardDetail(
     backImageUrl: backImageUrl || null,
     backLocalImagePath: null, // populated by downloadImages after downloading
     flipSideName: flipSideName || null,
+    quantity: 1, // overwritten by scrapeCardQuantities() post-processing pass
   };
 }

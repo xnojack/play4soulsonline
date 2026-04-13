@@ -104,6 +104,7 @@ async function main() {
         backImageUrl: null,
         backLocalImagePath: null,
         flipSideName: null,
+        quantity: 1,
       });
     }
 
