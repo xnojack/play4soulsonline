@@ -58,6 +58,64 @@ async function scrapePageCards(pageUrl: string): Promise<CardListEntry[]> {
   return cards;
 }
 
+/**
+ * Scrapes the card search with identical=no to count physical copies per card.
+ * Returns a map of card-id-slug → count (e.g. { "b2-a_penny_6": 6, ... }).
+ * Cards not present in the map should default to 1 in the caller.
+ */
+export async function scrapeCardQuantities(): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const pageUrl =
+      page === 1
+        ? `${SEARCH_URL}?searchtext=&origin=&card_type=&card_footnotes=&competitive_only=&identical=no&cardstatus=cur&holo=&printstatus=&franchise=&fullartist=&charartist=&backartist=`
+        : `${SEARCH_URL}page/${page}/?searchtext&origin&card_type&card_footnotes&competitive_only&identical=no&cardstatus=cur&holo&printstatus&franchise&fullartist&charartist&backartist`;
+
+    console.log(`  Scraping quantities page ${page}: ${pageUrl}`);
+
+    try {
+      const html = await fetchPage(pageUrl);
+      const $ = cheerio.load(html);
+      let foundOnPage = 0;
+
+      $('a[href*="/cards/"]').each((_i, el) => {
+        const href = $(el).attr('href');
+        if (!href || !href.includes('/cards/')) return;
+        if (href.includes('/card-search/') || href.includes('/cards/#')) return;
+
+        // Extract slug: last non-empty path segment
+        const slug = href.replace(/\/$/, '').split('/').pop();
+        if (!slug) return;
+
+        // Skip nav-style links — real card IDs always contain a hyphen
+        if (!slug.includes('-')) return;
+
+        counts[slug] = (counts[slug] ?? 0) + 1;
+        foundOnPage++;
+      });
+
+      if (foundOnPage === 0) {
+        hasMore = false;
+      } else {
+        console.log(`    Found ${foundOnPage} entries on page ${page}`);
+        page++;
+        await sleep(DELAY_MS);
+      }
+    } catch (err) {
+      console.error(`  Error on quantities page ${page}:`, err);
+      hasMore = false;
+    }
+  }
+
+  const totalCards = Object.keys(counts).length;
+  const totalCopies = Object.values(counts).reduce((a, b) => a + b, 0);
+  console.log(`  Quantities scraped: ${totalCards} unique cards, ${totalCopies} total copies`);
+  return counts;
+}
+
 export async function scrapeCardList(): Promise<CardListEntry[]> {
   const allCards: CardListEntry[] = [];
   const seenUrls = new Set<string>();

@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { scrapeCardList } from './scrapeCardList';
+import { scrapeCardList, scrapeCardQuantities } from './scrapeCardList';
 import { scrapeCardDetail } from './scrapeCardDetail';
 import { downloadImages, downloadBackImage } from './downloadImages';
 import { seedDatabase, writeJson } from './seedDatabase';
@@ -144,12 +144,21 @@ async function main() {
   }
   console.log();
 
-  // Step 4: Write JSON
-  console.log('Step 4: Writing cards.json...');
+  // Step 4: Scrape physical quantities (identical=no pass — fast, no detail fetches)
+  console.log('Step 4: Scraping card quantities (identical=no)...');
+  const quantityMap = await scrapeCardQuantities();
+  // Merge quantities into all cards; default to 1 for any card not found in the map
+  for (const card of allCards) {
+    card.quantity = quantityMap[card.id] ?? 1;
+  }
+  console.log();
+
+  // Step 5: Write JSON
+  console.log('Step 5: Writing cards.json...');
   writeJson(allCards, JSON_PATH);
 
-  // Step 5: Seed database
-  console.log('\nStep 5: Seeding SQLite database...');
+  // Step 6: Seed database
+  console.log('\nStep 6: Seeding SQLite database...');
   seedDatabase(allCards, DB_PATH);
 
   console.log('\n=== Scrape complete! ===');

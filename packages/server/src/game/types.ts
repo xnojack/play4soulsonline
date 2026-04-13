@@ -40,6 +40,8 @@ export interface Card {
   backImageUrl: string | null;
   /** Name of the back face (e.g. "amginE ehT"). null = not a flip card. */
   flipSideName: string | null;
+  /** Number of physical copies of this card in the game box (e.g. 6 for A Penny!). */
+  quantity: number;
 }
 
 // ============================================================

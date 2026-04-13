@@ -22,6 +22,7 @@ interface CardData {
   printStatus: string;
   backImageUrl: string | null;
   flipSideName: string | null;
+  quantity: number;
 }
 
 export function CardSearch() {

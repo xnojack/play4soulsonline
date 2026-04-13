@@ -18,6 +18,8 @@ export interface ScrapedCard {
   origin: string;
   /** 'in_print' | 'not_in_print' | 'never_printed' | 'planned' | 'unknown' */
   printStatus: string;
+  /** Number of physical copies of this card in the game box (e.g. 6 for A Penny!). Defaults to 1. */
+  quantity: number;
   /**
    * For Character cards: the card ID of their eternal starting item, as linked
    * in #CharitemBox on foursouls.com. null if the character has no fixed starting

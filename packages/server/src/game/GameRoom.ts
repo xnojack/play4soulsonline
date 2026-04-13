@@ -351,12 +351,12 @@ export class GameRoom {
     );
 
     // Eternal deck = all eternal treasure + eternal loot cards (shuffled together)
-    const shuffledEternal = shuffle([...eternalTreasure, ...eternalLoot].map((c) => c.id));
+    const shuffledEternal = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
 
-    const shuffledTreasure = shuffle(nonEternalTreasure.map((c) => c.id));
-    const shuffledLoot = shuffle(nonEternalLoot.map((c) => c.id));
-    const shuffledMonster = shuffle(filterCards(monsterCards).map((c) => c.id));
-    const shuffledRoom = shuffle(filterCards(roomCards).map((c) => c.id));
+    const shuffledTreasure = shuffle(nonEternalTreasure.flatMap((c) => Array(c.quantity).fill(c.id)));
+    const shuffledLoot = shuffle(nonEternalLoot.flatMap((c) => Array(c.quantity).fill(c.id)));
+    const shuffledMonster = shuffle(filterCards(monsterCards).flatMap((c) => Array(c.quantity).fill(c.id)));
+    const shuffledRoom = shuffle(filterCards(roomCards).flatMap((c) => Array(c.quantity).fill(c.id)));
 
     // Assign characters randomly — each player gets a unique character
     // If there are more players than characters, cycle with offset so no two share

@@ -24,6 +24,7 @@ interface DbRow {
   back_image_url: string | null;
   back_local_image_path: string | null;
   flip_side_name: string | null;
+  quantity: number;
 }
 
 function rowToCard(row: DbRow): Card {
@@ -52,6 +53,7 @@ function rowToCard(row: DbRow): Card {
     startingItemId: row.starting_item_id ?? null,
     backImageUrl,
     flipSideName: row.flip_side_name ?? null,
+    quantity: row.quantity ?? 1,
   };
 }
 

@@ -40,6 +40,7 @@ export function seedDatabase(cards: ScrapedCard[], dbPath: string): void {
     `ALTER TABLE cards ADD COLUMN back_image_url TEXT;`,
     `ALTER TABLE cards ADD COLUMN back_local_image_path TEXT;`,
     `ALTER TABLE cards ADD COLUMN flip_side_name TEXT;`,
+    `ALTER TABLE cards ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1;`,
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
@@ -51,13 +52,13 @@ export function seedDatabase(cards: ScrapedCard[], dbPath: string): void {
       card_type, sub_type, set_name, hp, atk, evasion,
       soul_value, reward_text, ability_text,
       three_player_only, is_eternal, origin, print_status, starting_item_id,
-      back_image_url, back_local_image_path, flip_side_name
+      back_image_url, back_local_image_path, flip_side_name, quantity
     ) VALUES (
       @id, @name, @sourceUrl, @imageUrl, @localImagePath,
       @cardType, @subType, @set, @hp, @atk, @evasion,
       @soulValue, @rewardText, @abilityText,
       @threePlayerOnly, @isEternal, @origin, @printStatus, @startingItemId,
-      @backImageUrl, @backLocalImagePath, @flipSideName
+      @backImageUrl, @backLocalImagePath, @flipSideName, @quantity
     )
   `);
 
@@ -86,6 +87,7 @@ export function seedDatabase(cards: ScrapedCard[], dbPath: string): void {
         backImageUrl: card.backImageUrl ?? null,
         backLocalImagePath: card.backLocalImagePath ?? null,
         flipSideName: card.flipSideName ?? null,
+        quantity: card.quantity ?? 1,
       });
     }
   });
