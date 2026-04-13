@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ClientPlayer } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { useGameStore } from '../../store/gameStore';
@@ -42,8 +42,6 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
     game?.stack.some((i) => i.type === 'attack_declaration' && !i.isCanceled) ?? false;
   const showAttackDice =
     isInAttack && !hasAttackDeclarationOnStack && (attackPhase === 'declared' || attackPhase === 'rolling');
-
-  const [showBaseStats, setShowBaseStats] = useState(false);
 
   const changeCoins = (amount: number) => {
     getSocket().emit(amount > 0 ? 'action:gain_coins' : 'action:spend_coins', {
@@ -106,6 +104,18 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
                 title="Heal 1 HP"
                 color="text-green-400 border-green-700/50 hover:bg-green-900/30"
               />
+              <StatButton
+                onClick={() => changeBaseHp(-1)}
+                label="↓max"
+                title="Reduce max HP by 1"
+                color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
+              />
+              <StatButton
+                onClick={() => changeBaseHp(1)}
+                label="↑max"
+                title="Increase max HP by 1"
+                color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
+              />
             </div>
           )}
         </div>
@@ -116,6 +126,22 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
           <span className="text-sm font-display font-semibold text-fs-parchment">
             {player.effectiveAtk}
           </span>
+          {isMe && (
+            <div className="flex gap-1 ml-0.5">
+              <StatButton
+                onClick={() => changeBaseAtk(-1)}
+                label="-1"
+                title="Reduce ATK by 1"
+                color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
+              />
+              <StatButton
+                onClick={() => changeBaseAtk(1)}
+                label="+1"
+                title="Increase ATK by 1"
+                color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
+              />
+            </div>
+          )}
         </div>
 
         {/* Coins */}
@@ -155,17 +181,6 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
           />
         )}
 
-        {/* Base stat toggle (only for own player) */}
-        {isMe && (
-          <button
-            onClick={() => setShowBaseStats(!showBaseStats)}
-            className="text-xs text-fs-parchment/30 hover:text-fs-parchment/60 transition-colors border border-fs-gold/10 rounded px-1.5 py-0.5"
-            title="Toggle base stat adjustments"
-          >
-            {showBaseStats ? 'Hide base stats' : 'Base stats...'}
-          </button>
-        )}
-
         {/* Status indicators */}
         {!player.isAlive && (
           <span className="text-sm text-gray-500">💀 Dead</span>
@@ -175,44 +190,6 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
         )}
       </div>
 
-      {/* Base stat adjustment row — hidden by default */}
-      {isMe && showBaseStats && (
-        <div className="flex gap-4 items-center flex-wrap bg-fs-darker/40 rounded px-2 py-1.5 border border-fs-gold/10">
-          <span className="text-xs text-fs-parchment/40">Base stats:</span>
-          {/* Base HP */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-pink-400/70">HP base {player.baseHp}</span>
-            <StatButton
-              onClick={() => changeBaseHp(-1)}
-              label="-1"
-              title="Reduce base HP permanently"
-              color="text-pink-400/60 border-pink-700/40 hover:bg-pink-900/20"
-            />
-            <StatButton
-              onClick={() => changeBaseHp(1)}
-              label="+1"
-              title="Increase base HP permanently"
-              color="text-pink-400/60 border-pink-700/40 hover:bg-pink-900/20"
-            />
-          </div>
-          {/* Base ATK */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-orange-400/70">ATK base {player.baseAtk}</span>
-            <StatButton
-              onClick={() => changeBaseAtk(-1)}
-              label="-1"
-              title="Reduce base ATK permanently"
-              color="text-orange-400/60 border-orange-700/40 hover:bg-orange-900/20"
-            />
-            <StatButton
-              onClick={() => changeBaseAtk(1)}
-              label="+1"
-              title="Increase base ATK permanently"
-              color="text-orange-400/60 border-orange-700/40 hover:bg-orange-900/20"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
