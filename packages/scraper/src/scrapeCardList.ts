@@ -93,7 +93,11 @@ export async function scrapeCardQuantities(): Promise<Record<string, number>> {
         // Skip nav-style links — real card IDs always contain a hyphen
         if (!slug.includes('-')) return;
 
-        counts[slug] = (counts[slug] ?? 0) + 1;
+        // Group by base ID: strip trailing numeric suffix (_2, _3, ...) so that
+        // b2-a_penny, b2-a_penny_2, ..., b2-a_penny_6 all map to base "b2-a_penny"
+        // and the total count (6) ends up stored under that base key.
+        const base = slug.replace(/_\d+$/, '');
+        counts[base] = (counts[base] ?? 0) + 1;
         foundOnPage++;
       });
 

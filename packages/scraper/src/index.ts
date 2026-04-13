@@ -150,7 +150,11 @@ async function main() {
   const quantityMap = await scrapeCardQuantities();
   // Merge quantities into all cards; default to 1 for any card not found in the map
   for (const card of allCards) {
-    card.quantity = quantityMap[card.id] ?? 1;
+    // The quantity map is keyed by base ID (numeric suffix stripped).
+    // Card IDs from identical=yes use the highest-numbered copy's slug (e.g. b2-a_penny_6),
+    // so strip the suffix here too to get the matching base key (e.g. b2-a_penny → count 6).
+    const baseId = card.id.replace(/_\d+$/, '');
+    card.quantity = quantityMap[baseId] ?? 1;
   }
   console.log();
 
