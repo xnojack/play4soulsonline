@@ -4,9 +4,7 @@ import { ResolvedCard, useCard, getCardFromCache } from '../board/CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { StatDisplay } from './StatDisplay';
 import { HandPanel } from './HandPanel';
-import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
-import { useIsMyTurn } from '../../hooks/useMyPlayer';
 
 /** Pre-warms a single card in the cache */
 function CardPreloader({ cardId }: { cardId: string }) {
@@ -105,14 +103,9 @@ function ItemCard({
 
 export function PlayerArea({ player, isMe }: PlayerAreaProps) {
   const game = useGameStore((s) => s.game);
-  const isMyTurn = useIsMyTurn();
 
   const isActiveTurn = game?.turn.activePlayerId === player.id;
   const otherPlayers = game?.players.filter((p) => p.id !== player.id && !p.isSpectator) ?? [];
-
-  const handleEndTurn = () => {
-    getSocket().emit('action:end_turn');
-  };
 
   const handleTapCharacter = () => {
     const charInstance = game?.characterCards[player.characterInstanceId];
@@ -151,13 +144,6 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
         )}
         {player.isSpectator && (
           <span className="text-sm text-fs-parchment/40">Spectator</span>
-        )}
-
-        {/* End turn button — only when it's my turn */}
-        {isMe && isMyTurn && game?.stack.length === 0 && (
-          <Button variant="primary" size="sm" onClick={handleEndTurn} className="font-bold">
-            End Turn
-          </Button>
         )}
 
         {/* Souls */}

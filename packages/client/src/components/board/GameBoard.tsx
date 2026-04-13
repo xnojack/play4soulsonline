@@ -2,8 +2,10 @@ import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { SharedTable } from './SharedTable';
+import { TurnActionBar } from './TurnActionBar';
 import { PlayerArea } from '../player/PlayerArea';
 import { OpponentArea } from '../player/OpponentArea';
+import { CompactOpponent } from '../player/CompactOpponent';
 import { TheStack } from '../stack/TheStack';
 import { GameLog } from '../log/GameLog';
 import { CardSearch } from '../cards/CardSearch';
@@ -11,12 +13,14 @@ import { CardModal } from '../cards/CardModal';
 import { DiceResultToast } from '../dice/DiceRoller';
 import { Button } from '../ui/Button';
 import { AttributionFooter } from '../ui/AttributionFooter';
-import { useIsHost } from '../../hooks/useMyPlayer';
+import { useIsHost, useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
 
 export function GameBoard() {
   const game = useGameStore((s) => s.game);
   const setCardSearchOpen = useGameStore((s) => s.setCardSearchOpen);
   const isHost = useIsHost();
+  const isMyTurn = useIsMyTurn();
+  const hasPriority = useHasPriority();
   const [showHint, setShowHint] = React.useState(() => !localStorage.getItem('hideCardHint'));
 
   const dismissHint = () => {
@@ -33,12 +37,14 @@ export function GameBoard() {
   const spectators = game.players.filter((p) => p.isSpectator);
 
   const activePlayer = game.players.find((p) => p.id === game.turn.activePlayerId);
-  const isMyTurn = game.turn.activePlayerId === game.myPlayerId;
 
   // Guidance text shown in the topbar
   const turnHint = isMyTurn
-    ? 'Your turn — loot, attack a monster, buy an item, or end turn'
+    ? 'Your turn'
     : `${activePlayer?.name ?? '?'}'s turn`;
+
+  // Bottom bar is visible when it's your turn or you have priority
+  const showBottomBar = game.phase === 'active' && (isMyTurn || hasPriority);
 
   const handleRestart = () => {
     if (!confirm('Reset game to lobby? All game state will be lost.')) return;
@@ -60,7 +66,7 @@ export function GameBoard() {
           </span>
           {showHint && (
             <span className="flex items-center gap-1.5 text-sm text-fs-parchment/40 italic border-l border-fs-gold/20 pl-3 ml-1">
-              Tip: Click any card to view it or take actions. Your cards are at the bottom.
+              Tip: Hover over cards to see actions. Click to view full details.
               <button
                 onClick={dismissHint}
                 className="text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors leading-none not-italic flex-shrink-0"
@@ -105,11 +111,26 @@ export function GameBoard() {
         </div>
       </div>
 
+      {/* Mobile opponents bar — horizontal scrollable, visible only on small screens */}
+      {opponents.length > 0 && (
+        <div className="lg:hidden flex-shrink-0 border-b border-fs-gold/10 bg-fs-dark/50">
+          <div className="flex gap-2 p-2 overflow-x-auto">
+            {opponents.map((p) => (
+              <CompactOpponent
+                key={p.id}
+                player={p}
+                isActiveTurn={game.turn.activePlayerId === p.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left: opponents — hidden when no opponents */}
+        {/* Left: opponents sidebar — desktop only, hidden on mobile */}
         {opponents.length > 0 && (
-          <div className="w-80 flex-shrink-0 overflow-y-auto p-2 space-y-2 border-r border-fs-gold/10">
+          <div className="hidden lg:block w-80 flex-shrink-0 overflow-y-auto p-2 space-y-2 border-r border-fs-gold/10">
             <div className="section-title px-1">Opponents</div>
             {opponents.map((p) => (
               <OpponentArea
@@ -131,10 +152,12 @@ export function GameBoard() {
               <PlayerArea player={myPlayer} isMe={true} />
             </div>
           )}
+          {/* Bottom padding when action bar is visible so content isn't hidden */}
+          {showBottomBar && <div className="h-14" />}
         </div>
 
         {/* Right: stack + log — full height */}
-          <div className="w-72 flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-hidden">
+        <div className="w-72 flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-hidden">
           <div className="h-1/2 overflow-hidden border-b border-fs-gold/10">
             <TheStack />
           </div>
@@ -151,6 +174,7 @@ export function GameBoard() {
       <DiceResultToast />
       <CardModal />
       <CardSearch />
+      <TurnActionBar />
     </div>
   );
 }

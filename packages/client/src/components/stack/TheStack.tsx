@@ -159,7 +159,7 @@ export function TheStack() {
         </AnimatePresence>
       </div>
 
-      {/* Priority actions */}
+      {/* Priority actions (secondary — primary controls are in the bottom action bar) */}
       <div className="p-2 border-t border-fs-gold/20 space-y-1">
         <PriorityRing />
         {hasPriority && (

@@ -24,15 +24,10 @@ export function HandPanel({ player }: HandPanelProps) {
   const canPlayLoot = isMyTurn
     ? hasPriority  // active player: just needs priority, no count gate
     : hasPriority && (game?.turn.lootPlaysRemaining ?? 0) > 0;
-  const lootPlaysRemaining = game?.turn.lootPlaysRemaining ?? 0;
 
   const handlePlayCard = (cardId: string) => {
     if (!canPlayLoot) return;
     getSocket().emit('action:play_loot', { cardId, targets: [] });
-  };
-
-  const handleGrantLootPlay = () => {
-    getSocket().emit('action:grant_loot_play');
   };
 
   const handleDiscardCard = (cardId: string) => {
@@ -60,16 +55,6 @@ export function HandPanel({ player }: HandPanelProps) {
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="section-title">Your Hand ({player.handCount} cards)</span>
-        {isMyTurn && (
-          <span className={`text-sm px-1.5 py-0.5 rounded font-mono ${lootPlaysRemaining > 0 ? 'bg-fs-gold/20 text-fs-gold' : 'bg-fs-darker text-fs-parchment/30'}`}>
-            {lootPlaysRemaining} loot play{lootPlaysRemaining !== 1 ? 's' : ''}
-          </span>
-        )}
-        {isMyTurn && (
-          <Button size="sm" variant="ghost" onClick={handleGrantLootPlay} title="Grant yourself an extra loot play this turn">
-            +1 Play
-          </Button>
-        )}
         <Button size="sm" variant="ghost" onClick={() => setSharing(!sharing)}>
           Share Hand
         </Button>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClientCard, CardInPlay } from '../../store/gameStore';
 import { CardTooltip } from './CardTooltip';
@@ -18,16 +18,16 @@ interface CardComponentProps {
   instance?: CardInPlay;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showCounters?: boolean;
-  /** If provided, clicking opens an action popover with these options instead of the modal */
+  /** If provided, hovering shows an action popover with these options */
   actions?: CardAction[];
-  /** Fallback: if no actions, click opens modal */
+  /** Fallback click handler (if no actions, click opens modal) */
   onClick?: () => void;
   selected?: boolean;
   className?: string;
   faceDown?: boolean;
   /** If true, the action popover opens below the card instead of above */
   popoverBelow?: boolean;
-  /** If true, clicking always opens the popover (even with no game actions) — enables counter row */
+  /** If true, the popover opens on hover even with no game actions — enables counter row */
   alwaysPopover?: boolean;
 }
 
@@ -44,6 +44,9 @@ const ACTION_COLORS: Record<string, string> = {
   soul: 'bg-purple-900/70 hover:bg-purple-800 text-purple-300 border-purple-700/50',
   ghost: 'bg-transparent hover:bg-fs-darker text-fs-parchment/70 border-fs-gold/20',
 };
+
+const HOVER_OPEN_DELAY = 200;  // ms before popover appears on hover
+const HOVER_CLOSE_DELAY = 150; // ms before popover closes when mouse leaves
 
 export function CardComponent({
   card,
@@ -63,29 +66,76 @@ export function CardComponent({
   const isSpent = instance?.charged === false;
   const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track whether we've seen a real mouse hover (to distinguish from touch)
+  const hasMouseRef = useRef(false);
+
+  const hasPopoverContent = alwaysPopover || (actions && actions.length > 0);
 
   // When flipped, substitute the back-face image and name
   const displayImageUrl = isFlipped && card.backImageUrl ? card.backImageUrl : card.imageUrl;
   const displayName = isFlipped && card.flipSideName ? card.flipSideName : card.name;
 
-  // Close popover when clicking outside
+  const clearTimers = useCallback(() => {
+    if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
+    if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
+  }, []);
+
+  // Close popover when clicking outside (fallback for touch)
   useEffect(() => {
     if (!popoverOpen) return;
     const handler = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setPopoverOpen(false);
+        clearTimers();
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [popoverOpen]);
+  }, [popoverOpen, clearTimers]);
+
+  // Clean up timers on unmount
+  useEffect(() => clearTimers, [clearTimers]);
+
+  // Hover handlers on the entire container (card + popover)
+  const handleMouseEnter = useCallback(() => {
+    if (faceDown || !hasPopoverContent) return;
+    hasMouseRef.current = true;
+    // Cancel any pending close
+    if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
+    // Start open delay
+    if (!popoverOpen && !hoverOpenTimer.current) {
+      hoverOpenTimer.current = setTimeout(() => {
+        setPopoverOpen(true);
+        hoverOpenTimer.current = null;
+      }, HOVER_OPEN_DELAY);
+    }
+  }, [faceDown, hasPopoverContent, popoverOpen]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!hasPopoverContent) return;
+    // Cancel any pending open
+    if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
+    // Start close delay
+    if (popoverOpen && !hoverCloseTimer.current) {
+      hoverCloseTimer.current = setTimeout(() => {
+        setPopoverOpen(false);
+        hoverCloseTimer.current = null;
+      }, HOVER_CLOSE_DELAY);
+    }
+  }, [hasPopoverContent, popoverOpen]);
 
   const handleClick = () => {
     if (faceDown) return;
-    if (alwaysPopover || (actions && actions.length > 0)) {
+    // On touch devices (no prior hover), toggle popover on tap
+    if (!hasMouseRef.current && hasPopoverContent) {
       setPopoverOpen((v) => !v);
-    } else if (onClick) {
+      return;
+    }
+    // On mouse devices: click always opens the full card modal
+    if (onClick) {
       onClick();
     } else {
       setModalCard(card);
@@ -100,9 +150,11 @@ export function CardComponent({
       delay={500}
     >
       <div
-        ref={popoverRef}
+        ref={containerRef}
         className={`relative inline-block select-none ${className}`}
         style={{ width: dim.width, height: dim.height }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <motion.div
           className="w-full h-full cursor-pointer"
@@ -165,13 +217,6 @@ export function CardComponent({
               ↕
             </div>
           )}
-
-          {/* "Has actions" indicator */}
-          {(alwaysPopover || (actions && actions.length > 0)) && !faceDown && (
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-0.5 pointer-events-none">
-              <div className="w-1 h-1 rounded-full bg-fs-gold/60" />
-            </div>
-          )}
         </motion.div>
 
         {/* Print status badge */}
@@ -190,11 +235,11 @@ export function CardComponent({
           </div>
         )}
 
-        {/* Action popover */}
+        {/* Action popover — shown on hover (desktop) or tap (touch) */}
         <AnimatePresence>
-          {popoverOpen && (alwaysPopover || actions) && (
+          {popoverOpen && hasPopoverContent && (
             <motion.div
-              className={`absolute z-50 ${popoverBelow ? 'top-full mt-1' : 'bottom-full mb-1'} left-1/2 -translate-x-1/2 bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-1.5 min-w-[130px]`}
+              className={`absolute z-50 ${popoverBelow ? 'top-full mt-1' : 'bottom-full mb-1'} left-1/2 -translate-x-1/2 bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-1.5 min-w-[140px]`}
               initial={{ opacity: 0, y: popoverBelow ? -6 : 6, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: popoverBelow ? -6 : 6, scale: 0.95 }}
@@ -208,11 +253,13 @@ export function CardComponent({
                 {(actions ?? []).map((action, i) => (
                   <button
                     key={i}
-                    className={`text-sm px-2 py-1 rounded border text-left transition-colors ${
+                    className={`text-sm px-2 py-1.5 rounded border text-left transition-colors ${
                       ACTION_COLORS[action.variant ?? 'default']
                     }`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setPopoverOpen(false);
+                      clearTimers();
                       action.onClick();
                     }}
                   >
@@ -255,11 +302,13 @@ export function CardComponent({
                     </div>
                   </div>
                 )}
-                {/* Always offer "View card" */}
+                {/* View card link */}
                 <button
                   className="text-sm px-2 py-1 rounded border text-left transition-colors text-fs-parchment/50 border-fs-gold/10 hover:text-fs-parchment hover:bg-fs-darker"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setPopoverOpen(false);
+                    clearTimers();
                     setModalCard(card);
                   }}
                 >
