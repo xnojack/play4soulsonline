@@ -83,7 +83,9 @@ function inferCardType(
 
 /**
  * Extract clean text from an .effectOutcome element.
- * - Replaces inline icons with [alt] bracketed text first.
+ * - Handles inline icons: if the text node immediately before the <img> already ends with
+ *   a "]" (i.e. the site placed a bracketed label before the icon), the img is stripped;
+ *   otherwise it is replaced with [alt] so mid-sentence icons are still readable.
  * - Converts <li> elements to newline-prefixed bullet lines so list structure
  *   is preserved in plain text (rather than all items being concatenated).
  * - Returns the cleaned, entity-decoded string.
@@ -91,10 +93,21 @@ function inferCardType(
 function extractEffectText($: cheerio.CheerioAPI, el: cheerio.Element): string {
   const elem = $(el);
 
-  // Replace ALL inline images with bracketed alt text (catches any class, not just inlineIcon/effectIcon)
+  // Handle ALL inline images.
+  // The site often renders: [Label text node] <img alt="Label"> — a text label followed
+  // by a redundant icon image.  In that case stripping the img avoids "[Label][Label]"
+  // duplication.  When an img appears mid-sentence without a preceding bracket label
+  // (e.g. inline stat icons) we substitute [alt] so the meaning is preserved.
   elem.find('img').each((_j, img) => {
     const alt = $(img).attr('alt') || '';
-    $(img).replaceWith(`[${alt}]`);
+    const prev = img.previousSibling;
+    const prevText = prev && prev.type === 'text' ? prev.data ?? '' : '';
+    if (prevText.trimEnd().endsWith(']')) {
+      // Preceding text node already has the label — just drop the icon
+      $(img).remove();
+    } else {
+      $(img).replaceWith(`[${alt}]`);
+    }
   });
 
   // Convert <li> elements to newline-prefixed lines before extracting text,
@@ -220,21 +233,47 @@ export async function scrapeCardDetail(
   const quoteText = decodeEntities($('.quoteText').first().text().trim());
 
   // --- Reward text (monsters) ---
-  // Target the #CardInfo text, but use a targeted selector for the rewards
-  // section rather than a broad regex over the whole block.
+  // The reward section is a <table> immediately following the
+  // <h2>Potential Rewards</h2> heading inside #CardInfo.
+  // Each row: <td class="value">Nx</td> <td class="icon"><img alt="Soul|Coin|Loot|Treasure" ...></td>
   let rewardText = '';
-  const cardInfoEl = $('#CardInfo');
-  // The reward text follows the label "Potential Rewards" in the card info
-  const cardInfoText = cardInfoEl.text();
-  const rewardMatch = cardInfoText.match(/Potential Rewards[:\s]*([\s\S]*?)(?:\n\n|$)/);
-  if (rewardMatch) {
-    rewardText = decodeEntities(rewardMatch[1].trim());
-  }
+  const rewardHeading = $('#CardInfo').find('h2, h3').filter((_i, el) =>
+    $(el).text().trim().toLowerCase().includes('potential rewards')
+  ).first();
+  const rewardTable = rewardHeading.next('table');
+  if (rewardTable.length) {
+    const parts: string[] = [];
+    rewardTable.find('tr').each((_i, row) => {
+      const qtyRaw = $(row).find('td.value').text().trim(); // e.g. "1x" or "6x"
+      const qty = parseInt(qtyRaw.replace(/[^0-9]/g, ''), 10) || 1;
+      // Use data-src filename as fallback when alt is missing (lazy-loaded images)
+      const img = $(row).find('td.icon img');
+      const alt = img.attr('alt') || '';
+      const dataSrc = img.attr('data-src') || '';
+      // Derive reward type from alt text; fall back to parsing the data-src filename
+      let type = alt.trim();
+      if (!type) {
+        if (dataSrc.includes('Soul')) type = 'Soul';
+        else if (dataSrc.includes('penny') || dataSrc.includes('Coin')) type = 'Coin';
+        else if (dataSrc.includes('loot') || dataSrc.includes('Loot')) type = 'Loot';
+        else if (dataSrc.includes('Treasure')) type = 'Treasure';
+      }
+      if (!type) return; // skip unrecognisable rows
 
-  // Soul value from rewards section for monsters
-  if (soulValue === 0 && rewardText) {
-    const soulRewardMatch = rewardText.match(/(\d+)x?\s*soul/i);
-    if (soulRewardMatch) soulValue = parseInt(soulRewardMatch[1], 10);
+      // Accumulate soul value directly from reward rows
+      if (type.toLowerCase() === 'soul') {
+        soulValue += qty;
+      }
+
+      // Pluralise for display (Loot and Treasure don't pluralise)
+      let displayType = type;
+      if (qty > 1) {
+        if (type === 'Soul') displayType = 'Souls';
+        else if (type === 'Coin') displayType = 'Coins';
+      }
+      parts.push(`${qty} ${displayType}`);
+    });
+    rewardText = parts.join(' · ');
   }
 
   // Soul bonus soul cards always have soulValue >= 1
