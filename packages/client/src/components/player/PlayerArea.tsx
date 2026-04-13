@@ -161,21 +161,50 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
         )}
 
         {/* Souls */}
-        <div className="flex items-center gap-1 ml-2">
-          {player.souls.map((soul) => (
-            <ResolvedCard
-              key={soul.instanceId}
-              instance={soul}
-              size="xs"
-              showCounters={false}
-              alwaysPopover={isMe}
-              actions={isMe ? [{
-                label: 'Remove Soul',
-                onClick: () => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId }),
-                variant: 'danger',
-              }] : undefined}
-            />
-          ))}
+        <div className="flex items-center gap-1 ml-2 flex-wrap">
+          {player.souls.map((soul) => {
+            const isGeneric = soul.cardId === '';
+            if (isGeneric) {
+              // Generic souls have no backing card — render a simple token with a direct remove button
+              return (
+                <div
+                  key={soul.instanceId}
+                  className="relative group"
+                  title="Generic soul (1 soul point)"
+                >
+                  <img
+                    src="/card-back.png"
+                    alt="Soul"
+                    className="rounded border border-purple-700/40"
+                    style={{ width: 52, height: 71, objectFit: 'cover' }}
+                  />
+                  {isMe && (
+                    <button
+                      onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-900/80 border border-red-500/60 text-red-300 text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove this soul"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <ResolvedCard
+                key={soul.instanceId}
+                instance={soul}
+                size="xs"
+                showCounters={false}
+                alwaysPopover={isMe}
+                actions={isMe ? [{
+                  label: 'Remove Soul',
+                  onClick: () => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId }),
+                  variant: 'danger',
+                }] : undefined}
+              />
+            );
+          })}
           <SoulValueBadge souls={player.souls} kills={player.kills} />
           {isMe && (
             <button

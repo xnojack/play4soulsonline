@@ -211,16 +211,25 @@ export async function scrapeCardDetail(
 
   // Fallback: cards with no explicit type label and no monster stats are likely Loot cards
   // (numbered variants of coins, tarot cards, etc.)
+  // Exclude the Challenges set — those are scenario cards, not standard loot.
   const resolvedCardType =
-    cardType === 'Unknown' && hp === null && atk === null ? 'Loot' : cardType;
+    cardType === 'Unknown' && hp === null && atk === null && origin !== 'Challenges'
+      ? 'Loot'
+      : cardType;
 
   // --- Print status ---
   // #CardTrivia contains a <p> with human-readable print status text.
+  // Note: the site has a persistent typo "offically" (missing 'i') in some entries.
   let printStatus = 'unknown';
   const triviaText = $('#CardTrivia p').first().text().toLowerCase();
-  if (triviaText.includes('never been printed') || triviaText.includes('never printed')) {
+  if (/never\s+\w*\s*print/i.test(triviaText)) {
+    // Catches: "never been printed", "never been offically printed", etc.
     printStatus = 'never_printed';
-  } else if (triviaText.includes('not currently in print') || triviaText.includes('not in print')) {
+  } else if (
+    triviaText.includes('not currently in print') ||
+    triviaText.includes('not in print') ||
+    triviaText.includes('no longer in print')
+  ) {
     printStatus = 'not_in_print';
   } else if (triviaText.includes('currently in print') || triviaText.includes('in print')) {
     printStatus = 'in_print';

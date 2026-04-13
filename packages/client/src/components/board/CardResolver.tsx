@@ -71,6 +71,17 @@ export function ResolvedCard({
   if (!card) {
     const SIZES = { xs: [52, 71], sm: [78, 107], md: [117, 160], lg: [182, 249] };
     const [w, h] = SIZES[size];
+    // Generic soul (cardId === '') — show the card back image instead of a placeholder
+    if (instance.cardId === '') {
+      return (
+        <img
+          src="/card-back.png"
+          alt="Soul"
+          className={`rounded border border-purple-700/30 ${className ?? ''}`}
+          style={{ width: w, height: h, objectFit: 'cover' }}
+        />
+      );
+    }
     return (
       <div
         className={`bg-fs-darker border border-fs-gold/20 rounded flex items-center justify-center text-xs text-fs-parchment/30 ${className ?? ''}`}

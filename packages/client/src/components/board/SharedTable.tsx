@@ -49,6 +49,10 @@ export function SharedTable() {
   const game = useGameStore((s) => s.game);
   const [browseDeck, setBrowseDeck] = useState<BrowseDeckType | null>(null);
   const [browseInitialTab, setBrowseInitialTab] = useState<BrowseInitialTab | undefined>(undefined);
+  // Feature 1: track which room card instanceId is being returned to a player
+  const [returningCard, setReturningCard] = useState<string | null>(null);
+  // Feature 4: track whether slot-picker for "Flip & Attack" is open
+  const [flippingAttack, setFlippingAttack] = useState(false);
   const isMyTurn = useIsMyTurn();
 
   if (!game) return null;
@@ -60,6 +64,13 @@ export function SharedTable() {
   const topEternalDiscard = game.eternalDiscard[game.eternalDiscard.length - 1];
 
   const isActiveTurn = game.turn.activePlayerId === game.myPlayerId;
+  const canFlipAttack =
+    isActiveTurn &&
+    game.monsterDeckCount > 0 &&
+    game.turn.currentAttack === null;
+
+  // Non-spectator players for "Return to player" picker
+  const nonSpectatorPlayers = game.players.filter((p) => !p.isSpectator);
 
   return (
     <div className="panel pt-2 px-2 pb-0 space-y-2">
@@ -67,15 +78,54 @@ export function SharedTable() {
       <div>
         <div className="flex items-center justify-between mb-1">
           <div className="section-title text-sm">Monsters</div>
-          {isActiveTurn && (
-            <button
-              onClick={() => getSocket().emit('action:add_slot', { slotType: 'monster' })}
-              className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-              title="Add a monster slot"
-            >
-              + Slot
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Feature 4: Flip & Attack button with slot picker */}
+            {canFlipAttack && (
+              <div className="relative">
+                {flippingAttack ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-red-400/70">Flip into:</span>
+                    {game.monsterSlots.map((slot) => (
+                      <button
+                        key={slot.slotIndex}
+                        onClick={() => {
+                          getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex });
+                          setFlippingAttack(false);
+                        }}
+                        className="text-xs px-1.5 py-0.5 rounded border border-red-700/50 text-red-400/80 hover:text-red-300 hover:bg-red-900/20 transition-colors"
+                        title={`Flip top of monster deck into monster slot ${slot.slotIndex + 1}`}
+                      >
+                        Slot {slot.slotIndex + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setFlippingAttack(false)}
+                      className="text-xs px-1 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setFlippingAttack(true)}
+                    className="text-xs px-1.5 py-0.5 rounded border border-red-700/40 text-red-500/60 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                    title="Flip top of monster deck into a slot and attack"
+                  >
+                    Flip &amp; Attack
+                  </button>
+                )}
+              </div>
+            )}
+            {isActiveTurn && (
+              <button
+                onClick={() => getSocket().emit('action:add_slot', { slotType: 'monster' })}
+                className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
+                title="Add a monster slot"
+              >
+                + Slot
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           {game.monsterSlots.map((slot) => (
@@ -136,22 +186,52 @@ export function SharedTable() {
                     </div>
                   )}
                   {game.roomSlots.map((slot) => {
+                    const isReturning = returningCard === slot.instanceId;
+                    // Feature 1: "Return to Player" action — active player only
                     const roomActions: CardAction[] = [
                       {
                         label: 'Discard',
                         onClick: () => getSocket().emit('action:discard_room_slot', { instanceId: slot.instanceId }),
                         variant: 'danger',
                       },
+                      ...(isActiveTurn
+                        ? [{
+                            label: isReturning ? 'Cancel return' : 'Return to Player…',
+                            onClick: () => setReturningCard(isReturning ? null : slot.instanceId),
+                            variant: 'ghost' as const,
+                          }]
+                        : []),
                     ];
                     return (
-                      <ResolvedCard
-                        key={slot.instanceId}
-                        instance={slot}
-                        size="sm"
-                        actions={roomActions}
-                        alwaysPopover
-                        popoverBelow
-                      />
+                      <div key={slot.instanceId} className="flex flex-col items-center gap-1">
+                        <ResolvedCard
+                          instance={slot}
+                          size="sm"
+                          actions={roomActions}
+                          alwaysPopover
+                          popoverBelow
+                        />
+                        {/* Feature 1: inline player picker shown below the card */}
+                        {isReturning && (
+                          <div className="flex flex-col gap-0.5 bg-fs-darker border border-fs-gold/20 rounded p-1">
+                            {nonSpectatorPlayers.map((p) => (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  getSocket().emit('action:return_room_card', {
+                                    instanceId: slot.instanceId,
+                                    toPlayerId: p.id,
+                                  });
+                                  setReturningCard(null);
+                                }}
+                                className="text-xs px-2 py-0.5 rounded hover:bg-fs-gold/10 text-fs-parchment/70 hover:text-fs-parchment text-left transition-colors"
+                              >
+                                {p.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -272,3 +352,4 @@ export function SharedTable() {
     </div>
   );
 }
+

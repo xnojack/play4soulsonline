@@ -420,6 +420,11 @@ export interface PlaceInRoomPayload {
   instanceId: string; // item instanceId to move into the room area
 }
 
+export interface ReturnRoomCardPayload {
+  instanceId: string;   // room slot instanceId to return
+  toPlayerId: string;   // player who receives the card back into their items
+}
+
 export interface AttackMonsterDeckPayload {
   slotIndex: number; // which slot the flipped card lands in
 }

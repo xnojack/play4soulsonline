@@ -37,6 +37,7 @@ import {
   AddSlotPayload,
   TradeCardPayload,
   PlaceInRoomPayload,
+  ReturnRoomCardPayload,
   EdenPickPayload,
   SadVotePayload,
 } from '../game/types';
@@ -1517,6 +1518,47 @@ export function registerHandlers(io: Server, socket: Socket): void {
         p.id === ctx.playerId ? { ...p, items: newItems } : p
       ),
       roomSlots: [...state.roomSlots, item],
+      log: [...state.log, log],
+    });
+
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Return a card from the room area back to a player's items (active player only, no replacement draw) */
+  socket.on('action:return_room_card', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['instanceId', 'toPlayerId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as ReturnRoomCardPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    if (state.turn.activePlayerId !== ctx.playerId)
+      return sendError(socket, 'Only the active player can return room cards');
+
+    const slot = state.roomSlots.find((s) => s.instanceId === payload.instanceId);
+    if (!slot) return sendError(socket, 'Room card not found');
+
+    const recipient = state.players.find((p) => p.id === payload.toPlayerId);
+    if (!recipient) return sendError(socket, 'Player not found');
+
+    const actingPlayer = state.players.find((p) => p.id === ctx.playerId);
+    const log = createLogEntry(
+      'info',
+      `${actingPlayer?.name ?? ctx.playerId} returns a room card to ${recipient.name}'s items`,
+      ctx.playerId
+    );
+
+    room.setState({
+      ...state,
+      roomSlots: state.roomSlots.filter((s) => s.instanceId !== payload.instanceId),
+      players: state.players.map((p) =>
+        p.id === payload.toPlayerId ? { ...p, items: [...p.items, slot] } : p
+      ),
       log: [...state.log, log],
     });
 

@@ -82,29 +82,48 @@ export function resolveTopOfStack(state: GameState): {
 
   let newState: GameState = { ...state, stack: newStack, log: [...state.log, log] };
 
-  // Handle loot card resolution — trinkets go to the player's items, others to discard
+  // Handle loot card resolution — if canceled, return to the player's hand;
+  // otherwise trinkets go to the player's items, other loot goes to discard
   if (resolved.type === 'loot') {
     const cardId = resolved.data.cardId as string | undefined;
     if (cardId) {
-      const card = getCardById(cardId);
-      if (card?.subType === 'Trinket') {
-        const newItem = createCardInPlay(cardId);
-        const trinketLog = createLogEntry(
+      if (resolved.isCanceled) {
+        // Canceled: give the card back to the player's hand
+        const returnLog = createLogEntry(
           'card_play',
-          `${card.name} goes to ${state.players.find((p) => p.id === resolved.sourcePlayerId)?.name ?? 'player'}'s items`,
+          `${state.players.find((p) => p.id === resolved.sourcePlayerId)?.name ?? 'Player'}'s loot card returns to their hand`,
           resolved.sourcePlayerId
         );
         newState = {
           ...newState,
           players: newState.players.map((p) =>
             p.id === resolved.sourcePlayerId
-              ? { ...p, items: [...p.items, newItem] }
+              ? { ...p, handCardIds: [...p.handCardIds, cardId] }
               : p
           ),
-          log: [...newState.log, trinketLog],
+          log: [...newState.log, returnLog],
         };
       } else {
-        newState = { ...newState, lootDiscard: [...newState.lootDiscard, cardId] };
+        const card = getCardById(cardId);
+        if (card?.subType === 'Trinket') {
+          const newItem = createCardInPlay(cardId);
+          const trinketLog = createLogEntry(
+            'card_play',
+            `${card.name} goes to ${state.players.find((p) => p.id === resolved.sourcePlayerId)?.name ?? 'player'}'s items`,
+            resolved.sourcePlayerId
+          );
+          newState = {
+            ...newState,
+            players: newState.players.map((p) =>
+              p.id === resolved.sourcePlayerId
+                ? { ...p, items: [...p.items, newItem] }
+                : p
+            ),
+            log: [...newState.log, trinketLog],
+          };
+        } else {
+          newState = { ...newState, lootDiscard: [...newState.lootDiscard, cardId] };
+        }
       }
     }
   }
