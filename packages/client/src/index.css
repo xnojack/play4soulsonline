@@ -4,13 +4,13 @@
 
 @layer base {
   html {
-    background-color: #1a1208;
-    color: #f4e8d0;
+    background-color: #111114;
+    color: #e8e0d0;
   }
 
   body {
     min-height: 100vh;
-    font-family: 'IM Fell English', serif;
+    font-family: 'Josefin Sans', sans-serif;
   }
 
   * {
@@ -23,11 +23,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #0f0b05;
+    background: #0a0a0c;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c8a84b;
+    background: #c9a227;
     border-radius: 3px;
   }
 }
