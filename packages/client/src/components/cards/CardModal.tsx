@@ -16,7 +16,7 @@ export function CardModal() {
             <img
               src={`${serverUrl}${modalCard.imageUrl}`}
               alt={modalCard.name}
-              className="w-80 h-auto rounded-lg shadow-2xl"
+              className={`${modalCard.cardType === 'Room' ? 'w-[440px]' : 'w-80'} h-auto rounded-lg shadow-2xl`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder-card.png';
               }}

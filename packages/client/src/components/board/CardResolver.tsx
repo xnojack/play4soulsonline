@@ -56,6 +56,7 @@ export function ResolvedCard({
   className,
   popoverBelow,
   alwaysPopover,
+  landscape,
 }: {
   instance: CardInPlay;
   size?: 'xs' | 'sm' | 'md' | 'lg';
@@ -66,11 +67,14 @@ export function ResolvedCard({
   className?: string;
   popoverBelow?: boolean;
   alwaysPopover?: boolean;
+  landscape?: boolean;
 }) {
   const card = useCard(instance.cardId);
   if (!card) {
     const SIZES = { xs: [52, 71], sm: [78, 107], md: [117, 160], lg: [182, 249] };
     const [w, h] = SIZES[size];
+    const pw = landscape ? h : w;
+    const ph = landscape ? w : h;
     // Generic soul (cardId === '') — show the card back image instead of a placeholder
     if (instance.cardId === '') {
       return (
@@ -78,14 +82,14 @@ export function ResolvedCard({
           src="/card-back.png"
           alt="Soul"
           className={`rounded border border-purple-700/30 ${className ?? ''}`}
-          style={{ width: w, height: h, objectFit: 'cover' }}
+          style={{ width: pw, height: ph, objectFit: 'cover' }}
         />
       );
     }
     return (
       <div
         className={`bg-fs-darker border border-fs-gold/20 rounded flex items-center justify-center text-xs text-fs-parchment/30 ${className ?? ''}`}
-        style={{ width: w, height: h }}
+        style={{ width: pw, height: ph }}
       >
         {instance.cardId === 'unknown' || instance.cardId === 'placeholder-starting-item' ? '?' : 'Loading…'}
       </div>
@@ -119,6 +123,7 @@ export function ResolvedCard({
       className={className}
       popoverBelow={popoverBelow}
       alwaysPopover={alwaysPopover}
+      landscape={landscape}
     />
   );
 }

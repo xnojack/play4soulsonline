@@ -29,6 +29,8 @@ interface CardComponentProps {
   popoverBelow?: boolean;
   /** If true, the popover opens on hover even with no game actions — enables counter row */
   alwaysPopover?: boolean;
+  /** If true, swaps width and height so the card occupies a landscape footprint (for pre-rotated images) */
+  landscape?: boolean;
 }
 
 const CARD_SIZES = {
@@ -60,9 +62,12 @@ export function CardComponent({
   faceDown = false,
   popoverBelow = false,
   alwaysPopover = false,
+  landscape = false,
 }: CardComponentProps) {
   const { setModalCard, setHoveredCard } = useGameStore();
   const dim = CARD_SIZES[size];
+  const containerWidth  = landscape ? dim.height : dim.width;
+  const containerHeight = landscape ? dim.width  : dim.height;
   const isSpent = instance?.charged === false;
   const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -152,7 +157,7 @@ export function CardComponent({
       <div
         ref={containerRef}
         className={`relative inline-block select-none ${className}`}
-        style={{ width: dim.width, height: dim.height }}
+        style={{ width: containerWidth, height: containerHeight }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >

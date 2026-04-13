@@ -181,7 +181,7 @@ export function SharedTable() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {game.roomSlots.length === 0 && (
-                    <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/20 flex items-center justify-center text-sm text-fs-parchment/20">
+                    <div className="w-[107px] h-[78px] rounded border border-dashed border-fs-gold/20 flex items-center justify-center text-sm text-fs-parchment/20">
                       Empty
                     </div>
                   )}
@@ -207,6 +207,7 @@ export function SharedTable() {
                         <ResolvedCard
                           instance={slot}
                           size="sm"
+                          landscape
                           actions={roomActions}
                           alwaysPopover
                           popoverBelow
