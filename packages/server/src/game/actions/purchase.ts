@@ -47,6 +47,7 @@ export function purchaseItem(
     players,
     shopSlots: newShopSlots,
     log: [...state.log, log],
+    turn: { ...state.turn, purchasesMade: state.turn.purchasesMade + 1 },
   };
 
   // Refill the slot

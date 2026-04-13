@@ -1707,6 +1707,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
           : p
       ),
       log: [...state.log, log],
+      turn: { ...state.turn, purchasesMade: state.turn.purchasesMade + 1 },
     };
 
     room.setState(newState);
