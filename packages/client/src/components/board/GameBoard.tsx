@@ -22,6 +22,8 @@ export function GameBoard() {
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
   const [showHint, setShowHint] = React.useState(() => !localStorage.getItem('hideCardHint'));
+  const [showOpponents, setShowOpponents] = React.useState(true);
+  const [showStackLog, setShowStackLog] = React.useState(true);
 
   const dismissHint = () => {
     localStorage.setItem('hideCardHint', '1');
@@ -128,18 +130,31 @@ export function GameBoard() {
 
       {/* Main layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left: opponents sidebar — desktop only, hidden on mobile */}
+        {/* Left: opponents sidebar — desktop only, collapsible */}
         {opponents.length > 0 && (
-          <div className="hidden lg:block w-80 flex-shrink-0 overflow-y-auto p-2 space-y-2 border-r border-fs-gold/10">
-            <div className="section-title px-1">Opponents</div>
-            {opponents.map((p) => (
-              <OpponentArea
-                key={p.id}
-                player={p}
-                isActiveTurn={game.turn.activePlayerId === p.id}
-              />
-            ))}
+          <div className={`hidden lg:block flex-shrink-0 overflow-y-auto border-r border-fs-gold/10 transition-all duration-200 ${showOpponents ? 'w-80' : 'w-0'}`}>
+            <div className="p-2 space-y-2 w-80">
+              <div className="section-title px-1">Opponents</div>
+              {opponents.map((p) => (
+                <OpponentArea
+                  key={p.id}
+                  player={p}
+                  isActiveTurn={game.turn.activePlayerId === p.id}
+                />
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Left sidebar toggle tab — desktop only, shown when there are opponents */}
+        {opponents.length > 0 && (
+          <button
+            onClick={() => setShowOpponents((v) => !v)}
+            className="hidden lg:flex flex-shrink-0 items-center justify-center w-4 self-stretch bg-fs-dark hover:bg-fs-brown/40 border-r border-fs-gold/10 text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors z-10"
+            title={showOpponents ? 'Hide opponents panel' : 'Show opponents panel'}
+          >
+            <span className="text-[10px] leading-none">{showOpponents ? '‹' : '›'}</span>
+          </button>
         )}
 
         {/* Center: table + player area scroll together as one column */}
@@ -156,16 +171,27 @@ export function GameBoard() {
           {showBottomBar && <div className="h-14" />}
         </div>
 
-        {/* Right: stack + log — full height */}
-        <div className="w-72 flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-hidden">
-          <div className="h-1/2 overflow-hidden border-b border-fs-gold/10">
-            <TheStack />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <GameLog />
-          </div>
-          <div className="flex-shrink-0 px-2 py-1 border-t border-fs-gold/10">
-            <AttributionFooter compact />
+        {/* Right stack+log toggle tab — desktop only */}
+        <button
+          onClick={() => setShowStackLog((v) => !v)}
+          className="hidden lg:flex flex-shrink-0 items-center justify-center w-4 self-stretch bg-fs-dark hover:bg-fs-brown/40 border-l border-fs-gold/10 text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors z-10"
+          title={showStackLog ? 'Hide stack/log panel' : 'Show stack/log panel'}
+        >
+          <span className="text-[10px] leading-none">{showStackLog ? '›' : '‹'}</span>
+        </button>
+
+        {/* Right: stack + log — collapsible, sections scroll independently with min-height */}
+        <div className={`flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-y-auto transition-all duration-200 ${showStackLog ? 'w-72' : 'w-0 overflow-hidden'}`}>
+          <div className="w-72 flex flex-col">
+            <div className="min-h-[200px] max-h-[50vh] overflow-y-auto border-b border-fs-gold/10 flex-shrink-0">
+              <TheStack />
+            </div>
+            <div className="min-h-[160px] overflow-y-auto flex-shrink-0">
+              <GameLog />
+            </div>
+            <div className="flex-shrink-0 px-2 py-1 border-t border-fs-gold/10">
+              <AttributionFooter compact />
+            </div>
           </div>
         </div>
       </div>
