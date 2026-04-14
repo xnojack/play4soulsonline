@@ -53,6 +53,13 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
       });
     }
   }
+  if (isActive && topCard) {
+    actions.push({
+      label: 'Discard',
+      onClick: () => getSocket().emit('action:destroy_card', { instanceId: topCard.instanceId }),
+      variant: 'danger',
+    });
+  }
 
   return (
     <div className="flex flex-col items-center gap-1 min-w-[130px]">

@@ -2,6 +2,8 @@ import { GameState, CardInPlay } from '../types';
 import { createLogEntry } from '../GameRoom';
 import { getCardById } from '../../db/cards';
 import { createCardInPlay, drawFromDeck } from '../decks';
+import { refillShopSlot } from './purchase';
+import { refillMonsterSlot } from './monsters';
 
 /** Charge (ready) an item */
 export function chargeItem(
@@ -67,8 +69,77 @@ export function moveItem(
   return { ...state, players };
 }
 
-/** Destroy a card (remove from play and send to appropriate discard) */
-export function destroyCard(state: GameState, instanceId: string): GameState {
+/** Destroy a card (remove from play and send to appropriate discard).
+ *  actorPlayerId is required to permission-check shop/monster slot discards
+ *  (only the active player may discard from those zones). */
+export function destroyCard(state: GameState, instanceId: string, actorPlayerId?: string): GameState {
+  // --- Shop slot ---
+  {
+    const slotIdx = state.shopSlots.findIndex(
+      (s) => s.card?.instanceId === instanceId
+    );
+    if (slotIdx !== -1) {
+      // Only the active player may discard shop cards
+      if (actorPlayerId && actorPlayerId !== state.turn.activePlayerId) return state;
+
+      const slot = state.shopSlots[slotIdx];
+      const card = getCardById(slot.card!.cardId);
+      const cardName = card?.name ?? slot.card!.cardId;
+
+      // Remove card from slot and add to treasure discard
+      const withoutCard: GameState = {
+        ...state,
+        shopSlots: state.shopSlots.map((s, i) =>
+          i === slotIdx ? { ...s, card: null } : s
+        ),
+        treasureDiscard: [...state.treasureDiscard, slot.card!.cardId],
+        log: [
+          ...state.log,
+          createLogEntry('info', `${cardName} discarded from the shop`, actorPlayerId ?? null),
+        ],
+      };
+
+      // Refill the slot from the treasure deck
+      return refillShopSlot(withoutCard, slot.slotIndex);
+    }
+  }
+
+  // --- Monster slot (top card only) ---
+  {
+    const slotIdx = state.monsterSlots.findIndex((s) => {
+      const top = s.stack[s.stack.length - 1];
+      return top?.instanceId === instanceId;
+    });
+    if (slotIdx !== -1) {
+      // Only the active player may discard monster cards
+      if (actorPlayerId && actorPlayerId !== state.turn.activePlayerId) return state;
+
+      const slot = state.monsterSlots[slotIdx];
+      const topCard = slot.stack[slot.stack.length - 1];
+      const card = getCardById(topCard.cardId);
+      const cardName = card?.name ?? topCard.cardId;
+      const newStack = slot.stack.slice(0, -1);
+
+      const withoutCard: GameState = {
+        ...state,
+        monsterSlots: state.monsterSlots.map((s, i) =>
+          i === slotIdx ? { ...s, stack: newStack } : s
+        ),
+        monsterDiscard: [...state.monsterDiscard, topCard.cardId],
+        log: [
+          ...state.log,
+          createLogEntry('info', `${cardName} discarded from the monster zone`, actorPlayerId ?? null),
+        ],
+      };
+
+      // Refill the slot if the stack is now empty
+      if (newStack.length === 0) {
+        return refillMonsterSlot(withoutCard, slot.slotIndex);
+      }
+      return withoutCard;
+    }
+  }
+
   // Search players' items, souls, curses, kills
   let destroyed: CardInPlay | undefined;
   let sourceType: 'item' | 'soul' | 'curse' | 'kill' | null = null;

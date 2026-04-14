@@ -84,6 +84,13 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
     actions.push({ label: 'Deal 1 Damage', onClick: () => handleApplyDamage(1), variant: 'danger' });
     actions.push({ label: 'Heal 1 HP', onClick: handleHeal, variant: 'ghost' });
   }
+  if (isActiveTurn && topCard) {
+    actions.push({
+      label: 'Discard Monster',
+      onClick: () => getSocket().emit('action:destroy_card', { instanceId: topCard.instanceId }),
+      variant: 'danger',
+    });
+  }
 
   return (
     <div className="flex flex-col items-center gap-1 min-w-[130px]">

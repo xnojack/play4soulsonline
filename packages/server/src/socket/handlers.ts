@@ -959,7 +959,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
-    room.setState(destroyCard(room.getState(), payload.instanceId));
+    room.setState(destroyCard(room.getState(), payload.instanceId, ctx.playerId));
     broadcastState(io, ctx.roomId);
   }));
 
