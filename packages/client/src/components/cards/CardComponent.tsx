@@ -6,6 +6,7 @@ import { useGameStore } from '../../store/gameStore';
 import { Tooltip } from '../ui/Tooltip';
 import { getSocket } from '../../socket/client';
 import { SERVER_URL } from '../../config';
+import { isTouchDevice } from '../../hooks/useIsTouchDevice';
 
 export interface CardAction {
   label: string;
@@ -74,8 +75,8 @@ export function CardComponent({
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Track whether we've seen a real mouse hover (to distinguish from touch)
-  const hasMouseRef = useRef(false);
+  // Evaluate once per render — pointer type doesn't change mid-session
+  const isTouch = isTouchDevice();
 
   const hasPopoverContent = alwaysPopover || (actions && actions.length > 0);
 
@@ -88,17 +89,21 @@ export function CardComponent({
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
   }, []);
 
-  // Close popover when clicking outside (fallback for touch)
+  // Close popover when clicking/tapping outside
   useEffect(() => {
     if (!popoverOpen) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setPopoverOpen(false);
         clearTimers();
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [popoverOpen, clearTimers]);
 
   // Clean up timers on unmount
@@ -106,8 +111,7 @@ export function CardComponent({
 
   // Hover handlers on the entire container (card + popover)
   const handleMouseEnter = useCallback(() => {
-    if (faceDown || !hasPopoverContent) return;
-    hasMouseRef.current = true;
+    if (faceDown || !hasPopoverContent || isTouch) return;
     // Cancel any pending close
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
     // Start open delay
@@ -117,10 +121,10 @@ export function CardComponent({
         hoverOpenTimer.current = null;
       }, HOVER_OPEN_DELAY);
     }
-  }, [faceDown, hasPopoverContent, popoverOpen]);
+  }, [faceDown, hasPopoverContent, isTouch, popoverOpen]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!hasPopoverContent) return;
+    if (!hasPopoverContent || isTouch) return;
     // Cancel any pending open
     if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
     // Start close delay
@@ -130,16 +134,16 @@ export function CardComponent({
         hoverCloseTimer.current = null;
       }, HOVER_CLOSE_DELAY);
     }
-  }, [hasPopoverContent, popoverOpen]);
+  }, [hasPopoverContent, isTouch, popoverOpen]);
 
   const handleClick = () => {
     if (faceDown) return;
-    // On touch devices (no prior hover), toggle popover on tap
-    if (!hasMouseRef.current && hasPopoverContent) {
+    // On touch: tap toggles the action popover; the "View card" button inside opens the modal
+    if (isTouch && hasPopoverContent) {
       setPopoverOpen((v) => !v);
       return;
     }
-    // On mouse devices: click always opens the full card modal
+    // On mouse: click always opens the full card modal
     if (onClick) {
       onClick();
     } else {
@@ -167,9 +171,9 @@ export function CardComponent({
           animate={{ rotate: isSpent ? 90 : 0 }}
           transition={{ duration: 0.25, type: 'spring', stiffness: 200, damping: 25 }}
           onClick={handleClick}
-          onMouseEnter={() => !faceDown && setHoveredCard(card)}
-          onMouseLeave={() => setHoveredCard(null)}
-          whileHover={{ scale: 1.05, zIndex: 10 }}
+          onMouseEnter={() => { if (!isTouch && !faceDown) setHoveredCard(card); }}
+          onMouseLeave={() => { if (!isTouch) setHoveredCard(null); }}
+          whileHover={isTouch ? {} : { scale: 1.05, zIndex: 10 }}
         >
           <img
             src={faceDown ? '/card-back.png' : `${serverUrl}${displayImageUrl}`}

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isTouchDevice } from '../../hooks/useIsTouchDevice';
 
 interface TooltipProps {
   content: React.ReactNode;
@@ -14,6 +15,8 @@ export function Tooltip({ content, children, delay = 400 }: TooltipProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   const show = (e: React.MouseEvent) => {
+    // Never show tooltip on touch — the popover serves that purpose
+    if (isTouchDevice()) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setPos({ x: rect.right + 8, y: rect.top });
     timer.current = setTimeout(() => setVisible(true), delay);
