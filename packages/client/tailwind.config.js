@@ -18,8 +18,8 @@ export default {
         'fs-bone': '#cfc9b8',
       },
       fontFamily: {
-        display: ['"Uncial Antiqua"', 'serif'],
-        body: ['"Josefin Sans"', 'sans-serif'],
+        display: ['"Permanent Marker"', 'cursive'],
+        body: ['"Roboto"', 'sans-serif'],
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
