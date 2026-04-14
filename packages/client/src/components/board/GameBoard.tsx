@@ -24,10 +24,27 @@ export function GameBoard() {
   const [showHint, setShowHint] = React.useState(() => !localStorage.getItem('hideCardHint'));
   const [showOpponents, setShowOpponents] = React.useState(true);
   const [showStackLog, setShowStackLog] = React.useState(true);
+  const [showOrientationHint, setShowOrientationHint] = React.useState(() => {
+    if (localStorage.getItem('hideOrientationHint')) return false;
+    return window.matchMedia('(pointer: coarse) and (orientation: portrait)').matches;
+  });
+
+  React.useEffect(() => {
+    if (localStorage.getItem('hideOrientationHint')) return;
+    const mq = window.matchMedia('(pointer: coarse) and (orientation: portrait)');
+    const handler = (e: MediaQueryListEvent) => setShowOrientationHint(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const dismissHint = () => {
     localStorage.setItem('hideCardHint', '1');
     setShowHint(false);
+  };
+
+  const dismissOrientationHint = () => {
+    localStorage.setItem('hideOrientationHint', '1');
+    setShowOrientationHint(false);
   };
 
   if (!game) return null;
@@ -125,6 +142,20 @@ export function GameBoard() {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Orientation hint — touch portrait only, dismissable */}
+      {showOrientationHint && (
+        <div className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-amber-900/80 border-b border-amber-700/50 text-amber-200 text-sm">
+          <span>↻ Rotate to landscape for the best experience.</span>
+          <button
+            onClick={dismissOrientationHint}
+            className="text-amber-200/60 hover:text-amber-200 transition-colors flex-shrink-0 leading-none"
+            title="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
 
