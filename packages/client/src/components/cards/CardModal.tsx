@@ -10,13 +10,13 @@ export function CardModal() {
   return (
     <Modal isOpen={!!modalCard} onClose={() => setModalCard(null)} wide>
       {modalCard && (
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
           {/* Card image */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-center sm:block">
             <img
               src={`${serverUrl}${modalCard.imageUrl}`}
               alt={modalCard.name}
-              className={`${modalCard.cardType === 'Room' ? 'w-[440px]' : 'w-80'} h-auto rounded-lg shadow-2xl`}
+              className={`${modalCard.cardType === 'Room' ? 'w-full max-w-[300px] sm:w-[440px]' : 'w-full max-w-[220px] sm:w-80'} h-auto rounded-lg shadow-2xl`}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder-card.png';
               }}

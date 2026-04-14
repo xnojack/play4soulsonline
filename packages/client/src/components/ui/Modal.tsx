@@ -22,7 +22,7 @@ export function Modal({ isOpen, onClose, title, children, wide = false }: ModalP
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -34,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children, wide = false }: ModalP
           />
           {/* Panel */}
           <motion.div
-            className={`relative bg-fs-brown border border-fs-gold/50 rounded-xl shadow-2xl z-10 ${wide ? 'max-w-4xl w-full' : 'max-w-lg w-full'}`}
+            className={`relative bg-fs-brown border border-fs-gold/50 rounded-xl shadow-2xl z-10 max-h-[90vh] overflow-y-auto ${wide ? 'max-w-4xl w-full' : 'max-w-lg w-full'}`}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
