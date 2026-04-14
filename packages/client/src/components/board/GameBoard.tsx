@@ -213,11 +213,11 @@ export function GameBoard() {
 
         {/* Right: stack + log — collapsible, sections scroll independently with min-height */}
         <div className={`flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-y-auto transition-all duration-200 ${showStackLog ? 'w-72' : 'w-0 overflow-hidden'}`}>
-          <div className="w-72 flex flex-col">
-            <div className="min-h-[200px] max-h-[50vh] overflow-y-auto border-b border-fs-gold/10 flex-shrink-0">
+          <div className="w-72 flex flex-col min-h-screen">
+            <div className="min-h-[200px] flex-1 overflow-y-auto border-b border-fs-gold/10">
               <TheStack />
             </div>
-            <div className="min-h-[160px] overflow-y-auto flex-shrink-0">
+            <div className="min-h-[160px] flex-1 overflow-y-auto">
               <GameLog />
             </div>
             <div className="flex-shrink-0 px-2 py-1 border-t border-fs-gold/10">
