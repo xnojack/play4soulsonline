@@ -173,15 +173,14 @@ export function TurnActionBar() {
             {/* End Turn */}
             <button
               onClick={handleEndTurn}
-              disabled={!stackEmpty}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-display font-semibold text-sm transition-colors ${
                 stackEmpty
                   ? 'bg-fs-gold text-fs-dark hover:bg-fs-gold-light shadow-lg shadow-fs-gold/20'
-                  : 'bg-fs-darker text-fs-parchment/30 border border-fs-gold/10 cursor-not-allowed'
+                  : 'bg-amber-900/60 text-amber-300 border border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
               }`}
-              title={stackEmpty ? 'End your turn' : 'Resolve the stack first'}
+              title={stackEmpty ? 'End your turn' : `Force end turn — ${stackLength} stack item${stackLength !== 1 ? 's' : ''} will be discarded`}
             >
-              End Turn
+              {stackEmpty ? 'End Turn' : 'End Turn ⚠'}
             </button>
           </div>
 

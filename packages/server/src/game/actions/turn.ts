@@ -21,14 +21,49 @@ export function beginActionPhase(state: GameState): GameState {
   return resetPriority({ ...state, turn: newTurn, log: [...state.log, log] });
 }
 
+/** Drain all remaining stack items without resolving their effects.
+ *  Loot cards that were on the stack return to the loot discard.
+ *  Active attacks are voided. All other items are simply cleared. */
+function drainStack(state: GameState): GameState {
+  if (state.stack.length === 0) return state;
+
+  let newState = { ...state };
+
+  for (const item of state.stack) {
+    if (item.isCanceled) continue;
+
+    if (item.type === 'loot') {
+      // Loot card never resolved — send it to the discard
+      const cardId = item.data.cardId as string | undefined;
+      if (cardId) {
+        newState = { ...newState, lootDiscard: [...newState.lootDiscard, cardId] };
+      }
+    } else if (item.type === 'attack_declaration') {
+      // Void the in-progress attack
+      newState = { ...newState, turn: { ...newState.turn, currentAttack: null } };
+    }
+    // dice_roll, attack_roll, activated_ability, triggered_ability: no card to return
+  }
+
+  const count = state.stack.filter((i) => !i.isCanceled).length;
+  const log = createLogEntry(
+    'phase',
+    `Turn ended with ${count} item${count !== 1 ? 's' : ''} on the stack — stack cleared`,
+    state.turn.activePlayerId
+  );
+
+  return { ...newState, stack: [], log: [...newState.log, log] };
+}
+
 /** End the active player's turn and advance to the next player */
 export function endTurn(state: GameState): GameState {
-  if (state.stack.length > 0) return state; // can't end turn with items on stack
+  // Drain any remaining stack items before advancing
+  const drained = drainStack(state);
 
   // Revive any player whose HP has been restored above 0 (e.g. healed by a card effect)
   const revivedState = {
-    ...state,
-    players: state.players.map((p) => {
+    ...drained,
+    players: drained.players.map((p) => {
       if (!p.isAlive && p.baseHp + p.hpCounters - p.currentDamage > 0) {
         return { ...p, isAlive: true };
       }

@@ -579,8 +579,6 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const state = room.getState();
     if (state.turn.activePlayerId !== ctx.playerId)
       return sendError(socket, 'Not your turn');
-    if (state.stack.length > 0)
-      return sendError(socket, 'Cannot end turn with items on stack');
 
     room.setState(endTurn(state));
     broadcastState(io, ctx.roomId);
