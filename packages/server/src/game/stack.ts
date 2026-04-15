@@ -33,13 +33,16 @@ export function pushStack(
 
   const log = createLogEntry('stack', `${item.description} added to stack`, item.sourcePlayerId);
 
-  return {
+  const resultState: GameState = {
     ...state,
     stack: [...state.stack, newItem],
     priorityQueue: newQueue,
     turn: newTurn,
     log: [...state.log, log],
   };
+
+  // Start a timeout for the player who now has priority (skip active player)
+  return startPriorityTimeout(resultState, newQueue[0]);
 }
 
 /** Cancel a specific stack item by ID */
@@ -152,14 +155,17 @@ export function allPassedPriority(state: GameState): boolean {
 
 /** Mark a player as passing priority; return next player who has priority */
 export function passPriority(state: GameState, playerId: string): GameState {
-  const newPassed = new Set(state.turn.passedPriority);
+  // Clear any active timeout first
+  let s = clearPriorityTimeout(state);
+
+  const newPassed = new Set(s.turn.passedPriority);
   newPassed.add(playerId);
 
-  const alivePlayers = state.players.filter((p) => !p.isSpectator && p.isAlive);
+  const alivePlayers = s.players.filter((p) => !p.isSpectator && p.isAlive);
 
   // Advance the priority queue
-  const currentIdx = state.priorityQueue.indexOf(playerId);
-  let newQueue = [...state.priorityQueue];
+  const currentIdx = s.priorityQueue.indexOf(playerId);
+  let newQueue = [...s.priorityQueue];
   if (currentIdx >= 0) {
     // Rotate: move this player to the end
     newQueue = [...newQueue.slice(currentIdx + 1), ...newQueue.slice(0, currentIdx + 1)];
@@ -177,17 +183,27 @@ export function passPriority(state: GameState, playerId: string): GameState {
     rotations++;
   }
 
-  return {
-    ...state,
+  s = {
+    ...s,
     priorityQueue: newQueue,
-    turn: { ...state.turn, passedPriority: newPassed },
+    turn: { ...s.turn, passedPriority: newPassed },
   };
+
+  // Start a timeout for the next player in queue (skip if it's the active player or all passed)
+  if (newQueue.length > 0 && !newPassed.has(newQueue[0])) {
+    s = startPriorityTimeout(s, newQueue[0]);
+  }
+
+  return s;
 }
 
 /** Reset priority to the active player (start of turn, after resolution) */
 export function resetPriority(state: GameState): GameState {
-  const alivePlayers = state.players.filter((p) => !p.isSpectator && p.isAlive);
-  const activeIdx = alivePlayers.findIndex((p) => p.id === state.turn.activePlayerId);
+  // Clear any active timeout
+  let s = clearPriorityTimeout(state);
+
+  const alivePlayers = s.players.filter((p) => !p.isSpectator && p.isAlive);
+  const activeIdx = alivePlayers.findIndex((p) => p.id === s.turn.activePlayerId);
   const queue =
     activeIdx >= 0
       ? [
@@ -197,13 +213,44 @@ export function resetPriority(state: GameState): GameState {
       : alivePlayers.map((p) => p.id);
 
   return {
-    ...state,
+    ...s,
     priorityQueue: queue,
-    turn: { ...state.turn, passedPriority: new Set<string>() },
+    turn: { ...s.turn, passedPriority: new Set<string>() },
   };
 }
 
 /** Get which player currently has priority */
 export function currentPriorityPlayerId(state: GameState): string | null {
   return state.priorityQueue[0] ?? null;
+}
+
+// ─── Priority timeout helpers ─────────────────────────────────────────────────
+
+/** Start a priority timeout for a specific player.
+ *  No-op if timeout is disabled (priorityTimeoutMs <= 0) or if it's the active player. */
+export function startPriorityTimeout(state: GameState, playerId: string): GameState {
+  if (state.priorityTimeoutMs <= 0) return state;
+  // Active player never has a timeout
+  if (playerId === state.turn.activePlayerId) return state;
+  return {
+    ...state,
+    turn: {
+      ...state.turn,
+      priorityTimeoutPlayerId: playerId,
+      priorityTimeoutDeadline: Date.now() + state.priorityTimeoutMs,
+    },
+  };
+}
+
+/** Clear any active priority timeout. */
+export function clearPriorityTimeout(state: GameState): GameState {
+  if (!state.turn.priorityTimeoutPlayerId && !state.turn.priorityTimeoutDeadline) return state;
+  return {
+    ...state,
+    turn: {
+      ...state.turn,
+      priorityTimeoutPlayerId: undefined,
+      priorityTimeoutDeadline: undefined,
+    },
+  };
 }

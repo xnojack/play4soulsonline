@@ -169,6 +169,9 @@ export interface GameState {
 
   // Saddest character vote phase (before active)
   sadVotes: Record<string, string>; // voterId → targetPlayerId; fully public
+
+  // Seconds remaining on the current viewer's priority timeout (0 = no timeout / not their turn)
+  priorityTimeoutRemaining: number;
 }
 
 export interface DiceResult {

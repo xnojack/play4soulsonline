@@ -64,6 +64,9 @@ export function TurnActionBar() {
 
   // Non-active-turn player: compact priority bar
   if (!isMyTurn && hasPriority) {
+    const timeoutRemaining = game?.priorityTimeoutRemaining ?? 0;
+    const isUrgent = timeoutRemaining > 0 && timeoutRemaining <= 5;
+
     return (
       <AnimatePresence>
         <motion.div
@@ -77,16 +80,21 @@ export function TurnActionBar() {
             {/* Priority indicator */}
             <div className="flex items-center gap-2">
               <motion.div
-                className="w-2 h-2 rounded-full bg-fs-gold"
+                className={`w-2 h-2 rounded-full ${isUrgent ? 'bg-red-400' : 'bg-fs-gold'}`}
                 animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+                transition={{ duration: isUrgent ? 0.5 : 1.5, repeat: Infinity }}
               />
-              <span className="text-sm font-display text-fs-gold font-semibold">
+              <span className={`text-sm font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-fs-gold'}`}>
                 You have priority
               </span>
               {stackLength > 0 && (
                 <span className="text-xs text-fs-parchment/40 ml-1">
                   ({stackLength} on stack)
+                </span>
+              )}
+              {timeoutRemaining > 0 && (
+                <span className={`text-xs font-display font-semibold ml-1 ${isUrgent ? 'text-red-400' : 'text-amber-400'}`}>
+                  {timeoutRemaining}s
                 </span>
               )}
             </div>
@@ -96,7 +104,11 @@ export function TurnActionBar() {
               <DiceRoller compact context="manual" />
               <button
                 onClick={handlePassPriority}
-                className="px-4 py-1.5 rounded-lg border-2 border-fs-gold/60 text-fs-gold font-display font-semibold text-sm hover:bg-fs-gold/10 transition-colors"
+                className={`px-4 py-1.5 rounded-lg border-2 font-display font-semibold text-sm transition-colors ${
+                  isUrgent
+                    ? 'border-red-500/80 text-red-400 hover:bg-red-900/20'
+                    : 'border-fs-gold/60 text-fs-gold hover:bg-fs-gold/10'
+                }`}
               >
                 Pass
               </button>

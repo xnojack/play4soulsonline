@@ -172,6 +172,7 @@ export function Lobby() {
   const [bonusSoulCount, setBonusSoulCount] = useState(3);
   const [includeRooms, setIncludeRooms] = useState(true);
   const [excludeNeverPrinted, setExcludeNeverPrinted] = useState(true);
+  const [priorityTimeoutSeconds, setPriorityTimeoutSeconds] = useState(30);
   const [starting, setStarting] = useState(false);
   const inRoom = game?.roomId === roomId;
 
@@ -229,6 +230,7 @@ export function Lobby() {
       bonusSoulCount,
       includeRooms,
       excludeNeverPrinted,
+      priorityTimeoutMs: priorityTimeoutSeconds * 1000,
     });
   };
 
@@ -394,6 +396,17 @@ export function Lobby() {
                   className="accent-fs-gold"
                 />
                 <span className="text-sm text-fs-parchment/80">Exclude Unprinted Cards</span>
+              </label>
+              <label className="flex items-center gap-1.5">
+                <span className="text-xs text-fs-parchment/60">Priority timeout (s, 0 = off):</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={120}
+                  value={priorityTimeoutSeconds}
+                  onChange={(e) => setPriorityTimeoutSeconds(Math.max(0, Math.min(120, Number(e.target.value))))}
+                  className="w-16 bg-fs-darker border border-fs-gold/30 rounded px-2 py-0.5 text-fs-parchment text-sm focus:outline-none focus:border-fs-gold"
+                />
               </label>
             </div>
           </div>

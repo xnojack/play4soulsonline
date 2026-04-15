@@ -1,9 +1,17 @@
 import { GameRoom } from './GameRoom';
 import { MAX_ROOMS } from '../config';
+import {
+  clearPriorityTimeout,
+  passPriority,
+  allPassedPriority,
+  resolveTopOfStack,
+  resetPriority,
+} from './stack';
 
 class GameStore {
   private rooms = new Map<string, GameRoom>();
   private cleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private timeoutCheckTimer?: ReturnType<typeof setInterval>;
   private maxRooms: number;
 
   constructor(maxRooms: number) {
@@ -60,6 +68,42 @@ class GameStore {
 
   get size(): number {
     return this.rooms.size;
+  }
+
+  /**
+   * Start the periodic priority-timeout checker.
+   * Call this once after the Socket.IO server is ready.
+   * Runs every 500ms; auto-passes priority for any player whose deadline has elapsed.
+   * `broadcastFn` should broadcast the updated state for the given roomId.
+   */
+  startTimeoutChecker(broadcastFn: (roomId: string) => void): void {
+    if (this.timeoutCheckTimer) return; // already running
+
+    this.timeoutCheckTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [roomId, room] of this.rooms) {
+        const state = room.getState();
+        if (state.phase !== 'active') continue;
+        if (
+          state.turn.priorityTimeoutDeadline == null ||
+          state.turn.priorityTimeoutPlayerId == null
+        ) continue;
+        if (now < state.turn.priorityTimeoutDeadline) continue;
+
+        // Deadline elapsed — auto-pass for this player
+        const timedOutPlayerId = state.turn.priorityTimeoutPlayerId;
+        let s = clearPriorityTimeout(state);
+        s = passPriority(s, timedOutPlayerId);
+
+        if (allPassedPriority(s) && s.stack.length > 0) {
+          const { newState } = resolveTopOfStack(s);
+          s = resetPriority(newState);
+        }
+
+        room.setState(s);
+        broadcastFn(roomId);
+      }
+    }, 500);
   }
 }
 

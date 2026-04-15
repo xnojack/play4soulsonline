@@ -49,6 +49,7 @@ import {
   cancelStackItem,
   pushStack,
   resetPriority,
+  clearPriorityTimeout,
 } from '../game/stack';
 import { endTurn, drawLoot, playLootCard, discardLoot, returnToDeck, rechargePlayerItems } from '../game/actions/turn';
 import {
@@ -227,6 +228,9 @@ function rejectIfSpectator(socket: Socket, ctx: { roomId: string; playerId: stri
 // ─── Handler registration ─────────────────────────────────────────────────────
 
 export function registerHandlers(io: Server, socket: Socket): void {
+  // Start the priority-timeout checker (idempotent — only runs once globally)
+  gameStore.startTimeoutChecker((roomId) => broadcastState(io, roomId));
+
   // ─── Join / create room ─────────────────────────────────────────────────────
 
   socket.on('action:join', safeHandler<unknown>(socket, (raw) => {
@@ -322,6 +326,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       bonusSoulCount: isNumber(payload.bonusSoulCount) ? payload.bonusSoulCount : undefined,
       includeRooms: isBoolean(payload.includeRooms) ? payload.includeRooms : false,
       excludeNeverPrinted: isBoolean(payload.excludeNeverPrinted) ? payload.excludeNeverPrinted : true,
+      priorityTimeoutMs: isNumber(payload.priorityTimeoutMs) ? payload.priorityTimeoutMs : 30000,
     });
     if (err) return sendError(socket, err);
 
@@ -515,6 +520,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (state.priorityQueue[0] !== ctx.playerId)
       return sendError(socket, "It's not your priority");
 
+    state = clearPriorityTimeout(state);
     state = passPriority(state, ctx.playerId);
 
     if (allPassedPriority(state) && state.stack.length > 0) {
@@ -545,7 +551,8 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (state.stack.length === 0)
       return sendError(socket, 'Stack is empty');
 
-    const { newState } = resolveTopOfStack(state);
+    const clearedState = clearPriorityTimeout(state);
+    const { newState } = resolveTopOfStack(clearedState);
     room.setState(resetPriority(newState));
     broadcastState(io, ctx.roomId);
   }));

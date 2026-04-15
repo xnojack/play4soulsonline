@@ -149,6 +149,9 @@ export interface TurnState {
   currentAttack: AttackState | null;
   // Track which players have passed priority since last stack push
   passedPriority: Set<string>;
+  // Priority timeout tracking (server-side only)
+  priorityTimeoutPlayerId?: string;  // which player's timeout is active
+  priorityTimeoutDeadline?: number;  // Unix ms when their time expires
 }
 
 // ============================================================
@@ -264,6 +267,9 @@ export interface GameState {
 
   // Saddest character vote phase (before active)
   sadVotes: Record<string, string>; // voterId → targetPlayerId; fully public
+
+  // Priority timeout (ms); 0 or negative = disabled
+  priorityTimeoutMs: number;
 }
 
 // ============================================================
@@ -289,6 +295,8 @@ export interface ClientGameState extends Omit<GameState, 'players' | 'turn'> {
   eternalDeckCount: number;
   // Eden pick: options only visible to the current picker
   edenPickOptions: string[]; // empty for everyone except edenPickQueue[0]
+  // Seconds remaining on the current player's priority timeout (0 = no timeout or expired)
+  priorityTimeoutRemaining: number;
 }
 
 // ============================================================
@@ -308,6 +316,7 @@ export interface StartGamePayload {
   bonusSoulCount?: number; // how many bonus souls to lay out (default 3)
   includeRooms: boolean;
   excludeNeverPrinted?: boolean; // if true, filter out never_printed cards from all decks
+  priorityTimeoutMs?: number; // ms per player priority window; 0 = disabled (default 30000)
 }
 
 export interface PlayLootPayload {

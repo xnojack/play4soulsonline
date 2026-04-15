@@ -107,6 +107,7 @@ export class GameRoom {
       edenPickQueue: [],
       edenPickOptions: [],
       sadVotes: {},
+      priorityTimeoutMs: 30000,
     };
   }
 
@@ -179,6 +180,11 @@ export class GameRoom {
       eternalDeckCount: s.eternalDeck.length,
       // Eden pick options only visible to the current picker
       edenPickOptions: s.edenPickQueue[0] === viewerId ? s.edenPickOptions : [],
+      // Priority timeout: seconds remaining for this viewer (0 if not their turn or disabled)
+      priorityTimeoutRemaining:
+        s.turn.priorityTimeoutDeadline != null && s.turn.priorityTimeoutPlayerId === viewerId
+          ? Math.max(0, Math.ceil((s.turn.priorityTimeoutDeadline - Date.now()) / 1000))
+          : 0,
     };
   }
 
@@ -289,6 +295,7 @@ export class GameRoom {
     bonusSoulCount?: number;
     includeRooms: boolean;
     excludeNeverPrinted?: boolean;
+    priorityTimeoutMs?: number;
   }): string | null {
     if (this.state.phase !== 'lobby') return 'Game already started';
     const nonSpectators = this.state.players.filter((p) => !p.isSpectator);
@@ -533,6 +540,7 @@ export class GameRoom {
       ...this.state,
       phase: 'active',
       activeSets: options.activeSets,
+      priorityTimeoutMs: typeof options.priorityTimeoutMs === 'number' ? options.priorityTimeoutMs : 30000,
       turn: {
         activePlayerId: firstPlayer.id,
         phase: 'start',
@@ -543,6 +551,8 @@ export class GameRoom {
         attacksRequired: 1,
         currentAttack: null,
         passedPriority: new Set<string>(),
+        priorityTimeoutPlayerId: undefined,
+        priorityTimeoutDeadline: undefined,
       },
       stack: [],
       coinPool: DEFAULT_COIN_POOL - players.length * DEFAULT_STARTING_COINS,
@@ -766,6 +776,7 @@ export class GameRoom {
       edenPickQueue: [],
       edenPickOptions: [],
       sadVotes: {},
+      priorityTimeoutMs: 30000,
     };
   }
 }
