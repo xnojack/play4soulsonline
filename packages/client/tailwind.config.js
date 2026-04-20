@@ -18,8 +18,8 @@ export default {
         'fs-bone': '#cfc9b8',
       },
       fontFamily: {
-        display: ['"Permanent Marker"', 'cursive'],
-        body: ['"Roboto"', 'sans-serif'],
+        display: ['"Permanent Marker"', 'Fredoka', '"Comic Sans MS"', 'cursive'],
+        body: ['"Roboto"', 'Segoe UI', '"Helvetica Neue"', 'sans-serif'],
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
