@@ -28,3 +28,40 @@ dev-docker:
 
 install:
 	npm install
+
+# Test commands
+test:
+	npm test
+
+test-ui:
+	npm run test:ui
+
+test-watch:
+	npm run test:watch
+
+test-debug:
+	npm run test:debug
+
+test-headless:
+	npm run test:headless
+
+test-basic:
+	npm run test:basic
+
+test-cards:
+	npm run test:cards
+
+test-mechanics:
+	npm run test:mechanics
+
+test-regression:
+	npm run test:regression
+
+test-full:
+	npm run test:full
+
+test-report:
+	npm run test:report
+
+test-validate:
+	./tests/validate.sh

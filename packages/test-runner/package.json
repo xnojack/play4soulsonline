@@ -1,16 +1,9 @@
 {
-  "name": "four-souls-online",
+  "name": "@four-souls/test-runner",
   "private": true,
+  "version": "1.0.0",
   "license": "GPL-3.0-or-later",
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "setup": "npm run scrape",
-    "scrape": "npm run build --workspace=packages/scraper && node packages/scraper/dist/index.js",
-    "dev": "concurrently \"npm run dev --workspace=packages/server\" \"npm run dev --workspace=packages/client\"",
-    "build": "npm run build --workspace=packages/server && npm run build --workspace=packages/client",
-    "start": "npm run start --workspace=packages/server",
     "test": "playwright test",
     "test:headless": "playwright test --headless",
     "test:headed": "playwright test --headed",
@@ -25,10 +18,6 @@
     "test:full": "playwright test tests/e2e/regression/full-game.spec.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "concurrently": "^8.2.2"
-  },
-  "dependencies": {
-    "better-sqlite3": "^12.9.0"
+    "@playwright/test": "^1.44.0"
   }
 }
