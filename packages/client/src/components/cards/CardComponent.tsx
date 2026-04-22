@@ -8,6 +8,15 @@ import { getSocket } from '../../socket/client';
 import { SERVER_URL } from '../../config';
 import { isTouchDevice } from '../../hooks/useIsTouchDevice';
 
+/** Debounce helper for resize handlers */
+function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return (...args: Parameters<T>): void => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+
 export interface CardAction {
   label: string;
   onClick: () => void;
@@ -72,7 +81,9 @@ export function CardComponent({
   const isSpent = instance?.charged === false;
   const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<'above' | 'below'>('above');
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Evaluate once per render — pointer type doesn't change mid-session
@@ -88,6 +99,29 @@ export function CardComponent({
     if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
   }, []);
+
+  // Measure popover position — choose side with more available space
+  const measurePopover = useCallback(() => {
+    if (!popoverOpen || !containerRef.current || !popoverRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const popoverHeight = popoverRef.current.offsetHeight || 200;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    
+    // Smart fallback: choose side with more available space
+    setPopoverPosition(spaceAbove >= spaceBelow ? 'above' : 'below');
+  }, [popoverOpen]);
+
+  // Measure on mount, open, and resize
+  useEffect(() => {
+    if (popoverOpen) measurePopover();
+    const handleResize = debounce(() => {
+      if (popoverOpen) measurePopover();
+    }, 100);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [measurePopover, popoverOpen]);
 
   // Close popover when clicking/tapping outside
   useEffect(() => {
@@ -242,12 +276,13 @@ export function CardComponent({
         <AnimatePresence>
           {popoverOpen && hasPopoverContent && (
             <motion.div
-              className={`absolute z-50 ${popoverBelow ? 'top-full mt-1' : 'bottom-full mb-1'} left-1/2 -translate-x-1/2 bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-1.5 min-w-[140px]`}
-              initial={{ opacity: 0, y: popoverBelow ? -6 : 6, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: popoverBelow ? -6 : 6, scale: 0.95 }}
-              transition={{ duration: 0.12 }}
-            >
+               ref={popoverRef}
+               className={`absolute z-50 ${popoverPosition === 'below' ? 'top-full mt-1' : 'bottom-full mb-1'} left-1/2 -translate-x-1/2 bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-1.5 min-w-[140px]`}
+               initial={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
+               animate={{ opacity: 1, y: 0, scale: 1 }}
+               exit={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
+               transition={{ duration: 0.12 }}
+             >
               {/* Card name header */}
               <div className="text-sm text-fs-gold font-display font-semibold px-1 pb-1 mb-1 border-b border-fs-gold/20 truncate">
                 {displayName}
