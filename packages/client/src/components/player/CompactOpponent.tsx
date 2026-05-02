@@ -35,7 +35,7 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
     <div className="relative flex-shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors min-w-[140px] ${
+        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-colors min-w-[140px] flex-1 ${
           isActiveTurn
             ? 'border-fs-gold/60 bg-fs-gold/10'
             : 'border-fs-gold/20 bg-fs-darker/60 hover:bg-fs-darker/80'
@@ -53,7 +53,7 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
         )}
 
         {/* Info */}
-        <div className="flex flex-col items-start gap-0.5 min-w-0">
+        <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
           <div className="flex items-center gap-1">
             <span className="text-xs font-display text-fs-parchment font-semibold truncate max-w-[80px]">
               {player.name}

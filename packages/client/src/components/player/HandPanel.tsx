@@ -98,7 +98,7 @@ export function HandPanel({ player }: HandPanelProps) {
       </AnimatePresence>
 
       {/* Cards in hand */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap content-start">
         {player.handCardIds.length === 0 && (
           <div className="text-sm text-fs-parchment/30 italic">No cards in hand</div>
         )}

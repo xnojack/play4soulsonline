@@ -93,7 +93,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[130px]">
+    <div className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1">
       <div className="section-title text-center text-sm mb-0.5">Monster {slot.slotIndex + 1}</div>
 
       {/* Stack display */}

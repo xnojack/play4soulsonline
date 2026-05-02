@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClientCard, CardInPlay } from '../../store/gameStore';
 import { CardTooltip } from './CardTooltip';
@@ -82,6 +83,8 @@ export function CardComponent({
   const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState<'above' | 'below'>('above');
+  // null = not yet measured (render hidden); object = measured and placed
+  const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,34 +103,56 @@ export function CardComponent({
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
   }, []);
 
-  // Measure popover position — choose side with more available space
+  // Compute fixed viewport coordinates from actual rendered popover size.
+  // Called after the popover has painted (via rAF) so offsetWidth/Height are real.
   const measurePopover = useCallback(() => {
-    if (!popoverOpen || !containerRef.current || !popoverRef.current) return;
-    
+    if (!containerRef.current || !popoverRef.current) return;
+
     const rect = containerRef.current.getBoundingClientRect();
-    const popoverHeight = popoverRef.current.offsetHeight || 200;
+    const popoverWidth = popoverRef.current.offsetWidth;
+    const popoverHeight = popoverRef.current.offsetHeight;
+    if (!popoverWidth || !popoverHeight) return;
+
+    const margin = 8;
+
+    // Vertical: choose the side with more space
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
-    
-    // Smart fallback: choose side with more available space
-    setPopoverPosition(spaceAbove >= spaceBelow ? 'above' : 'below');
-  }, [popoverOpen]);
+    const above = spaceAbove >= spaceBelow;
+    setPopoverPosition(above ? 'above' : 'below');
+    const top = above
+      ? rect.top - popoverHeight - 4
+      : rect.bottom + 4;
 
-  // Measure on mount, open, and resize
+    // Horizontal: center on card, then clamp within viewport
+    let left = rect.left + rect.width / 2 - popoverWidth / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
+
+    setPopoverCoords({ top, left });
+  }, []);
+
+  // Two-pass: render popover invisible, then measure and position via rAF
   useEffect(() => {
-    if (popoverOpen) measurePopover();
-    const handleResize = debounce(() => {
-      if (popoverOpen) measurePopover();
-    }, 100);
+    if (!popoverOpen) { setPopoverCoords(null); return; }
+    const id = requestAnimationFrame(() => measurePopover());
+    return () => cancelAnimationFrame(id);
+  }, [popoverOpen, measurePopover]);
+
+  // Re-measure on resize while open
+  useEffect(() => {
+    const handleResize = debounce(() => { if (popoverOpen) measurePopover(); }, 100);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [measurePopover, popoverOpen]);
+  }, [popoverOpen, measurePopover]);
 
-  // Close popover when clicking/tapping outside
+  // Close popover when clicking/tapping outside (both card and portal popover)
   useEffect(() => {
     if (!popoverOpen) return;
     const handler = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inCard = containerRef.current?.contains(target);
+      const inPopover = popoverRef.current?.contains(target);
+      if (!inCard && !inPopover) {
         setPopoverOpen(false);
         clearTimers();
       }
@@ -146,9 +171,7 @@ export function CardComponent({
   // Hover handlers on the entire container (card + popover)
   const handleMouseEnter = useCallback(() => {
     if (faceDown || !hasPopoverContent || isTouch) return;
-    // Cancel any pending close
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
-    // Start open delay
     if (!popoverOpen && !hoverOpenTimer.current) {
       hoverOpenTimer.current = setTimeout(() => {
         setPopoverOpen(true);
@@ -159,9 +182,7 @@ export function CardComponent({
 
   const handleMouseLeave = useCallback(() => {
     if (!hasPopoverContent || isTouch) return;
-    // Cancel any pending open
     if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
-    // Start close delay
     if (popoverOpen && !hoverCloseTimer.current) {
       hoverCloseTimer.current = setTimeout(() => {
         setPopoverOpen(false);
@@ -172,12 +193,10 @@ export function CardComponent({
 
   const handleClick = () => {
     if (faceDown) return;
-    // On touch: tap toggles the action popover; the "View card" button inside opens the modal
     if (isTouch && hasPopoverContent) {
       setPopoverOpen((v) => !v);
       return;
     }
-    // On mouse: click always opens the full card modal
     if (onClick) {
       onClick();
     } else {
@@ -188,176 +207,200 @@ export function CardComponent({
   const serverUrl = SERVER_URL;
 
   return (
-    <Tooltip
-      content={!faceDown && !popoverOpen ? <CardTooltip card={card} instance={instance} /> : null}
-      delay={500}
-    >
-      <div
-        ref={containerRef}
-        className={`relative inline-block select-none ${className}`}
-        style={{ width: containerWidth, height: containerHeight }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+    <>
+      <Tooltip
+        content={!faceDown && !popoverOpen ? <CardTooltip card={card} instance={instance} /> : null}
+        delay={500}
       >
-        <motion.div
-          className="w-full h-full cursor-pointer"
-          style={{ rotate: isSpent ? 90 : 0 }}
-          animate={{ rotate: isSpent ? 90 : 0 }}
-          transition={{ duration: 0.25, type: 'spring', stiffness: 200, damping: 25 }}
-          onClick={handleClick}
-          onMouseEnter={() => { if (!isTouch && !faceDown) setHoveredCard(card); }}
-          onMouseLeave={() => { if (!isTouch) setHoveredCard(null); }}
-          whileHover={isTouch ? {} : { scale: 1.05, zIndex: 10 }}
+        <div
+          ref={containerRef}
+          className={`relative inline-block select-none ${className}`}
+          style={{ width: containerWidth, height: containerHeight }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          <img
-            src={faceDown ? '/card-back.png' : `${serverUrl}${displayImageUrl}`}
-            alt={faceDown ? 'Card' : displayName}
-            className={`w-full h-full object-cover rounded-sm card-shadow ${
-              selected ? 'ring-2 ring-fs-gold-light ring-offset-1 ring-offset-fs-darker' : ''
-            } ${isSpent ? 'card-spent' : ''}`}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder-card.png';
-            }}
-            draggable={false}
-          />
+          <motion.div
+            className="w-full h-full cursor-pointer"
+            style={{ rotate: isSpent ? 90 : 0 }}
+            animate={{ rotate: isSpent ? 90 : 0 }}
+            transition={{ duration: 0.25, type: 'spring', stiffness: 200, damping: 25 }}
+            onClick={handleClick}
+            onMouseEnter={() => { if (!isTouch && !faceDown) setHoveredCard(card); }}
+            onMouseLeave={() => { if (!isTouch) setHoveredCard(null); }}
+            whileHover={isTouch ? {} : { scale: 1.05, zIndex: 10 }}
+          >
+            <img
+              src={faceDown ? '/card-back.png' : `${serverUrl}${displayImageUrl}`}
+              alt={faceDown ? 'Card' : displayName}
+              className={`w-full h-full object-cover rounded-sm card-shadow ${
+                selected ? 'ring-2 ring-fs-gold-light ring-offset-1 ring-offset-fs-darker' : ''
+              } ${isSpent ? 'card-spent' : ''}`}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-card.png';
+              }}
+              draggable={false}
+            />
 
-          {/* Counters overlay */}
-          {showCounters && instance && (
-            <div className="absolute bottom-0 left-0 right-0 flex flex-wrap gap-0.5 p-0.5">
-              {instance.damageCounters > 0 && (
-                <CounterBadge label={`${instance.damageCounters}`} color="bg-red-700" title="Damage" />
-              )}
-              {instance.hpCounters > 0 && (
-                <CounterBadge label={`+${instance.hpCounters}HP`} color="bg-pink-700" title="HP Counters" />
-              )}
-              {instance.atkCounters > 0 && (
-                <CounterBadge label={`+${instance.atkCounters}ATK`} color="bg-orange-700" title="ATK Counters" />
-              )}
-              {instance.genericCounters > 0 && (
-                <CounterBadge label={`${instance.genericCounters}`} color="bg-gray-600" title="Counters" />
-              )}
-              {Object.entries(instance.namedCounters).map(([name, count]) =>
-                count > 0 ? (
-                  <CounterBadge key={name} label={`${count} ${name}`} color="bg-purple-700" title={name} />
-                ) : null
-              )}
-            </div>
-          )}
+            {/* Counters overlay */}
+            {showCounters && instance && (
+              <div className="absolute bottom-0 left-0 right-0 flex flex-wrap gap-0.5 p-0.5">
+                {instance.damageCounters > 0 && (
+                  <CounterBadge label={`${instance.damageCounters}`} color="bg-red-700" title="Damage" />
+                )}
+                {instance.hpCounters > 0 && (
+                  <CounterBadge label={`+${instance.hpCounters}HP`} color="bg-pink-700" title="HP Counters" />
+                )}
+                {instance.atkCounters > 0 && (
+                  <CounterBadge label={`+${instance.atkCounters}ATK`} color="bg-orange-700" title="ATK Counters" />
+                )}
+                {instance.genericCounters > 0 && (
+                  <CounterBadge label={`${instance.genericCounters}`} color="bg-gray-600" title="Counters" />
+                )}
+                {Object.entries(instance.namedCounters).map(([name, count]) =>
+                  count > 0 ? (
+                    <CounterBadge key={name} label={`${count} ${name}`} color="bg-purple-700" title={name} />
+                  ) : null
+                )}
+              </div>
+            )}
 
-          {/* Soul value badge */}
-          {card.soulValue > 0 && !faceDown && (
-            <div className="absolute top-0 right-0 w-4 h-4 bg-fs-soul rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg">
-              {card.soulValue}
-            </div>
-          )}
+            {/* Soul value badge */}
+            {card.soulValue > 0 && !faceDown && (
+              <div className="absolute top-0 right-0 w-4 h-4 bg-fs-soul rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg">
+                {card.soulValue}
+              </div>
+            )}
 
-          {/* Flip card indicator badge */}
-          {card.backImageUrl && !faceDown && (
-            <div
-              className="absolute top-0 left-0 w-4 h-4 bg-fs-dark/80 border border-fs-gold/40 rounded-sm text-fs-gold text-xs flex items-center justify-center leading-none shadow"
-              title="Dual-sided card"
-            >
-              ↕
-            </div>
-          )}
+            {/* Flip card indicator badge */}
+            {card.backImageUrl && !faceDown && (
+              <div
+                className="absolute top-0 left-0 w-4 h-4 bg-fs-dark/80 border border-fs-gold/40 rounded-sm text-fs-gold text-xs flex items-center justify-center leading-none shadow"
+                title="Dual-sided card"
+              >
+                ↕
+              </div>
+            )}
 
-          {/* Eternal badge */}
-          {!faceDown && card.isEternal && (
-            <div
-              className="absolute bottom-0 left-0 px-1 py-0.5 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-xs leading-none pointer-events-none"
-              title="Eternal — cannot be destroyed"
-            >
-              ETR
-            </div>
-          )}
-        </motion.div>
+            {/* Eternal badge */}
+            {!faceDown && card.isEternal && (
+              <div
+                className="absolute bottom-0 left-0 px-1 py-0.5 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-xs leading-none pointer-events-none"
+                title="Eternal — cannot be destroyed"
+              >
+                ETR
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </Tooltip>
 
-        {/* Action popover — shown on hover (desktop) or tap (touch) */}
+      {/* Action popover — portalled into document.body to escape all parent transforms/clips */}
+      {hasPopoverContent && createPortal(
         <AnimatePresence>
-          {popoverOpen && hasPopoverContent && (
+          {popoverOpen && (
             <motion.div
-               ref={popoverRef}
-               className={`absolute z-50 ${popoverPosition === 'below' ? 'top-full mt-1' : 'bottom-full mb-1'} left-1/2 -translate-x-1/2 bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-1.5 min-w-[140px]`}
-               initial={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
-               animate={{ opacity: 1, y: 0, scale: 1 }}
-               exit={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
-               transition={{ duration: 0.12 }}
-             >
+              ref={popoverRef}
+              className={`fixed z-[9999] bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-3 min-w-[180px] max-w-[calc(100vw-1rem)] ${card.abilityText ? 'w-[320px]' : ''}`}
+              style={popoverCoords
+                ? { top: popoverCoords.top, left: popoverCoords.left }
+                : { visibility: 'hidden', top: 0, left: 0 }}
+              initial={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
+              transition={{ duration: 0.12 }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
               {/* Card name header */}
-              <div className="text-sm text-fs-gold font-display font-semibold px-1 pb-1 mb-1 border-b border-fs-gold/20 truncate">
+              <div className="text-base text-fs-gold font-display font-semibold pb-1.5 mb-2 border-b border-fs-gold/20 truncate">
                 {displayName}
               </div>
-              <div className="flex flex-col gap-0.5">
-                {(actions ?? []).map((action, i) => (
-                  <button
-                    key={i}
-                    className={`text-sm px-2 py-1.5 rounded border text-left transition-colors ${
-                      ACTION_COLORS[action.variant ?? 'default']
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPopoverOpen(false);
-                      clearTimers();
-                      action.onClick();
-                    }}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-                {/* Generic counter row */}
-                {instance && (
-                  <div className="flex items-center justify-between px-1 pt-1 mt-0.5 border-t border-fs-gold/10">
-                    <span className="text-xs text-fs-parchment/40">
-                      Counters: {instance.genericCounters}
-                    </span>
-                    <div className="flex gap-1">
-                      <button
-                        className="w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold leading-none"
-                        title="Remove counter"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (instance.genericCounters > 0) {
-                            getSocket().emit('action:remove_counter', {
+
+              <div className="flex gap-3">
+                {/* Left column — actions & controls */}
+                <div className="flex flex-col gap-1 min-w-0 flex-shrink-0">
+                  {(actions ?? []).map((action, i) => (
+                    <button
+                      key={i}
+                      className={`text-base px-3 py-2 rounded border text-left transition-colors ${
+                        ACTION_COLORS[action.variant ?? 'default']
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPopoverOpen(false);
+                        clearTimers();
+                        action.onClick();
+                      }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                  {/* Generic counter row */}
+                  {instance && (
+                    <div className="flex items-center justify-between px-1 pt-1.5 mt-1 border-t border-fs-gold/10">
+                      <span className="text-sm text-fs-parchment/40">
+                        Counters: {instance.genericCounters}
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
+                          title="Remove counter"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (instance.genericCounters > 0) {
+                              getSocket().emit('action:remove_counter', {
+                                instanceId: instance.instanceId,
+                                counterType: 'generic',
+                                amount: 1,
+                              });
+                            }
+                          }}
+                        >−</button>
+                        <button
+                          className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
+                          title="Add counter"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            getSocket().emit('action:add_counter', {
                               instanceId: instance.instanceId,
                               counterType: 'generic',
                               amount: 1,
                             });
-                          }
-                        }}
-                      >−</button>
-                      <button
-                        className="w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold leading-none"
-                        title="Add counter"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          getSocket().emit('action:add_counter', {
-                            instanceId: instance.instanceId,
-                            counterType: 'generic',
-                            amount: 1,
-                          });
-                        }}
-                      >+</button>
+                          }}
+                        >+</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* View card link */}
+                  <button
+                    className="text-base px-3 py-1.5 rounded border text-left transition-colors text-fs-parchment/50 border-fs-gold/10 hover:text-fs-parchment hover:bg-fs-darker"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPopoverOpen(false);
+                      clearTimers();
+                      setModalCard(card);
+                    }}
+                  >
+                    View card
+                  </button>
+                </div>
+
+                {/* Right column — ability text */}
+                {card.abilityText && (
+                  <div className="flex-1 min-w-0 border-l border-fs-gold/15 pl-3">
+                    <div className="text-xs uppercase tracking-wider text-fs-parchment/30 mb-1">Ability</div>
+                    <div className="text-sm text-fs-parchment/80 leading-relaxed whitespace-pre-line max-h-[200px] overflow-y-auto">
+                      {card.abilityText}
                     </div>
                   </div>
                 )}
-                {/* View card link */}
-                <button
-                  className="text-sm px-2 py-1 rounded border text-left transition-colors text-fs-parchment/50 border-fs-gold/10 hover:text-fs-parchment hover:bg-fs-darker"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPopoverOpen(false);
-                    clearTimers();
-                    setModalCard(card);
-                  }}
-                >
-                  View card
-                </button>
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
-      </div>
-    </Tooltip>
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 }
 
