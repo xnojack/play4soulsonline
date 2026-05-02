@@ -62,7 +62,6 @@ export function SharedTable() {
   const topLootDiscard = game.lootDiscard[game.lootDiscard.length - 1];
   const topMonsterDiscard = game.monsterDiscard[game.monsterDiscard.length - 1];
   const topRoomDiscard = game.roomDiscard[game.roomDiscard.length - 1];
-  const topEternalDiscard = game.eternalDiscard[game.eternalDiscard.length - 1];
 
   const isActiveTurn = game.turn.activePlayerId === game.myPlayerId;
   const canFlipAttack =
@@ -319,17 +318,6 @@ export function SharedTable() {
             onBrowse={() => setBrowseDeck('room')}
             discardCount={game.roomDiscard.length}
             onBrowseDiscard={() => { setBrowseDeck('room'); setBrowseInitialTab('discard_room'); }}
-          />
-        )}
-        {(game.eternalDeckCount > 0 || game.eternalDiscard.length > 0) && (
-          <DeckZone
-            label="Eternal"
-            count={game.eternalDeckCount}
-            topDiscardCardId={topEternalDiscard}
-            deckType="eternal"
-            onBrowse={() => setBrowseDeck('eternal')}
-            discardCount={game.eternalDiscard.length}
-            onBrowseDiscard={() => { setBrowseDeck('eternal'); setBrowseInitialTab('discard_eternal'); }}
           />
         )}
       </div>

@@ -4,7 +4,7 @@ import { ResolvedCard } from '../board/CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
-import { useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
+import { useHasPriority } from '../../hooks/useMyPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Draggable } from '../board/DnDPrimitives';
 
@@ -14,17 +14,13 @@ interface HandPanelProps {
 
 export function HandPanel({ player }: HandPanelProps) {
   const game = useGameStore((s) => s.game);
-  const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
   const [sharing, setSharing] = useState(false);
 
-  // Active player can always play loot while they have priority (lootPlaysRemaining
-  // can go below 0 — negative means they've played more than their base allotment,
-  // which is fine if an item/character granted extra plays).
-  // Non-active players can only play loot if they have priority AND plays remain.
-  const canPlayLoot = isMyTurn
-    ? hasPriority  // active player: just needs priority, no count gate
-    : hasPriority && (game?.turn.lootPlaysRemaining ?? 0) > 0;
+  // Soft check — any player with priority can attempt to play a loot card.
+  // Resource tracking (lootPlaysRemaining, character card charged state) is
+  // handled server-side and never hard-blocks the play.
+  const canPlayLoot = hasPriority;
 
   const handlePlayCard = (cardId: string) => {
     if (!canPlayLoot) return;

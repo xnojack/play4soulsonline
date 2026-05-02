@@ -189,15 +189,33 @@ export function playLootCard(
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return { newState: state, error: 'Player not found' };
 
-  const isActivePlayer = state.turn.activePlayerId === playerId;
-  // Non-active players are gated by lootPlaysRemaining; the active player
-  // can always play loot while they have priority (counter tracks net plays,
-  // can go negative if they've spent more than their base allotment via abilities).
-  if (!isActivePlayer && state.turn.lootPlaysRemaining <= 0)
-    return { newState: state, error: 'No loot plays remaining' };
-
   if (!player.handCardIds.includes(cardId))
     return { newState: state, error: 'Card not in hand' };
+
+  const isActivePlayer = state.turn.activePlayerId === playerId;
+  const charCard = state.characterCards[player.characterInstanceId];
+
+  // Soft resource tracking — never blocks the play, but spends resources in order:
+  //   1. On the active player's turn: consume lootPlaysRemaining first if > 0.
+  //   2. Then (or for non-active players): spend the character card if charged.
+  //   3. If nothing available, the play still goes through untracked.
+  const hasFreePlay = isActivePlayer && state.turn.lootPlaysRemaining > 0;
+  const canSpendChar = !!charCard?.charged;
+
+  const newTurn = {
+    ...state.turn,
+    lootPlaysRemaining: hasFreePlay
+      ? state.turn.lootPlaysRemaining - 1
+      : state.turn.lootPlaysRemaining,
+  };
+
+  let newCharacterCards = state.characterCards;
+  if (!hasFreePlay && canSpendChar) {
+    newCharacterCards = {
+      ...state.characterCards,
+      [player.characterInstanceId]: { ...charCard, charged: false },
+    };
+  }
 
   // Remove from hand
   const newHandCardIds = player.handCardIds.filter((id) => id !== cardId);
@@ -205,18 +223,17 @@ export function playLootCard(
     p.id === playerId ? { ...p, handCardIds: newHandCardIds } : p
   );
 
-  // Decrement loot plays
-  const newTurn = {
-    ...state.turn,
-    lootPlaysRemaining: state.turn.lootPlaysRemaining - 1,
-  };
-
   const card = getCardById(cardId);
   const cardName = card?.name ?? cardId;
   const playerName = player.name;
 
   // Put loot on stack
-  const stateWithPlayers = { ...state, players, turn: newTurn };
+  const stateWithPlayers = {
+    ...state,
+    players,
+    turn: newTurn,
+    characterCards: newCharacterCards,
+  };
 
   const log = createLogEntry('card_play', `${playerName} plays ${cardName}`, playerId);
 

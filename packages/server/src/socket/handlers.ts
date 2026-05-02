@@ -44,7 +44,6 @@ import {
 } from '../game/types';
 import {
   passPriority,
-  allPassedPriority,
   resolveTopOfStack,
   cancelStackItem,
   pushStack,
@@ -523,14 +522,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
     state = clearPriorityTimeout(state);
     state = passPriority(state, ctx.playerId);
 
-    if (allPassedPriority(state) && state.stack.length > 0) {
-      const { resolved, newState } = resolveTopOfStack(state);
-      state = newState;
-      // After resolution, reset priority
-      state = resetPriority(state);
-    } else if (allPassedPriority(state) && state.stack.length === 0) {
-      // All passed with empty stack — nothing to do
-    }
+    // Stack never auto-resolves; the active player must explicitly call
+    // action:resolve_top to resolve. Players may continue passing priority
+    // back and forth indefinitely.
 
     room.setState(state);
     broadcastState(io, ctx.roomId);

@@ -3,9 +3,6 @@ import { MAX_ROOMS } from '../config';
 import {
   clearPriorityTimeout,
   passPriority,
-  allPassedPriority,
-  resolveTopOfStack,
-  resetPriority,
 } from './stack';
 
 class GameStore {
@@ -95,10 +92,8 @@ class GameStore {
         let s = clearPriorityTimeout(state);
         s = passPriority(s, timedOutPlayerId);
 
-        if (allPassedPriority(s) && s.stack.length > 0) {
-          const { newState } = resolveTopOfStack(s);
-          s = resetPriority(newState);
-        }
+        // Stack never auto-resolves; the active player must call
+        // action:resolve_top explicitly.
 
         room.setState(s);
         broadcastFn(roomId);
