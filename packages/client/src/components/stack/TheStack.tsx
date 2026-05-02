@@ -6,6 +6,7 @@ import { useHasPriority, useIsMyTurn } from '../../hooks/useMyPlayer';
 import { Button } from '../ui/Button';
 import { useCard } from '../board/CardResolver';
 import { SERVER_URL } from '../../config';
+import { Droppable } from '../board/DnDPrimitives';
 
 /** Resolve sourceCardInstanceId to a DB cardId for image lookup.
  *  For loot the sourceCardInstanceId is the cardId itself.
@@ -102,7 +103,14 @@ export function TheStack() {
   const visibleStack = [...stack].reverse(); // show top first
 
   return (
-    <div className="flex flex-col h-full">
+    <Droppable
+      id="drop-play-loot"
+      payload={{ kind: 'play-loot' }}
+      accepts={(drag) => drag.type === 'loot-hand'}
+      className="h-full"
+      highlightInset="inset-1"
+    >
+    <div className="flex flex-col h-full" data-zone="the-stack">
       <div className="flex items-center justify-between px-2 py-1 border-b border-fs-gold/20">
         <span className="section-title">The Stack</span>
         {stack.length > 0 && (
@@ -185,6 +193,7 @@ export function TheStack() {
         )}
       </div>
     </div>
+    </Droppable>
   );
 }
 

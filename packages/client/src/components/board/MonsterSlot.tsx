@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MonsterSlot as MonsterSlotType, useGameStore } from '../../store/gameStore';
 import { ResolvedCard, useCard } from './CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { getSocket } from '../../socket/client';
 import { useIsMyTurn, useMyPlayer } from '../../hooks/useMyPlayer';
+import { Droppable } from './DnDPrimitives';
 
 interface MonsterSlotProps {
   slot: MonsterSlotType;
@@ -71,6 +73,13 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
   const maxHp = topCardData && topCard ? (topCardData.hp ?? 0) + topCard.hpCounters : 0;
   const currentHp = topCard ? maxHp - topCard.damageCounters : 0;
 
+  // Highlight when this slot is the current attack target
+  const attack = game?.turn.currentAttack;
+  const isUnderAttack =
+    !!attack &&
+    attack.targetType === 'monster_slot' &&
+    attack.targetSlotIndex === slot.slotIndex;
+
   // Build action list for the popover
   // Events: resolve button shown below card (not in popover)
   // Player curses: give-to button shown below card (not in popover)
@@ -93,11 +102,55 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1">
+    <Droppable
+      id={`drop-monster-${slot.slotIndex}`}
+      payload={{ kind: 'attack-monster', slotIndex: slot.slotIndex }}
+      accepts={(drag) => drag.type === 'character' && canAttack && !isPlayerCurse && !isEvent}
+    >
+    <div
+      className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1"
+      data-zone={`monster-${slot.slotIndex}`}
+    >
       <div className="section-title text-center text-sm mb-0.5">Monster {slot.slotIndex + 1}</div>
 
       {/* Stack display */}
       <div className="relative">
+        <AnimatePresence>
+          {isUnderAttack && (
+            <motion.div
+              key="attack-glow"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                boxShadow: [
+                  '0 0 0px 0px rgba(248,113,113,0.0)',
+                  '0 0 22px 6px rgba(248,113,113,0.7)',
+                  '0 0 0px 0px rgba(248,113,113,0.0)',
+                ],
+              }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{
+                opacity: { duration: 0.25 },
+                scale: { duration: 0.25 },
+                boxShadow: { duration: 1.1, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              className="absolute -inset-1 rounded-md pointer-events-none z-0 border-2 border-red-500/70 bg-red-500/10"
+            />
+          )}
+        </AnimatePresence>
+        {isUnderAttack && (
+          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <motion.span
+              initial={{ y: 4, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 4, opacity: 0 }}
+              className="px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-display font-bold tracking-wider shadow-lg"
+            >
+              ⚔ TARGETED
+            </motion.span>
+          </div>
+        )}
         {isEmpty ? (
           <div className="w-[117px] h-[160px] rounded border-2 border-dashed border-fs-gold/20 flex flex-col items-center justify-center text-fs-parchment/20 text-sm text-center gap-1">
             <span>Empty</span>
@@ -112,7 +165,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
             )}
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative z-10">
             {coveredCards.length > 0 && (
               <div
                 className="absolute -bottom-1 -right-1 bg-fs-darker border border-fs-gold/20 rounded text-xs text-fs-parchment/40 px-1 cursor-pointer z-10"
@@ -239,6 +292,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
         </div>
       )}
     </div>
+    </Droppable>
   );
 }
 

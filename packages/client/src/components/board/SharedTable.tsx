@@ -299,6 +299,7 @@ export function SharedTable() {
           onDraw={() => getSocket().emit('action:draw_loot', { playerId: game.myPlayerId, count: 1 })}
           discardCount={game.lootDiscard.length}
           onBrowseDiscard={() => { setBrowseDeck('loot'); setBrowseInitialTab('discard_loot'); }}
+          discardIsDroppable
         />
         <DeckZone
           label="Monster"

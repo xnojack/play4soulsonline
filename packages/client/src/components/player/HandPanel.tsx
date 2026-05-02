@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
 import { useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Draggable } from '../board/DnDPrimitives';
 
 interface HandPanelProps {
   player: ClientPlayer;
@@ -98,20 +99,25 @@ export function HandPanel({ player }: HandPanelProps) {
       </AnimatePresence>
 
       {/* Cards in hand */}
-      <div className="flex gap-2 flex-wrap content-start">
+      <div className="flex gap-2 flex-wrap content-start" data-zone="my-hand">
         {player.handCardIds.length === 0 && (
           <div className="text-sm text-fs-parchment/30 italic">No cards in hand</div>
         )}
-        {player.handCardIds.map((cardId) => (
-          <HandCardSlot
-            key={cardId}
-            cardId={cardId}
-            canPlay={canPlayLoot}
-            otherPlayers={otherPlayers}
-            onPlay={() => handlePlayCard(cardId)}
-            onDiscard={() => handleDiscardCard(cardId)}
-            onTrade={(toPlayerId) => handleTradeCard(cardId, toPlayerId)}
-          />
+        {player.handCardIds.map((cardId, idx) => (
+          <Draggable
+            key={`${cardId}-${idx}`}
+            id={`hand-${cardId}-${idx}`}
+            payload={{ type: 'loot-hand', cardId }}
+          >
+            <HandCardSlot
+              cardId={cardId}
+              canPlay={canPlayLoot}
+              otherPlayers={otherPlayers}
+              onPlay={() => handlePlayCard(cardId)}
+              onDiscard={() => handleDiscardCard(cardId)}
+              onTrade={(toPlayerId) => handleTradeCard(cardId, toPlayerId)}
+            />
+          </Draggable>
         ))}
       </div>
     </div>

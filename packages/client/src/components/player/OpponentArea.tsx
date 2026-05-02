@@ -1,7 +1,9 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ClientPlayer, useGameStore } from '../../store/gameStore';
 import { ResolvedCard } from '../board/CardResolver';
 import { StatDisplay } from './StatDisplay';
+import { Droppable } from '../board/DnDPrimitives';
 
 interface OpponentAreaProps {
   player: ClientPlayer;
@@ -26,11 +28,48 @@ export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
     : null;
 
   return (
-    <div
-      className={`panel p-2 transition-colors ${
-        isActiveTurn ? 'border-fs-gold/60 bg-fs-gold/5' : ''
+    <Droppable
+      id={`drop-give-${player.id}`}
+      payload={{ kind: 'give-item', toPlayerId: player.id }}
+      accepts={(drag) => drag.type === 'item' || drag.type === 'loot-hand'}
+    >
+    <motion.div
+      data-zone={`player-${player.id}`}
+      animate={
+        isActiveTurn
+          ? {
+              boxShadow: [
+                '0 0 0px 0px rgba(212, 175, 55, 0.0)',
+                '0 0 14px 2px rgba(212, 175, 55, 0.55)',
+                '0 0 0px 0px rgba(212, 175, 55, 0.0)',
+              ],
+            }
+          : { boxShadow: '0 0 0px 0px rgba(212, 175, 55, 0.0)' }
+      }
+      transition={
+        isActiveTurn
+          ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
+          : { duration: 0.3 }
+      }
+      className={`panel p-2 transition-colors relative ${
+        isActiveTurn ? 'border-fs-gold/70 bg-fs-gold/5' : ''
       } ${!player.isAlive ? 'opacity-50' : ''}`}
     >
+      <AnimatePresence>
+        {isActiveTurn && (
+          <motion.div
+            key="active-badge"
+            initial={{ opacity: 0, y: -6, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.85 }}
+            transition={{ duration: 0.2 }}
+            className="absolute -top-2 right-2 px-2 py-0.5 bg-fs-gold text-fs-darker text-xs rounded-full font-display font-bold shadow-lg pointer-events-none z-10"
+          >
+            ★ ACTIVE
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
@@ -146,6 +185,7 @@ export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
+    </Droppable>
   );
 }

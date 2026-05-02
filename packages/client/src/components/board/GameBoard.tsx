@@ -3,6 +3,10 @@ import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { SharedTable } from './SharedTable';
 import { TurnActionBar } from './TurnActionBar';
+import { PriorityBanner } from './PriorityBanner';
+import { DnDProvider } from './DnDProvider';
+import { CardFlightLayer } from './CardFlightLayer';
+import { useCardFlightDetector } from '../../hooks/useCardFlightDetector';
 import { PlayerArea } from '../player/PlayerArea';
 import { OpponentArea } from '../player/OpponentArea';
 import { CompactOpponent } from '../player/CompactOpponent';
@@ -21,6 +25,7 @@ export function GameBoard() {
   const isHost = useIsHost();
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
+  useCardFlightDetector();
   const [showHint, setShowHint] = React.useState(() => !localStorage.getItem('hideCardHint'));
   const [showOpponents, setShowOpponents] = React.useState(true);
   const [showStackLog, setShowStackLog] = React.useState(true);
@@ -71,6 +76,7 @@ export function GameBoard() {
   };
 
   return (
+    <DnDProvider>
     <div className="h-screen flex flex-col bg-fs-darker overflow-hidden">
       {/* Top bar */}
       <div className="bg-fs-dark border-b border-fs-gold/20 px-4 py-2 flex items-center justify-between flex-shrink-0">
@@ -231,7 +237,10 @@ export function GameBoard() {
       <DiceResultToast />
       <CardModal />
       <CardSearch />
+      <PriorityBanner />
       <TurnActionBar />
+      <CardFlightLayer />
     </div>
+    </DnDProvider>
   );
 }

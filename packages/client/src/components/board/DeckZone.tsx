@@ -1,5 +1,6 @@
 import React from 'react';
 import { ResolvedCard, useCard } from './CardResolver';
+import { Droppable } from './DnDPrimitives';
 
 interface DeckZoneProps {
   label: string;
@@ -13,6 +14,8 @@ interface DeckZoneProps {
   onBrowseDiscard?: () => void;
   /** If provided, show a Draw button that calls this callback */
   onDraw?: () => void;
+  /** If true, the discard pile is a drop target for cards of this deck's type */
+  discardIsDroppable?: boolean;
 }
 
 export function DeckZone({
@@ -24,6 +27,7 @@ export function DeckZone({
   onBrowse,
   onBrowseDiscard,
   onDraw,
+  discardIsDroppable = false,
 }: DeckZoneProps) {
   const topDiscard = useCard(topDiscardCardId);
 
@@ -41,7 +45,7 @@ export function DeckZone({
       <div className="section-title text-center text-sm">{label}</div>
       <div className="flex gap-2">
         {/* Deck */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1" data-zone={`${deckType}-deck`}>
           {/* Card back image as deck face */}
           <div className="relative w-[78px] h-[107px]">
             <img
@@ -94,43 +98,83 @@ export function DeckZone({
         </div>
 
         {/* Discard */}
-        <div className="flex flex-col items-center gap-1">
-          {topDiscard && topDiscardCardId ? (
-            <div className="w-[78px] h-[107px] rounded overflow-hidden">
-              <ResolvedCard
-                instance={{
-                  instanceId: 'discard',
-                  cardId: topDiscardCardId,
-                  charged: true,
-                  damageCounters: 0,
-                  hpCounters: 0,
-                  atkCounters: 0,
-                  genericCounters: 0,
-                  namedCounters: {},
-                  flipped: false,
-                }}
-                size="sm"
-                showCounters={false}
-              />
-            </div>
-          ) : (
-            <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
-              Empty
-            </div>
-          )}
-          {onBrowseDiscard && discardCount > 0 ? (
-            <button
-              onClick={onBrowseDiscard}
-              className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-gold/60 hover:text-fs-gold hover:border-fs-gold/60 transition-colors w-full text-center"
-              title={`Browse ${label} discard`}
-            >
-              Browse
-            </button>
-          ) : (
-            <span className="text-sm text-fs-parchment/40">Discard</span>
-          )}
-        </div>
+        {discardIsDroppable ? (
+          <Droppable
+            id={`drop-discard-${deckType}`}
+            payload={{ kind: 'discard-loot' }}
+            accepts={(drag) => drag.type === 'loot-hand' && deckType === 'loot'}
+          >
+            <DiscardCol
+              topDiscardCardId={topDiscardCardId}
+              topDiscard={topDiscard}
+              discardCount={discardCount}
+              label={label}
+              onBrowseDiscard={onBrowseDiscard}
+            />
+          </Droppable>
+        ) : (
+          <DiscardCol
+            topDiscardCardId={topDiscardCardId}
+            topDiscard={topDiscard}
+            discardCount={discardCount}
+            label={label}
+            onBrowseDiscard={onBrowseDiscard}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+function DiscardCol({
+  topDiscardCardId,
+  topDiscard,
+  discardCount,
+  label,
+  onBrowseDiscard,
+}: {
+  topDiscardCardId?: string;
+  topDiscard: ReturnType<typeof useCard>;
+  discardCount: number;
+  label: string;
+  onBrowseDiscard?: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      {topDiscard && topDiscardCardId ? (
+        <div className="w-[78px] h-[107px] rounded overflow-hidden">
+          <ResolvedCard
+            instance={{
+              instanceId: 'discard',
+              cardId: topDiscardCardId,
+              charged: true,
+              damageCounters: 0,
+              hpCounters: 0,
+              atkCounters: 0,
+              genericCounters: 0,
+              namedCounters: {},
+              flipped: false,
+            }}
+            size="sm"
+            showCounters={false}
+          />
+        </div>
+      ) : (
+        <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
+          Empty
+        </div>
+      )}
+      {onBrowseDiscard && discardCount > 0 ? (
+        <button
+          onClick={onBrowseDiscard}
+          className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-gold/60 hover:text-fs-gold hover:border-fs-gold/60 transition-colors w-full text-center"
+          title={`Browse ${label} discard`}
+        >
+          Browse
+        </button>
+      ) : (
+        <span className="text-sm text-fs-parchment/40">Discard</span>
+      )}
     </div>
   );
 }

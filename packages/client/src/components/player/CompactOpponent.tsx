@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClientPlayer, useGameStore } from '../../store/gameStore';
 import { ResolvedCard } from '../board/CardResolver';
 import { OpponentArea } from './OpponentArea';
+import { Droppable } from '../board/DnDPrimitives';
 
 interface CompactOpponentProps {
   player: ClientPlayer;
@@ -32,6 +33,11 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
     : null;
 
   return (
+    <Droppable
+      id={`drop-give-compact-${player.id}`}
+      payload={{ kind: 'give-item', toPlayerId: player.id }}
+      accepts={(drag) => drag.type === 'item' || drag.type === 'loot-hand'}
+    >
     <div className="relative flex-shrink-0">
       <button
         onClick={() => setExpanded(!expanded)}
@@ -90,5 +96,6 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
         </>
       )}
     </div>
+    </Droppable>
   );
 }

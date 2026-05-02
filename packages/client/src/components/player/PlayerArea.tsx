@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ClientPlayer, CardInPlay, useGameStore } from '../../store/gameStore';
 import { ResolvedCard, useCard, getCardFromCache } from '../board/CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { StatDisplay } from './StatDisplay';
 import { HandPanel } from './HandPanel';
 import { getSocket } from '../../socket/client';
+import { Draggable } from '../board/DnDPrimitives';
 
 /** Pre-warms a single card in the cache */
 function CardPreloader({ cardId }: { cardId: string }) {
@@ -127,11 +129,43 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
     : [];
 
   return (
-    <div
-      className={`panel p-2 transition-colors ${
-        isActiveTurn ? 'border-fs-gold/70 bg-fs-gold/5' : ''
+    <motion.div
+      data-zone={`player-${player.id}`}
+      animate={
+        isActiveTurn
+          ? {
+              boxShadow: [
+                '0 0 0px 0px rgba(212, 175, 55, 0.0)',
+                '0 0 16px 2px rgba(212, 175, 55, 0.55)',
+                '0 0 0px 0px rgba(212, 175, 55, 0.0)',
+              ],
+            }
+          : { boxShadow: '0 0 0px 0px rgba(212, 175, 55, 0.0)' }
+      }
+      transition={
+        isActiveTurn
+          ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
+          : { duration: 0.3 }
+      }
+      className={`panel p-2 transition-colors relative ${
+        isActiveTurn ? 'border-fs-gold/80 bg-fs-gold/5' : ''
       } ${!player.isAlive ? 'opacity-60' : ''}`}
     >
+      <AnimatePresence>
+        {isActiveTurn && (
+          <motion.div
+            key="active-badge"
+            initial={{ opacity: 0, y: -6, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.85 }}
+            transition={{ duration: 0.2 }}
+            className="absolute -top-2 right-2 px-2 py-0.5 bg-fs-gold text-fs-darker text-xs rounded-full font-display font-bold shadow-lg pointer-events-none z-10"
+          >
+            ★ ACTIVE
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Player header */}
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <span className="font-display text-fs-gold-light font-semibold">
@@ -215,25 +249,56 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
         {player.characterInstanceId && (
           <div className="flex flex-col items-center gap-0.5 min-w-[120px] max-w-[180px] flex-1">
             <span className="text-sm text-fs-parchment/40">Character</span>
-            <ResolvedCard
-              instance={
-                charInstance ?? {
+            {isMe ? (
+              <Draggable
+                id={`char-${player.characterInstanceId}`}
+                payload={{
+                  type: 'character',
                   instanceId: player.characterInstanceId,
-                  cardId: player.characterCardId || player.characterInstanceId,
-                  charged: false,
-                  damageCounters: 0,
-                  hpCounters: 0,
-                  atkCounters: 0,
-                  genericCounters: 0,
-                  namedCounters: {},
-                  flipped: false,
+                  cardId: player.characterCardId || (charInstance?.cardId ?? ''),
+                }}
+              >
+                <ResolvedCard
+                  instance={
+                    charInstance ?? {
+                      instanceId: player.characterInstanceId,
+                      cardId: player.characterCardId || player.characterInstanceId,
+                      charged: false,
+                      damageCounters: 0,
+                      hpCounters: 0,
+                      atkCounters: 0,
+                      genericCounters: 0,
+                      namedCounters: {},
+                      flipped: false,
+                    }
+                  }
+                  size="sm"
+                  actions={charActions.length > 0 ? charActions : undefined}
+                  alwaysPopover
+                  popoverBelow
+                />
+              </Draggable>
+            ) : (
+              <ResolvedCard
+                instance={
+                  charInstance ?? {
+                    instanceId: player.characterInstanceId,
+                    cardId: player.characterCardId || player.characterInstanceId,
+                    charged: false,
+                    damageCounters: 0,
+                    hpCounters: 0,
+                    atkCounters: 0,
+                    genericCounters: 0,
+                    namedCounters: {},
+                    flipped: false,
+                  }
                 }
-              }
-              size="sm"
-              actions={charActions.length > 0 ? charActions : undefined}
-              alwaysPopover
-              popoverBelow
-            />
+                size="sm"
+                actions={charActions.length > 0 ? charActions : undefined}
+                alwaysPopover
+                popoverBelow
+              />
+            )}
           </div>
         )}
 
@@ -243,15 +308,29 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
             Items
             {isMe && <span className="text-fs-parchment/20 ml-1">(click to act)</span>}
           </span>
-          <div className="flex gap-2 flex-wrap content-start">
-            {player.items.map((item) => (
-              <ItemCard
-                key={item.instanceId}
-                item={item}
-                isMe={isMe}
-                otherPlayers={otherPlayers}
-              />
-            ))}
+          <div className="flex gap-2 flex-wrap content-start" data-zone={`items-${player.id}`}>
+            {player.items.map((item) =>
+              isMe ? (
+                <Draggable
+                  key={item.instanceId}
+                  id={`item-${item.instanceId}`}
+                  payload={{ type: 'item', instanceId: item.instanceId, cardId: item.cardId }}
+                >
+                  <ItemCard
+                    item={item}
+                    isMe={isMe}
+                    otherPlayers={otherPlayers}
+                  />
+                </Draggable>
+              ) : (
+                <ItemCard
+                  key={item.instanceId}
+                  item={item}
+                  isMe={isMe}
+                  otherPlayers={otherPlayers}
+                />
+              )
+            )}
             {player.items.length === 0 && (
               <span className="text-sm text-fs-parchment/20 italic">No items</span>
             )}
@@ -289,6 +368,6 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
            </div>
          </div>
        )}
-     </div>
+     </motion.div>
    );
  }
