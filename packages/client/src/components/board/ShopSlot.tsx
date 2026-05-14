@@ -4,6 +4,8 @@ import { ResolvedCard, useCard } from './CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { getSocket } from '../../socket/client';
 import { useIsMyTurn, useMyPlayer } from '../../hooks/useMyPlayer';
+import { Draggable, Droppable } from './DnDPrimitives';
+import { playSound } from '../audio/SoundManager';
 
 interface ShopSlotProps {
   slot: ShopSlotType;
@@ -26,6 +28,7 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
   const isActive = game?.turn.activePlayerId === myPlayer?.id;
 
   const handlePurchase = () => {
+    playSound('coinClink');
     getSocket().emit('action:purchase', { slotIndex: slot.slotIndex });
   };
 
@@ -62,6 +65,10 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
   }
 
   return (
+    <Droppable
+      id={`drop-shop-${slot.slotIndex}`}
+      payload={{ targetZone: 'shop', targetZoneId: String(slot.slotIndex) }}
+    >
     <div
       className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1"
       data-zone={`shop-${slot.slotIndex}`}
@@ -102,13 +109,37 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
           Empty
         </div>
       ) : (
-        <ResolvedCard
-          instance={slot.card}
-          size="md"
-          actions={actions.length > 0 ? actions : undefined}
-          alwaysPopover
-        />
+        <div className="flex flex-col items-center gap-1">
+        <Draggable
+          id={`shop-${slot.card.instanceId}`}
+          payload={{ cardId: slot.card.cardId, instanceId: slot.card.instanceId, sourceZone: 'shop', sourceZoneId: String(slot.slotIndex) }}
+        >
+         <ResolvedCard
+            instance={slot.card}
+            size="md"
+            actions={actions.length > 0 ? actions : undefined}
+            alwaysPopover
+          />
+        </Draggable>
+
+        {/* Buy button — inline, below card */}
+        {canPurchase && (
+          <button
+            onClick={handlePurchase}
+            className={`text-xs px-3 py-1 rounded border transition-colors font-display ${
+              cost <= 0
+                ? 'border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70'
+                : 'border-fs-gold/30 text-fs-parchment hover:bg-fs-brown/40 hover:border-fs-gold/50'
+            }`}
+          >
+            {cost <= 0
+              ? (cost < 0 ? `Take (+${Math.abs(cost)}¢)` : 'Take')
+              : `Buy for ${cost}¢`}
+          </button>
+        )}
+        </div>
       )}
     </div>
+    </Droppable>
   );
 }

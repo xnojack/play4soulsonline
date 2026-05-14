@@ -51,6 +51,7 @@ export function ResolvedCard({
   size = 'md',
   showCounters = true,
   actions,
+  primaryActions,
   onClick,
   selected,
   className,
@@ -62,6 +63,7 @@ export function ResolvedCard({
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showCounters?: boolean;
   actions?: CardAction[];
+  primaryActions?: CardAction[];
   onClick?: () => void;
   selected?: boolean;
   className?: string;
@@ -118,6 +120,7 @@ export function ResolvedCard({
       size={size}
       showCounters={showCounters}
       actions={mergedActions}
+      primaryActions={primaryActions}
       onClick={onClick}
       selected={selected}
       className={className}

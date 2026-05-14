@@ -6,7 +6,7 @@ import { useHasPriority, useIsMyTurn } from '../../hooks/useMyPlayer';
 import { Button } from '../ui/Button';
 import { useCard } from '../board/CardResolver';
 import { SERVER_URL } from '../../config';
-import { Droppable } from '../board/DnDPrimitives';
+import { Draggable, Droppable } from '../board/DnDPrimitives';
 
 /** Resolve sourceCardInstanceId to a DB cardId for image lookup.
  *  For loot the sourceCardInstanceId is the cardId itself.
@@ -73,6 +73,24 @@ function StackCardThumb({ cardId }: { cardId: string }) {
   );
 }
 
+/** Die face thumbnail — shown in the stack list for dice_roll and attack_roll items */
+export function DiceFace({ value, size = 'sm' }: { value: number; size?: 'sm' | 'lg' }) {
+  if (size === 'lg') {
+    return (
+      <div className="w-16 h-20 bg-fs-darker border-2 border-fs-gold/50 rounded-lg flex flex-col items-center justify-center gap-1 flex-shrink-0">
+        <span className="text-3xl leading-none">🎲</span>
+        <span className="font-display text-fs-gold text-2xl font-bold leading-none">{value}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="w-10 h-14 bg-fs-darker border border-fs-gold/30 rounded flex flex-col items-center justify-center gap-0.5 flex-shrink-0">
+      <span className="text-xl leading-none">🎲</span>
+      <span className="font-display text-fs-gold text-lg font-bold leading-none">{value}</span>
+    </div>
+  );
+}
+
 const STACK_TYPE_ICONS: Record<string, string> = {
   loot: '🃏',
   activated_ability: '⚡',
@@ -105,8 +123,7 @@ export function TheStack() {
   return (
     <Droppable
       id="drop-play-loot"
-      payload={{ kind: 'play-loot' }}
-      accepts={(drag) => drag.type === 'loot-hand'}
+      payload={{ targetZone: 'stack' }}
       className="h-full"
       highlightInset="inset-1"
     >
@@ -123,46 +140,69 @@ export function TheStack() {
           {visibleStack.length === 0 ? (
             <div className="text-sm text-fs-parchment/30 text-center py-4">Stack is empty</div>
           ) : (
-            visibleStack.map((item, i) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: item.isCanceled ? 0.3 : 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`bg-fs-darker/60 border rounded p-2 text-sm ${
-                  i === 0
-                    ? 'border-fs-gold/60 bg-fs-gold/5'
-                    : 'border-fs-gold/20'
-                } ${item.isCanceled ? 'line-through opacity-40' : ''}`}
-              >
-                <div className="flex items-start gap-2">
-                  {/* Card thumbnail */}
-                  {game && (() => {
-                    const cardId = resolveStackCardId(item, game);
-                    return cardId ? <StackCardThumb cardId={cardId} /> : null;
-                  })()}
-                  {/* Text + cancel */}
-                  <div className="flex-1 flex items-start justify-between gap-1 min-w-0">
-                    <div className="min-w-0">
-                      <span className="text-fs-parchment/50 mr-1">{STACK_TYPE_ICONS[item.type] ?? '📋'}</span>
-                      <span className="text-fs-parchment/90 break-words">{item.description}</span>
-                      {i === 0 && !item.isCanceled && (
-                        <span className="ml-1 text-fs-gold/60 text-xs">(resolves next)</span>
-                      )}
+            visibleStack.map((item, i) => {
+              const isTop = i === 0 && !item.isCanceled;
+              // Resolve card ID for drag payload: loot uses sourceCardInstanceId as cardId directly
+              const dragCardId = game ? (resolveStackCardId(item, game) ?? '') : '';
+              return (
+                <Draggable
+                  key={item.id}
+                  id={`stack-${item.id}`}
+                  payload={{ cardId: dragCardId, instanceId: item.id, sourceZone: 'stack', sourceZoneId: item.sourceCardInstanceId }}
+                >
+                <div>
+                  {isTop && (
+                    <div
+                      className="absolute -inset-0.5 rounded-lg pointer-events-none z-0"
+                      style={{ boxShadow: '0 0 12px 2px rgba(201, 162, 39, 0.25)' }}
+                    />
+                  )}
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: item.isCanceled ? 0.3 : 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={`relative z-10 bg-fs-darker/60 border rounded p-2 text-sm ${
+                      isTop
+                        ? 'border-fs-gold/60 bg-fs-gold/5'
+                        : 'border-fs-gold/20'
+                    } ${item.isCanceled ? 'line-through opacity-40' : ''}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {game && (() => {
+                        const isRoll = item.type === 'dice_roll' || item.type === 'attack_roll';
+                        const rollValue = isRoll ? (item.data?.roll as number | undefined) : undefined;
+                        if (isRoll && rollValue !== undefined) {
+                          return <DiceFace value={rollValue} size="sm" />;
+                        }
+                        const cardId = resolveStackCardId(item, game);
+                        return cardId ? <StackCardThumb cardId={cardId} /> : null;
+                      })()}
+                      <div className="flex-1 flex items-start justify-between gap-1 min-w-0">
+                        <div className="min-w-0">
+                          <span className="text-fs-parchment/50 mr-1">{STACK_TYPE_ICONS[item.type] ?? '📋'}</span>
+                          <span className="text-fs-parchment/90 break-words">{item.description}</span>
+                          {isTop && (
+                            <span className="ml-1 px-1.5 py-0.5 bg-fs-gold/20 text-fs-gold text-xs rounded font-display whitespace-nowrap">
+                              resolves next
+                            </span>
+                          )}
+                        </div>
+                        {!item.isCanceled && (
+                          <button
+                            onClick={() => handleCancel(item.id)}
+                            className="text-red-500/60 hover:text-red-500 text-xs flex-shrink-0"
+                            title="Cancel"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {!item.isCanceled && (
-                      <button
-                        onClick={() => handleCancel(item.id)}
-                        className="text-red-500/60 hover:text-red-500 text-xs flex-shrink-0"
-                        title="Cancel"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            ))
+                </Draggable>
+              );
+            })
           )}
         </AnimatePresence>
       </div>

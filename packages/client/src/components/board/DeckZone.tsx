@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResolvedCard, useCard } from './CardResolver';
-import { Droppable } from './DnDPrimitives';
+import { Draggable, Droppable } from './DnDPrimitives';
 
 interface DeckZoneProps {
   label: string;
@@ -16,6 +16,10 @@ interface DeckZoneProps {
   onDraw?: () => void;
   /** If true, the discard pile is a drop target for cards of this deck's type */
   discardIsDroppable?: boolean;
+  /** If true, the top discard card is draggable (sourceZone: 'discard') */
+  discardIsDraggable?: boolean;
+  /** If true, the deck face is a drop target (for return-to-deck drops) */
+  deckIsDroppable?: boolean;
 }
 
 export function DeckZone({
@@ -28,6 +32,8 @@ export function DeckZone({
   onBrowseDiscard,
   onDraw,
   discardIsDroppable = false,
+  discardIsDraggable = false,
+  deckIsDroppable = false,
 }: DeckZoneProps) {
   const topDiscard = useCard(topDiscardCardId);
 
@@ -40,31 +46,44 @@ export function DeckZone({
   };
   const backSrc = DECK_BACKS[deckType] ?? '/card-back.png';
 
+  const deckFace = (
+    <div className="relative w-[78px] h-[107px]">
+      <img
+        src={backSrc}
+        alt={`${label} deck`}
+        className={`w-full h-full object-cover rounded border-2 transition-colors ${
+          count > 0
+            ? 'border-fs-gold/40 opacity-100'
+            : 'border-fs-gold/10 opacity-30'
+        }`}
+        draggable={false}
+      />
+      {/* Count badge overlay */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="bg-fs-darker/70 text-fs-gold font-display font-bold text-base rounded px-1.5 py-0.5 shadow">
+          {count}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="section-title text-center text-sm">{label}</div>
       <div className="flex gap-2">
         {/* Deck */}
         <div className="flex flex-col items-center gap-1" data-zone={`${deckType}-deck`}>
-          {/* Card back image as deck face */}
-          <div className="relative w-[78px] h-[107px]">
-            <img
-              src={backSrc}
-              alt={`${label} deck`}
-              className={`w-full h-full object-cover rounded border-2 transition-colors ${
-                count > 0
-                  ? 'border-fs-gold/40 opacity-100'
-                  : 'border-fs-gold/10 opacity-30'
-              }`}
-              draggable={false}
-            />
-            {/* Count badge overlay */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="bg-fs-darker/70 text-fs-gold font-display font-bold text-base rounded px-1.5 py-0.5 shadow">
-                {count}
-              </span>
-            </div>
-          </div>
+          {/* Card back image as deck face — optionally droppable */}
+          {deckIsDroppable ? (
+            <Droppable
+              id={`drop-deck-${deckType}`}
+              payload={{ targetZone: 'deck', targetZoneId: deckType }}
+            >
+              {deckFace}
+            </Droppable>
+          ) : (
+            deckFace
+          )}
 
           {/* Browse and Draw buttons — shown simultaneously when available */}
           <div className="flex flex-col gap-0.5 w-full">
@@ -101,8 +120,7 @@ export function DeckZone({
         {discardIsDroppable ? (
           <Droppable
             id={`drop-discard-${deckType}`}
-            payload={{ kind: 'discard-loot' }}
-            accepts={(drag) => drag.type === 'loot-hand' && deckType === 'loot'}
+            payload={{ targetZone: 'discard', targetZoneId: deckType }}
           >
             <DiscardCol
               topDiscardCardId={topDiscardCardId}
@@ -110,6 +128,8 @@ export function DeckZone({
               discardCount={discardCount}
               label={label}
               onBrowseDiscard={onBrowseDiscard}
+              deckType={deckType}
+              isDraggable={discardIsDraggable}
             />
           </Droppable>
         ) : (
@@ -119,6 +139,8 @@ export function DeckZone({
             discardCount={discardCount}
             label={label}
             onBrowseDiscard={onBrowseDiscard}
+            deckType={deckType}
+            isDraggable={discardIsDraggable}
           />
         )}
       </div>
@@ -132,37 +154,52 @@ function DiscardCol({
   discardCount,
   label,
   onBrowseDiscard,
+  deckType,
+  isDraggable = false,
 }: {
   topDiscardCardId?: string;
   topDiscard: ReturnType<typeof useCard>;
   discardCount: number;
   label: string;
   onBrowseDiscard?: () => void;
+  deckType: string;
+  isDraggable?: boolean;
 }) {
+  const cardEl = topDiscard && topDiscardCardId ? (
+    <div className="w-[78px] h-[107px] rounded overflow-hidden">
+      <ResolvedCard
+        instance={{
+          instanceId: 'discard',
+          cardId: topDiscardCardId,
+          charged: true,
+          damageCounters: 0,
+          hpCounters: 0,
+          atkCounters: 0,
+          genericCounters: 0,
+          namedCounters: {},
+          flipped: false,
+        }}
+        size="sm"
+        showCounters={false}
+      />
+    </div>
+  ) : (
+    <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
+      Empty
+    </div>
+  );
+
   return (
     <div className="flex flex-col items-center gap-1">
-      {topDiscard && topDiscardCardId ? (
-        <div className="w-[78px] h-[107px] rounded overflow-hidden">
-          <ResolvedCard
-            instance={{
-              instanceId: 'discard',
-              cardId: topDiscardCardId,
-              charged: true,
-              damageCounters: 0,
-              hpCounters: 0,
-              atkCounters: 0,
-              genericCounters: 0,
-              namedCounters: {},
-              flipped: false,
-            }}
-            size="sm"
-            showCounters={false}
-          />
-        </div>
+      {isDraggable && topDiscardCardId && topDiscard ? (
+        <Draggable
+          id={`drag-discard-${deckType}-top`}
+          payload={{ cardId: topDiscardCardId, sourceZone: 'discard', sourceZoneId: deckType }}
+        >
+          {cardEl}
+        </Draggable>
       ) : (
-        <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
-          Empty
-        </div>
+        cardEl
       )}
       {onBrowseDiscard && discardCount > 0 ? (
         <button

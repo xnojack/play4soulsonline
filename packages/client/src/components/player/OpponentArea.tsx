@@ -30,8 +30,7 @@ export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
   return (
     <Droppable
       id={`drop-give-${player.id}`}
-      payload={{ kind: 'give-item', toPlayerId: player.id }}
-      accepts={(drag) => drag.type === 'item' || drag.type === 'loot-hand'}
+      payload={{ targetZone: 'player', targetZoneId: player.id }}
     >
     <motion.div
       data-zone={`player-${player.id}`}

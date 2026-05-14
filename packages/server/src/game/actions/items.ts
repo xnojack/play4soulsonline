@@ -504,12 +504,115 @@ export function changeCoins(
   return { ...state, players, coinPool: Math.max(0, newPool), log: [...state.log, log] };
 }
 
-/** Place an ambush/trinket loot card on top of a monster slot */
+/**
+ * Find a card in any zone and remove it, returning the mutated state and the
+ * CardInPlay instance. Lookup order: player items → shop slots → monster slot
+ * top card → room slots → hand (creates a fresh instance).
+ * If instanceId is provided it is used to disambiguate; otherwise first match
+ * by cardId is used.
+ */
+export function findAndRemoveCardInstance(
+  state: GameState,
+  cardId: string,
+  instanceId?: string,
+): { newState: GameState; instance: CardInPlay | null } {
+  // 1. Player items (any player)
+  for (const p of state.players) {
+    const idx = instanceId
+      ? p.items.findIndex((i) => i.instanceId === instanceId)
+      : p.items.findIndex((i) => i.cardId === cardId);
+    if (idx !== -1) {
+      const instance = p.items[idx];
+      const newState: GameState = {
+        ...state,
+        players: state.players.map((pl) =>
+          pl.id === p.id ? { ...pl, items: pl.items.filter((_, i) => i !== idx) } : pl
+        ),
+      };
+      return { newState, instance };
+    }
+  }
+
+  // 2. Shop slots
+  for (const slot of state.shopSlots) {
+    if (!slot.card) continue;
+    const match = instanceId
+      ? slot.card.instanceId === instanceId
+      : slot.card.cardId === cardId;
+    if (match) {
+      const instance = slot.card;
+      let newState: GameState = {
+        ...state,
+        shopSlots: state.shopSlots.map((s) =>
+          s.slotIndex === slot.slotIndex ? { ...s, card: null } : s
+        ),
+      };
+      newState = refillShopSlot(newState, slot.slotIndex);
+      return { newState, instance };
+    }
+  }
+
+  // 3. Monster slot top cards
+  for (const slot of state.monsterSlots) {
+    if (slot.stack.length === 0) continue;
+    const top = slot.stack[slot.stack.length - 1];
+    const match = instanceId ? top.instanceId === instanceId : top.cardId === cardId;
+    if (match) {
+      const instance = top;
+      const newStack = slot.stack.slice(0, -1);
+      let newState: GameState = {
+        ...state,
+        monsterSlots: state.monsterSlots.map((s) =>
+          s.slotIndex === slot.slotIndex ? { ...s, stack: newStack } : s
+        ),
+      };
+      if (newStack.length === 0) {
+        newState = refillMonsterSlot(newState, slot.slotIndex);
+      }
+      return { newState, instance };
+    }
+  }
+
+  // 4. Room slots
+  for (const room of state.roomSlots) {
+    const match = instanceId ? room.instanceId === instanceId : room.cardId === cardId;
+    if (match) {
+      const instance = room;
+      const newState: GameState = {
+        ...state,
+        roomSlots: state.roomSlots.filter((r) => r.instanceId !== room.instanceId),
+      };
+      return { newState, instance };
+    }
+  }
+
+  // 5. Hand — find any player holding cardId and create a fresh instance
+  for (const p of state.players) {
+    if (!p.handCardIds.includes(cardId)) continue;
+    const instance = createCardInPlay(cardId);
+    const newState: GameState = {
+      ...state,
+      players: state.players.map((pl) =>
+        pl.id === p.id
+          ? { ...pl, handCardIds: pl.handCardIds.filter((id) => id !== cardId) }
+          : pl
+      ),
+    };
+    return { newState, instance };
+  }
+
+  return { newState: state, instance: null };
+}
+
+/** Place a card on top of a monster slot.
+ *  When instanceId is provided the existing CardInPlay is moved (counters preserved).
+ *  When only cardId is provided the card is taken from the acting player's hand. */
 export function coverMonster(
   state: GameState,
   slotIndex: number,
   cardId: string,
-  playerId: string
+  playerId: string,
+  instanceId?: string,
 ): { newState: GameState; error: string | null } {
   const slot = state.monsterSlots[slotIndex];
   if (!slot) return { newState: state, error: 'Invalid slot' };
@@ -517,21 +620,35 @@ export function coverMonster(
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return { newState: state, error: 'Player not found' };
 
-  // Remove from hand
-  if (!player.handCardIds.includes(cardId))
-    return { newState: state, error: 'Card not in hand' };
+  let instance: CardInPlay;
+  let baseState = state;
 
-  const newInstance = createCardInPlay(cardId);
+  if (instanceId) {
+    // Multi-zone source: find and remove the existing CardInPlay
+    const wasRoomSlot = state.roomSlots.some((s) => s.instanceId === instanceId);
+    const { newState: afterRemove, instance: found } = findAndRemoveCardInstance(state, cardId, instanceId);
+    if (!found) return { newState: state, error: 'Card instance not found in any zone' };
+    instance = found;
+    baseState = wasRoomSlot ? drawRoomReplacement(afterRemove) : afterRemove;
+  } else if (player.handCardIds.includes(cardId)) {
+    // Hand-only fallback (original behaviour)
+    instance = createCardInPlay(cardId);
+    baseState = {
+      ...state,
+      players: state.players.map((p) =>
+        p.id === playerId
+          ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== cardId) }
+          : p
+      ),
+    };
+  } else {
+    // Stack-sourced card (no instanceId, not in hand) — create fresh instance; handler strips stack atomically
+    instance = createCardInPlay(cardId);
+  }
+
   const card = getCardById(cardId);
-
-  const updatedSlots = state.monsterSlots.map((s) =>
-    s.slotIndex === slotIndex ? { ...s, stack: [...s.stack, newInstance] } : s
-  );
-
-  const players = state.players.map((p) =>
-    p.id === playerId
-      ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== cardId) }
-      : p
+  const updatedSlots = baseState.monsterSlots.map((s) =>
+    s.slotIndex === slotIndex ? { ...s, stack: [...s.stack, instance] } : s
   );
 
   const log = createLogEntry(
@@ -541,7 +658,7 @@ export function coverMonster(
   );
 
   return {
-    newState: { ...state, players, monsterSlots: updatedSlots, log: [...state.log, log] },
+    newState: { ...baseState, monsterSlots: updatedSlots, log: [...baseState.log, log] },
     error: null,
   };
 }
@@ -686,7 +803,107 @@ export function discardRoomSlot(state: GameState, instanceId: string): GameState
   return withoutSlot;
 }
 
-/** Trade a card (item or hand card) from one player to another */
+/**
+ * If the room deck is non-empty, draw one card and add it to roomSlots.
+ * Call this after any operation that removes a room slot card.
+ */
+export function drawRoomReplacement(state: GameState): GameState {
+  if (state.roomDeck.length === 0) return state;
+  const { drawn, newDeck, newDiscard } = drawFromDeck(state.roomDeck, state.roomDiscard, 1);
+  if (!drawn[0]) return state;
+  const newRoom = createCardInPlay(drawn[0]);
+  const newCard = getCardById(drawn[0]);
+  const log = createLogEntry('info', `${newCard?.name ?? 'A new room'} enters play`, null);
+  return {
+    ...state,
+    roomDeck: newDeck,
+    roomDiscard: newDiscard,
+    roomSlots: [...state.roomSlots, newRoom],
+    log: [...state.log, log],
+  };
+}
+
+/**
+ * Replace an existing room slot card with a new one.
+ * The replaced card is discarded to roomDiscard.
+ * The new card is pulled from wherever it currently lives (items, hand, shop, etc.)
+ * No replacement draw — the incoming card itself fills the slot.
+ */
+export function replaceRoomSlot(
+  state: GameState,
+  replaceInstanceId: string,
+  newInstanceId?: string,
+  newCardId?: string,
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room',
+): GameState {
+  const oldSlot = state.roomSlots.find((s) => s.instanceId === replaceInstanceId);
+  if (!oldSlot) return state;
+
+  // Discard the old slot card
+  let s: GameState = {
+    ...state,
+    roomSlots: state.roomSlots.filter((r) => r.instanceId !== replaceInstanceId),
+    roomDiscard: [...state.roomDiscard, oldSlot.cardId],
+  };
+
+  let newInstance: CardInPlay;
+
+  if (newInstanceId) {
+    const { newState: afterRemove, instance } = findAndRemoveCardInstance(s, newCardId ?? '', newInstanceId);
+    if (!instance) return state;
+    s = afterRemove;
+    newInstance = instance;
+  } else if (newCardId) {
+    if (deckType) {
+      // Discard pile source — pop from the discard array
+      const discardKey = `${deckType}Discard` as keyof GameState;
+      const discard = s[discardKey] as string[];
+      const idx = discard.lastIndexOf(newCardId);
+      if (idx === -1) return state;
+      const newDiscard = [...discard];
+      newDiscard.splice(idx, 1);
+      s = { ...s, [discardKey]: newDiscard };
+      newInstance = createCardInPlay(newCardId);
+    } else {
+      // Hand card — remove from hand and create a fresh CardInPlay
+      let found = false;
+      for (const p of s.players) {
+        if (p.handCardIds.includes(newCardId)) {
+          s = {
+            ...s,
+            players: s.players.map((pl) =>
+              pl.id === p.id
+                ? { ...pl, handCardIds: pl.handCardIds.filter((id) => id !== newCardId) }
+                : pl
+            ),
+          };
+          found = true;
+          break;
+        }
+      }
+      if (!found) return state;
+      newInstance = createCardInPlay(newCardId);
+    }
+  } else {
+    return state;
+  }
+
+  const oldCard = getCardById(oldSlot.cardId);
+  const newCard = getCardById(newInstance.cardId);
+  const log = createLogEntry(
+    'info',
+    `${oldCard?.name ?? oldSlot.cardId} replaced by ${newCard?.name ?? newInstance.cardId} in room`,
+    null,
+  );
+
+  return {
+    ...s,
+    roomSlots: [...s.roomSlots, newInstance],
+    log: [...s.log, log],
+  };
+}
+
+
 export function tradeCard(
   state: GameState,
   fromPlayerId: string,
@@ -754,4 +971,183 @@ export function tradeCard(
   }
 
   return { newState, error: null };
+}
+
+// ─── Privileged override actions ─────────────────────────────────────────────
+// These bypass normal game-rule validation. They are gated behind
+// GameState.allowPrivilegedActions and logged with an [OVERRIDE] prefix so the
+// game history remains auditable.
+
+/**
+ * Move any card (by instanceId or cardId) to a player's hand.
+ * Source zone is detected and the card is removed automatically.
+ * Hand holds cardIds only — counters are not preserved (hand cards have no counters).
+ */
+export function moveToHand(
+  state: GameState,
+  actorPlayerId: string,
+  cardId: string,
+  instanceId: string | undefined,
+  targetPlayerId: string,
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room',
+): GameState {
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId);
+  if (!targetPlayer) return state;
+
+  const actor = state.players.find((p) => p.id === actorPlayerId);
+  const card = getCardById(cardId);
+
+  let newState: GameState;
+
+  if (deckType && !instanceId) {
+    const discardKey = `${deckType}Discard` as keyof GameState;
+    const discard = state[discardKey] as string[];
+    const idx = discard.lastIndexOf(cardId);
+    if (idx === -1) return state;
+    const newDiscard = [...discard];
+    newDiscard.splice(idx, 1);
+    newState = { ...state, [discardKey]: newDiscard };
+  } else {
+    const wasRoomSlot = instanceId ? state.roomSlots.some((s) => s.instanceId === instanceId) : false;
+    const result = findAndRemoveCardInstance(state, cardId, instanceId);
+    // If not found in any zone, the card may exist only on the stack (e.g. a played loot card).
+    // The handler will strip it from the stack atomically — just proceed with current state.
+    newState = result.instance
+      ? (wasRoomSlot ? drawRoomReplacement(result.newState) : result.newState)
+      : state;
+  }
+
+  const log = createLogEntry(
+    'info',
+    `[OVERRIDE] ${actor?.name ?? actorPlayerId} moves ${card?.name ?? cardId} to ${targetPlayer.name}'s hand`,
+    actorPlayerId,
+  );
+
+  return {
+    ...newState,
+    players: newState.players.map((p) =>
+      p.id === targetPlayerId ? { ...p, handCardIds: [...p.handCardIds, cardId] } : p
+    ),
+    log: [...newState.log, log],
+  };
+}
+
+/**
+ * Place any card (by instanceId or cardId) directly into a shop slot.
+ * Preserves counters on the CardInPlay instance.
+ * If the slot is already occupied the displaced card is sent to treasureDiscard.
+ */
+export function placeInShop(
+  state: GameState,
+  actorPlayerId: string,
+  cardId: string,
+  instanceId: string | undefined,
+  slotIndex: number,
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room',
+): GameState {
+  const slot = state.shopSlots[slotIndex];
+  if (!slot) return state;
+
+  const actor = state.players.find((p) => p.id === actorPlayerId);
+  const card = getCardById(cardId);
+
+  let afterRemove: GameState;
+  let instance: CardInPlay;
+
+  if (deckType && !instanceId) {
+    const discardKey = `${deckType}Discard` as keyof GameState;
+    const discard = state[discardKey] as string[];
+    const idx = discard.lastIndexOf(cardId);
+    if (idx === -1) return state;
+    const newDiscard = [...discard];
+    newDiscard.splice(idx, 1);
+    afterRemove = { ...state, [discardKey]: newDiscard };
+    instance = createCardInPlay(cardId);
+  } else {
+    const wasRoomSlot = instanceId ? state.roomSlots.some((s) => s.instanceId === instanceId) : false;
+    const result = findAndRemoveCardInstance(state, cardId, instanceId);
+    // If not found, card may exist only on the stack; proceed — handler strips it atomically.
+    afterRemove = result.instance
+      ? (wasRoomSlot ? drawRoomReplacement(result.newState) : result.newState)
+      : state;
+    instance = result.instance ?? createCardInPlay(cardId);
+  }
+
+  // If the slot is occupied, discard the displaced card
+  let baseState = afterRemove;
+  if (slot.card) {
+    baseState = {
+      ...baseState,
+      treasureDiscard: [...baseState.treasureDiscard, slot.card.cardId],
+    };
+  }
+
+  const log = createLogEntry(
+    'info',
+    `[OVERRIDE] ${actor?.name ?? actorPlayerId} places ${card?.name ?? cardId} in shop slot ${slotIndex + 1}`,
+    actorPlayerId,
+  );
+
+  return {
+    ...baseState,
+    shopSlots: baseState.shopSlots.map((s) =>
+      s.slotIndex === slotIndex ? { ...s, card: instance } : s
+    ),
+    log: [...baseState.log, log],
+  };
+}
+
+/**
+ * Move any card (by instanceId or cardId) directly into a player's items.
+ * Preserves counters on the CardInPlay instance.
+ */
+export function moveToItems(
+  state: GameState,
+  actorPlayerId: string,
+  cardId: string,
+  instanceId: string | undefined,
+  targetPlayerId: string,
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room',
+): GameState {
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId);
+  if (!targetPlayer) return state;
+
+  const actor = state.players.find((p) => p.id === actorPlayerId);
+  const card = getCardById(cardId);
+
+  let afterRemove: GameState;
+  let instance: CardInPlay;
+
+  if (deckType && !instanceId) {
+    const discardKey = `${deckType}Discard` as keyof GameState;
+    const discard = state[discardKey] as string[];
+    const idx = discard.lastIndexOf(cardId);
+    if (idx === -1) return state;
+    const newDiscard = [...discard];
+    newDiscard.splice(idx, 1);
+    afterRemove = { ...state, [discardKey]: newDiscard };
+    instance = createCardInPlay(cardId);
+  } else {
+    const wasRoomSlot = instanceId ? state.roomSlots.some((s) => s.instanceId === instanceId) : false;
+    const result = findAndRemoveCardInstance(state, cardId, instanceId);
+    // If not found, card may exist only on the stack; proceed — handler strips it atomically.
+    afterRemove = result.instance
+      ? (wasRoomSlot ? drawRoomReplacement(result.newState) : result.newState)
+      : state;
+    instance = result.instance ?? createCardInPlay(cardId);
+  }
+
+  const log = createLogEntry(
+    'info',
+    `[OVERRIDE] ${actor?.name ?? actorPlayerId} moves ${card?.name ?? cardId} to ${targetPlayer.name}'s items`,
+    actorPlayerId,
+  );
+
+  return {
+    ...afterRemove,
+    players: afterRemove.players.map((p) =>
+      p.id === targetPlayerId ? { ...p, items: [...p.items, instance] } : p
+    ),
+    log: [...afterRemove.log, log],
+  };
 }

@@ -172,6 +172,9 @@ export interface GameState {
 
   // Seconds remaining on the current viewer's priority timeout (0 = no timeout / not their turn)
   priorityTimeoutRemaining: number;
+
+  // Whether privileged override actions (move_to_hand, place_in_shop, move_to_items) are enabled
+  allowPrivilegedActions: boolean;
 }
 
 export interface DiceResult {

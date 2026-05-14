@@ -5,6 +5,7 @@ import { connectSocket, getSocket } from '../socket/client';
 import { GameBoard } from '../components/board/GameBoard';
 import { EdenPickModal } from '../components/board/EdenPickModal';
 import { SadVoteModal } from '../components/board/SadVoteModal';
+import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { useIsHost } from '../hooks/useMyPlayer';
@@ -120,6 +121,9 @@ export function Game() {
           {error}
         </div>
       )}
+
+      {/* Tutorial overlay — shows on first game */}
+      <TutorialOverlay />
 
       {/* Game over modal */}
       <Modal

@@ -7,3 +7,4 @@ packages/server/public/cards/
 data/
 *.log
 AGENTS.md
+.opencode

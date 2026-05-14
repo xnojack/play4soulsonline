@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
+import { playSound } from '../audio/SoundManager';
 
 function genRollId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -27,6 +28,7 @@ export function DiceRoller({ context = 'manual', disabled = false, compact = fal
   const handleRoll = useCallback(() => {
     if (cooldown || disabled) return;
     setCooldown(true);
+    playSound('diceRoll');
     getSocket().emit('action:roll_dice', { context, rollId: genRollId() });
     // Re-enable after 1 s so the toast has time to show
     setTimeout(() => setCooldown(false), 1000);

@@ -5,7 +5,8 @@ import { ResolvedCard, useCard } from './CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { getSocket } from '../../socket/client';
 import { useIsMyTurn, useMyPlayer } from '../../hooks/useMyPlayer';
-import { Droppable } from './DnDPrimitives';
+import { Draggable, Droppable } from './DnDPrimitives';
+import { playSound } from '../audio/SoundManager';
 
 interface MonsterSlotProps {
   slot: MonsterSlotType;
@@ -37,6 +38,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
   ) ?? [];
 
   const handleAttack = () => {
+    playSound('attack');
     getSocket().emit('action:declare_attack', {
       targetType: 'monster_slot',
       targetSlotIndex: slot.slotIndex,
@@ -45,6 +47,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
 
   const handleGainSoul = () => {
     if (!topCard || !myPlayer) return;
+    playSound('soul');
     getSocket().emit('action:gain_soul', {
       instanceId: topCard.instanceId,
       playerId: myPlayer.id,
@@ -53,6 +56,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
 
   const handleApplyDamage = (amount: number) => {
     if (!topCard) return;
+    playSound('attack');
     getSocket().emit('action:apply_damage', { targetInstanceId: topCard.instanceId, amount });
   };
 
@@ -62,10 +66,12 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
   };
 
   const handleResolveEvent = () => {
+    playSound('cardFlip');
     getSocket().emit('action:resolve_event', { slotIndex: slot.slotIndex });
   };
 
   const handleGiveCurse = (toPlayerId: string) => {
+    playSound('cardSlide');
     getSocket().emit('action:give_curse', { slotIndex: slot.slotIndex, toPlayerId });
     setGivingCurse(false);
   };
@@ -101,11 +107,12 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
     });
   }
 
+ 
+
   return (
     <Droppable
       id={`drop-monster-${slot.slotIndex}`}
-      payload={{ kind: 'attack-monster', slotIndex: slot.slotIndex }}
-      accepts={(drag) => drag.type === 'character' && canAttack && !isPlayerCurse && !isEvent}
+      payload={{ targetZone: 'monster', targetZoneId: String(slot.slotIndex) }}
     >
     <div
       className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1"
@@ -175,17 +182,32 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
                 +{coveredCards.length}
               </div>
             )}
-            {topCard && (
-              <ResolvedCard
-                instance={topCard}
-                size="md"
-                actions={actions.length > 0 ? actions : undefined}
-                popoverBelow
-              />
-            )}
-          </div>
-        )}
+          {topCard && (
+                 <Draggable
+                   id={`monster-${topCard.instanceId}`}
+                   payload={{ cardId: topCard.cardId, instanceId: topCard.instanceId, sourceZone: 'monster', sourceZoneId: String(slot.slotIndex) }}
+                 >
+                   <ResolvedCard
+                     instance={topCard}
+                     size="md"
+                     actions={actions.length > 0 ? actions : undefined}
+                     popoverBelow
+                   />
+                 </Draggable>
+               )}
+           </div>
+         )}
       </div>
+
+              {/* Attack button — inline, below card */}
+              {canAttack && (
+                <button
+                  onClick={handleAttack}
+                  className="text-xs px-3 py-1 rounded border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
+                >
+                  Attack
+                </button>
+              )}
 
       {/* Type / soul tag — below card, above HP tracker */}
       {!isEmpty && (isPlayerCurse || isEvent || isCurseMonster || hasSoul) && (
@@ -286,7 +308,13 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
           <div className="text-sm text-fs-parchment/40 mb-1">Covered:</div>
           <div className="flex gap-1 flex-wrap">
             {coveredCards.map((c) => (
-              <ResolvedCard key={c.instanceId} instance={c} size="sm" />
+              <Draggable
+                key={c.instanceId}
+                id={`monster-covered-${c.instanceId}`}
+                payload={{ cardId: c.cardId, instanceId: c.instanceId, sourceZone: 'monster', sourceZoneId: String(slot.slotIndex) }}
+              >
+                <ResolvedCard instance={c} size="sm" />
+              </Draggable>
             ))}
           </div>
         </div>

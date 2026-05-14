@@ -6,7 +6,8 @@ import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
 import { useHasPriority } from '../../hooks/useMyPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Draggable } from '../board/DnDPrimitives';
+import { Draggable, Droppable } from '../board/DnDPrimitives';
+import { playSound } from '../audio/SoundManager';
 
 interface HandPanelProps {
   player: ClientPlayer;
@@ -24,14 +25,17 @@ export function HandPanel({ player }: HandPanelProps) {
 
   const handlePlayCard = (cardId: string) => {
     if (!canPlayLoot) return;
+    playSound('cardSlide');
     getSocket().emit('action:play_loot', { cardId, targets: [] });
   };
 
   const handleDiscardCard = (cardId: string) => {
+    playSound('cardSlide');
     getSocket().emit('action:discard_loot', { cardId });
   };
 
   const handleTradeCard = (cardId: string, toPlayerId: string) => {
+    playSound('cardSlide');
     getSocket().emit('action:trade_card', { cardId, toPlayerId, fromHand: true });
   };
 
@@ -95,6 +99,10 @@ export function HandPanel({ player }: HandPanelProps) {
       </AnimatePresence>
 
       {/* Cards in hand */}
+      <Droppable
+        id={`drop-hand-${player.id}`}
+        payload={{ targetZone: 'hand', targetZoneId: player.id }}
+      >
       <div className="flex gap-2 flex-wrap content-start" data-zone="my-hand">
         {player.handCardIds.length === 0 && (
           <div className="text-sm text-fs-parchment/30 italic">No cards in hand</div>
@@ -103,7 +111,7 @@ export function HandPanel({ player }: HandPanelProps) {
           <Draggable
             key={`${cardId}-${idx}`}
             id={`hand-${cardId}-${idx}`}
-            payload={{ type: 'loot-hand', cardId }}
+            payload={{ cardId, sourceZone: 'hand', sourceZoneId: player.id }}
           >
             <HandCardSlot
               cardId={cardId}
@@ -116,6 +124,7 @@ export function HandPanel({ player }: HandPanelProps) {
           </Draggable>
         ))}
       </div>
+      </Droppable>
     </div>
   );
 }

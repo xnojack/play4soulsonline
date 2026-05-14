@@ -37,10 +37,14 @@ import {
   AddSlotPayload,
   TradeCardPayload,
   PlaceInRoomPayload,
+  ReplaceRoomSlotPayload,
   ReturnRoomCardPayload,
   EdenPickPayload,
   SadVotePayload,
   FlipCardPayload,
+  MoveToHandPayload,
+  PlaceInShopPayload,
+  MoveToItemsPayload,
 } from '../game/types';
 import {
   passPriority,
@@ -82,8 +86,14 @@ import {
   coverMonster,
   discardRoom,
   discardRoomSlot,
+  drawRoomReplacement,
+  replaceRoomSlot,
   tradeCard,
   giveCurse,
+  findAndRemoveCardInstance,
+  moveToHand,
+  placeInShop,
+  moveToItems,
 } from '../game/actions/items';
 import { drawFromDeck, createCardInPlay } from '../game/decks';
 import { getCardById } from '../db/cards';
@@ -326,6 +336,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       includeRooms: isBoolean(payload.includeRooms) ? payload.includeRooms : false,
       excludeNeverPrinted: isBoolean(payload.excludeNeverPrinted) ? payload.excludeNeverPrinted : true,
       priorityTimeoutMs: isNumber(payload.priorityTimeoutMs) ? payload.priorityTimeoutMs : 30000,
+      allowPrivilegedActions: isBoolean(payload.allowPrivilegedActions) ? payload.allowPrivilegedActions : true,
     });
     if (err) return sendError(socket, err);
 
@@ -546,8 +557,27 @@ export function registerHandlers(io: Server, socket: Socket): void {
       return sendError(socket, 'Stack is empty');
 
     const clearedState = clearPriorityTimeout(state);
-    const { newState } = resolveTopOfStack(clearedState);
-    room.setState(resetPriority(newState));
+    const { resolved, newState } = resolveTopOfStack(clearedState);
+    let finalState = resetPriority(newState);
+
+    if (resolved?.type === 'attack_roll') {
+      // Apply the already-rolled attack result now that the priority window has closed
+      const { newState: attackResolved } = resolveAttack(finalState);
+      finalState = attackResolved;
+      room.setState(finalState);
+      const winnerId = room.checkWin();
+      if (winnerId) {
+        room.endGame(winnerId);
+        io.to(ctx.roomId).emit('game:ended', {
+          winnerId,
+          winnerName: finalState.players.find((p) => p.id === winnerId)?.name,
+        });
+        gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+      }
+    } else {
+      room.setState(finalState);
+    }
+
     broadcastState(io, ctx.roomId);
   }));
 
@@ -564,6 +594,29 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     const newState = cancelStackItem(room.getState(), payload.stackItemId);
     room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Remove a stack item with no side effects — used when a drag action has already
+   *  placed the card; we just need to clean the item off the stack. */
+  socket.on('action:dismiss_stack_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['stackItemId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as CancelStackItemPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    const log = createLogEntry('stack', 'Stack item resolved via drag', ctx.playerId);
+    room.setState({
+      ...state,
+      stack: state.stack.filter((item) => item.id !== payload.stackItemId),
+      log: [...state.log, log],
+    });
     broadcastState(io, ctx.roomId);
   }));
 
@@ -672,7 +725,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const payload = raw as ReturnToDeckPayload;
 
     // Validate deckType and position values
-    if (!['loot', 'treasure', 'monster'].includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
+    if (!['loot', 'treasure', 'monster', 'room'].includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
     if (!['top', 'bottom'].includes(payload.position)) return sendError(socket, 'Invalid position');
 
     const ctx = getCtx(socket);
@@ -688,9 +741,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
         payload.cardId,
         payload.deckType,
         payload.position,
-        payload.fromHand ?? false
+        payload.fromHand ?? false,
+        payload.fromDiscard ?? false,
+        payload.fromInstanceId,
       )
     );
+    if (payload.stackItemId) {
+      const s = room.getState();
+      room.setState({ ...s, stack: s.stack.filter((i) => i.id !== payload.stackItemId) });
+    }
     broadcastState(io, ctx.roomId);
   }));
 
@@ -740,10 +799,10 @@ export function registerHandlers(io: Server, socket: Socket): void {
       if (declarationPending)
         return sendError(socket, 'Resolve the attack declaration on the stack first');
 
-      const { newState, roll, error } = rollAttackDice(state, ctx.playerId);
+      const { newState: rolledState, roll, error } = rollAttackDice(state, ctx.playerId);
       if (error) return sendError(socket, error);
 
-      // Broadcast the dice result to all in room
+      // Broadcast the dice result to all in room (client uses this for animation)
       io.to(ctx.roomId).emit('dice:result', {
         playerId: ctx.playerId,
         value: roll,
@@ -751,20 +810,18 @@ export function registerHandlers(io: Server, socket: Socket): void {
         context: payload.context,
       });
 
-      // Resolve the attack
-      const { newState: resolvedState, hit } = resolveAttack(newState);
+      const player = state.players.find((p) => p.id === ctx.playerId);
+      // Push attack_roll onto the stack — players can react before damage resolves
+      const newState = pushStack(rolledState, {
+        type: 'attack_roll',
+        sourceCardInstanceId: '',
+        sourcePlayerId: ctx.playerId,
+        description: `${player?.name ?? ctx.playerId} rolled a ${roll}`,
+        targets: [],
+        data: { roll },
+      });
 
-      // setState first so checkWin reads the correct state (souls may have been gained)
-      room.setState(resolvedState);
-      const winnerId = room.checkWin();
-      if (winnerId) {
-        room.endGame(winnerId);
-        io.to(ctx.roomId).emit('game:ended', {
-          winnerId,
-          winnerName: resolvedState.players.find((p) => p.id === winnerId)?.name,
-        });
-        gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
-      }
+      room.setState(newState);
     } else {
       // Manual dice roll — push to stack so players can respond
       const roll = Math.floor(Math.random() * 6) + 1;
@@ -1154,11 +1211,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
       room.getState(),
       payload.slotIndex,
       payload.cardId,
-      ctx.playerId
+      ctx.playerId,
+      payload.instanceId,
     );
     if (error) return sendError(socket, error);
 
-    room.setState(newState);
+    const finalState = payload.stackItemId
+      ? { ...newState, stack: newState.stack.filter((i) => i.id !== payload.stackItemId) }
+      : newState;
+    room.setState(finalState);
     broadcastState(io, ctx.roomId);
   }));
 
@@ -1435,7 +1496,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
   /** Add an extra monster or shop slot */
   socket.on('action:add_slot', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
-    if (!validatePayload(raw, ['slotType'])) return sendError(socket, 'Invalid payload');
+    if (!validatePayload(raw, ['slotType'], ['cardId', 'instanceId'])) return sendError(socket, 'Invalid payload');
     const payload = raw as AddSlotPayload;
     if (!['monster', 'shop', 'room'].includes(payload.slotType)) return sendError(socket, 'Invalid slot type');
 
@@ -1452,9 +1513,26 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (payload.slotType === 'monster') {
       const newSlotIndex = state.monsterSlots.length;
       const newSlots = [...state.monsterSlots, { slotIndex: newSlotIndex, stack: [] }];
-      // Refill the new slot from monster deck
       let newState = { ...state, monsterSlots: newSlots };
-      newState = refillMonsterSlot(newState, newSlotIndex);
+
+      if (payload.cardId) {
+        // Use the specific card provided (from drag — preserves counters)
+        const { newState: afterRemove, instance } = findAndRemoveCardInstance(
+          newState,
+          payload.cardId,
+          payload.instanceId,
+        );
+        if (!instance) return sendError(socket, 'Card not found in any zone');
+        newState = {
+          ...afterRemove,
+          monsterSlots: afterRemove.monsterSlots.map((s) =>
+            s.slotIndex === newSlotIndex ? { ...s, stack: [instance] } : s
+          ),
+        };
+      } else {
+        // Default: draw from monster deck
+        newState = refillMonsterSlot(newState, newSlotIndex);
+      }
       room.setState(newState);
     } else if (payload.slotType === 'shop') {
       const newSlotIndex = state.shopSlots.length;
@@ -1486,10 +1564,10 @@ export function registerHandlers(io: Server, socket: Socket): void {
   }));
 
   /** Move an item (from player's items or shop) into the room area */
-  socket.on('action:place_in_room', safeHandler<unknown>(socket, (raw) => {
+   socket.on('action:place_in_room', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
-    if (!validatePayload(raw, ['instanceId'])) return sendError(socket, 'Invalid payload');
-    const payload = raw as PlaceInRoomPayload;
+    const payload = isObject(raw) ? raw as PlaceInRoomPayload : {} as PlaceInRoomPayload;
+    if (!payload.instanceId && !payload.cardId) return sendError(socket, 'Invalid payload');
 
     const ctx = getCtx(socket);
     if (!ctx) return;
@@ -1501,30 +1579,83 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const player = state.players.find((p) => p.id === ctx.playerId);
     if (!player) return;
 
-    // Find the item in the player's items
-    const itemIdx = player.items.findIndex((i) => i.instanceId === payload.instanceId);
-    if (itemIdx === -1) return sendError(socket, 'Item not found in your items');
+    let instance;
+    let afterRemove = state;
 
-    const item = player.items[itemIdx];
-    const newItems = player.items.filter((_, i) => i !== itemIdx);
+    if (payload.instanceId) {
+      // Card already has a CardInPlay — find and remove from its current zone
+      const result = findAndRemoveCardInstance(state, payload.cardId ?? '', payload.instanceId);
+      if (!result.instance) return sendError(socket, 'Card not found');
+      instance = result.instance;
+      afterRemove = result.newState;
+    } else if (payload.deckType && payload.cardId) {
+      // Discard pile card — pop from the appropriate discard array
+      const discardKey = `${payload.deckType}Discard` as keyof typeof state;
+      const discard = state[discardKey] as string[];
+      const idx = discard.lastIndexOf(payload.cardId);
+      if (idx === -1) return sendError(socket, 'Card not found in discard');
+      const newDiscard = [...discard];
+      newDiscard.splice(idx, 1);
+      afterRemove = { ...state, [discardKey]: newDiscard };
+      instance = createCardInPlay(payload.cardId);
+    } else if (payload.cardId) {
+      // Hand card — remove from hand and create a fresh instance
+      const handPlayer = state.players.find((p) => p.handCardIds.includes(payload.cardId!));
+      if (!handPlayer) return sendError(socket, 'Card not found in any hand');
+      instance = createCardInPlay(payload.cardId);
+      afterRemove = {
+        ...state,
+        players: state.players.map((p) =>
+          p.id === handPlayer.id
+            ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== payload.cardId) }
+            : p
+        ),
+      };
+    } else {
+      return sendError(socket, 'Invalid payload');
+    }
 
+    const card = getCardById(instance.cardId);
     const log = createLogEntry(
       'info',
-      `${player.name} places an item into the room area`,
+      `${player.name} places ${card?.name ?? instance.cardId} into the room area`,
       ctx.playerId
     );
 
     room.setState({
-      ...state,
-      players: state.players.map((p) =>
-        p.id === ctx.playerId ? { ...p, items: newItems } : p
-      ),
-      roomSlots: [...state.roomSlots, item],
-      log: [...state.log, log],
+      ...afterRemove,
+      roomSlots: [...afterRemove.roomSlots, instance],
+      stack: payload.stackItemId ? afterRemove.stack.filter((i) => i.id !== payload.stackItemId) : afterRemove.stack,
+      log: [...afterRemove.log, log],
     });
 
     broadcastState(io, ctx.roomId);
   }));
+
+  /** Replace an existing room slot with a new card, discarding the old one */
+  socket.on('action:replace_room_slot', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload = isObject(raw) ? raw as unknown as ReplaceRoomSlotPayload : {} as ReplaceRoomSlotPayload;
+    if (!isString(payload.replaceInstanceId)) return sendError(socket, 'Invalid payload');
+    if (!payload.newInstanceId && !payload.newCardId) return sendError(socket, 'Invalid payload');
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const newState = replaceRoomSlot(
+      room.getState(),
+      payload.replaceInstanceId,
+      payload.newInstanceId,
+      payload.newCardId,
+      payload.deckType,
+    );
+    room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
+
 
   /** Return a card from the room area back to a player's items (active player only, no replacement draw) */
   socket.on('action:return_room_card', safeHandler<unknown>(socket, (raw) => {
@@ -1555,14 +1686,19 @@ export function registerHandlers(io: Server, socket: Socket): void {
       ctx.playerId
     );
 
-    room.setState({
+    let newState = {
       ...state,
       roomSlots: state.roomSlots.filter((s) => s.instanceId !== payload.instanceId),
       players: state.players.map((p) =>
         p.id === payload.toPlayerId ? { ...p, items: [...p.items, slot] } : p
       ),
       log: [...state.log, log],
-    });
+    };
+
+    // Draw a replacement room card if the deck is non-empty
+    newState = drawRoomReplacement(newState);
+
+    room.setState(newState);
 
     broadcastState(io, ctx.roomId);
   }));
@@ -1990,4 +2126,69 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     socketPlayerMap.delete(socket.id);
   });
+
+  // ─── Privileged override actions ─────────────────────────────────────────────
+
+  /** Move any card to a player's hand — privileged, bypasses game rules */
+  socket.on('action:move_to_hand', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId', 'targetPlayerId'], [])) return sendError(socket, 'Invalid payload');
+    const payload = raw as MoveToHandPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    if (!state.allowPrivilegedActions) return sendError(socket, 'Privileged actions are disabled');
+
+    let newState = moveToHand(state, ctx.playerId, payload.cardId, payload.instanceId, payload.targetPlayerId, payload.deckType);
+    if (payload.stackItemId) newState = { ...newState, stack: newState.stack.filter((i) => i.id !== payload.stackItemId) };
+    room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Place any card into a shop slot — privileged, bypasses game rules */
+  socket.on('action:place_in_shop', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId'], ['slotIndex'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as PlaceInShopPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    if (!state.allowPrivilegedActions) return sendError(socket, 'Privileged actions are disabled');
+
+    let newState = placeInShop(state, ctx.playerId, payload.cardId, payload.instanceId, clampInt(payload.slotIndex, 0, 99, 0), payload.deckType);
+    if (payload.stackItemId) newState = { ...newState, stack: newState.stack.filter((i) => i.id !== payload.stackItemId) };
+    room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Move any card directly into a player's items — privileged, bypasses game rules */
+  socket.on('action:move_to_items', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['cardId', 'targetPlayerId'], [])) return sendError(socket, 'Invalid payload');
+    const payload = raw as MoveToItemsPayload;
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    if (!state.allowPrivilegedActions) return sendError(socket, 'Privileged actions are disabled');
+
+    let newState = moveToItems(state, ctx.playerId, payload.cardId, payload.instanceId, payload.targetPlayerId, payload.deckType);
+    if (payload.stackItemId) newState = { ...newState, stack: newState.stack.filter((i) => i.id !== payload.stackItemId) };
+    room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
 }

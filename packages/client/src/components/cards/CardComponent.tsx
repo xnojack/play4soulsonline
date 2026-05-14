@@ -31,6 +31,8 @@ interface CardComponentProps {
   showCounters?: boolean;
   /** If provided, hovering shows an action popover with these options */
   actions?: CardAction[];
+  /** 1-2 primary actions shown as buttons below the card */
+  primaryActions?: CardAction[];
   /** Fallback click handler (if no actions, click opens modal) */
   onClick?: () => void;
   selected?: boolean;
@@ -58,8 +60,8 @@ const ACTION_COLORS: Record<string, string> = {
   ghost: 'bg-transparent hover:bg-fs-darker text-fs-parchment/70 border-fs-gold/20',
 };
 
-const HOVER_OPEN_DELAY = 200;  // ms before popover appears on hover
-const HOVER_CLOSE_DELAY = 150; // ms before popover closes when mouse leaves
+const HOVER_OPEN_DELAY = 200;
+const HOVER_CLOSE_DELAY = 150;
 
 export function CardComponent({
   card,
@@ -67,6 +69,7 @@ export function CardComponent({
   size = 'md',
   showCounters = true,
   actions,
+  primaryActions,
   onClick,
   selected = false,
   className = '',
@@ -77,24 +80,21 @@ export function CardComponent({
 }: CardComponentProps) {
   const { setModalCard, setHoveredCard } = useGameStore();
   const dim = CARD_SIZES[size];
-  const containerWidth  = landscape ? dim.height : dim.width;
-  const containerHeight = landscape ? dim.width  : dim.height;
+  const containerWidth = landscape ? dim.height : dim.width;
+  const containerHeight = landscape ? dim.width : dim.height;
   const isSpent = instance?.charged === false;
   const isFlipped = instance?.flipped === true;
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState<'above' | 'below'>('above');
-  // null = not yet measured (render hidden); object = measured and placed
   const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Evaluate once per render — pointer type doesn't change mid-session
   const isTouch = isTouchDevice();
 
   const hasPopoverContent = alwaysPopover || (actions && actions.length > 0);
 
-  // When flipped, substitute the back-face image and name
   const displayImageUrl = isFlipped && card.backImageUrl ? card.backImageUrl : card.imageUrl;
   const displayName = isFlipped && card.flipSideName ? card.flipSideName : card.name;
 
@@ -103,8 +103,6 @@ export function CardComponent({
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
   }, []);
 
-  // Compute fixed viewport coordinates from actual rendered popover size.
-  // Called after the popover has painted (via rAF) so offsetWidth/Height are real.
   const measurePopover = useCallback(() => {
     if (!containerRef.current || !popoverRef.current) return;
 
@@ -114,8 +112,6 @@ export function CardComponent({
     if (!popoverWidth || !popoverHeight) return;
 
     const margin = 8;
-
-    // Vertical: choose the side with more space
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
     const above = spaceAbove >= spaceBelow;
@@ -124,28 +120,24 @@ export function CardComponent({
       ? rect.top - popoverHeight - 4
       : rect.bottom + 4;
 
-    // Horizontal: center on card, then clamp within viewport
     let left = rect.left + rect.width / 2 - popoverWidth / 2;
     left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
 
     setPopoverCoords({ top, left });
   }, []);
 
-  // Two-pass: render popover invisible, then measure and position via rAF
   useEffect(() => {
     if (!popoverOpen) { setPopoverCoords(null); return; }
     const id = requestAnimationFrame(() => measurePopover());
     return () => cancelAnimationFrame(id);
   }, [popoverOpen, measurePopover]);
 
-  // Re-measure on resize while open
   useEffect(() => {
     const handleResize = debounce(() => { if (popoverOpen) measurePopover(); }, 100);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [popoverOpen, measurePopover]);
 
-  // Close popover when clicking/tapping outside (both card and portal popover)
   useEffect(() => {
     if (!popoverOpen) return;
     const handler = (e: MouseEvent | TouchEvent) => {
@@ -165,10 +157,8 @@ export function CardComponent({
     };
   }, [popoverOpen, clearTimers]);
 
-  // Clean up timers on unmount
   useEffect(() => clearTimers, [clearTimers]);
 
-  // Hover handlers on the entire container (card + popover)
   const handleMouseEnter = useCallback(() => {
     if (faceDown || !hasPopoverContent || isTouch) return;
     if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
@@ -213,12 +203,18 @@ export function CardComponent({
         delay={500}
       >
         <div
-          ref={containerRef}
-          className={`relative inline-block select-none ${className}`}
-          style={{ width: containerWidth, height: containerHeight }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          style={primaryActions && primaryActions.length > 0 ? { paddingBottom: '32px' } : undefined}
         >
+          <div
+            ref={containerRef}
+            className={`relative inline-block select-none ${className}`}
+            style={{
+              width: containerWidth,
+              height: containerHeight,
+            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
           <motion.div
             className="w-full h-full cursor-pointer"
             style={{ rotate: isSpent ? 90 : 0 }}
@@ -241,7 +237,6 @@ export function CardComponent({
               draggable={false}
             />
 
-            {/* Counters overlay */}
             {showCounters && instance && (
               <div className="absolute bottom-0 left-0 right-0 flex flex-wrap gap-0.5 p-0.5">
                 {instance.damageCounters > 0 && (
@@ -264,14 +259,12 @@ export function CardComponent({
               </div>
             )}
 
-            {/* Soul value badge */}
             {card.soulValue > 0 && !faceDown && (
               <div className="absolute top-0 right-0 w-4 h-4 bg-fs-soul rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg">
                 {card.soulValue}
               </div>
             )}
 
-            {/* Flip card indicator badge */}
             {card.backImageUrl && !faceDown && (
               <div
                 className="absolute top-0 left-0 w-4 h-4 bg-fs-dark/80 border border-fs-gold/40 rounded-sm text-fs-gold text-xs flex items-center justify-center leading-none shadow"
@@ -281,7 +274,6 @@ export function CardComponent({
               </div>
             )}
 
-            {/* Eternal badge */}
             {!faceDown && card.isEternal && (
               <div
                 className="absolute bottom-0 left-0 px-1 py-0.5 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-xs leading-none pointer-events-none"
@@ -291,10 +283,26 @@ export function CardComponent({
               </div>
             )}
           </motion.div>
+
+          {primaryActions && primaryActions.length > 0 && (
+            <div className="absolute -bottom-8 left-0 right-0 flex justify-center gap-1">
+              {primaryActions.map((action, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); action.onClick(); }}
+                  className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                    ACTION_COLORS[action.variant ?? 'default']
+                  }`}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+          </div>
       </Tooltip>
 
-      {/* Action popover — portalled into document.body to escape all parent transforms/clips */}
       {hasPopoverContent && createPortal(
         <AnimatePresence>
           {popoverOpen && (
@@ -311,13 +319,11 @@ export function CardComponent({
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              {/* Card name header */}
               <div className="text-base text-fs-gold font-display font-semibold pb-1.5 mb-2 border-b border-fs-gold/20 truncate">
                 {displayName}
               </div>
 
               <div className="flex gap-3">
-                {/* Left column — actions & controls */}
                 <div className="flex flex-col gap-1 min-w-0 flex-shrink-0">
                   {(actions ?? []).map((action, i) => (
                     <button
@@ -335,7 +341,6 @@ export function CardComponent({
                       {action.label}
                     </button>
                   ))}
-                  {/* Generic counter row */}
                   {instance && (
                     <div className="flex items-center justify-between px-1 pt-1.5 mt-1 border-t border-fs-gold/10">
                       <span className="text-sm text-fs-parchment/40">
@@ -371,7 +376,6 @@ export function CardComponent({
                       </div>
                     </div>
                   )}
-                  {/* View card link */}
                   <button
                     className="text-base px-3 py-1.5 rounded border text-left transition-colors text-fs-parchment/50 border-fs-gold/10 hover:text-fs-parchment hover:bg-fs-darker"
                     onClick={(e) => {
@@ -385,7 +389,6 @@ export function CardComponent({
                   </button>
                 </div>
 
-                {/* Right column — ability text */}
                 {card.abilityText && (
                   <div className="flex-1 min-w-0 border-l border-fs-gold/15 pl-3">
                     <div className="text-xs uppercase tracking-wider text-fs-parchment/30 mb-1">Ability</div>

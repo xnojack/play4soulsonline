@@ -270,6 +270,10 @@ export interface GameState {
 
   // Priority timeout (ms); 0 or negative = disabled
   priorityTimeoutMs: number;
+
+  // When true, privileged override actions (move_to_hand, place_in_shop, move_to_items) are allowed.
+  // Host can disable in lobby to enforce coded game rules only.
+  allowPrivilegedActions: boolean;
 }
 
 // ============================================================
@@ -297,6 +301,8 @@ export interface ClientGameState extends Omit<GameState, 'players' | 'turn'> {
   edenPickOptions: string[]; // empty for everyone except edenPickQueue[0]
   // Seconds remaining on the current player's priority timeout (0 = no timeout or expired)
   priorityTimeoutRemaining: number;
+  // Whether privileged override actions are enabled for this game
+  allowPrivilegedActions: boolean;
 }
 
 // ============================================================
@@ -317,6 +323,7 @@ export interface StartGamePayload {
   includeRooms: boolean;
   excludeNeverPrinted?: boolean; // if true, filter out never_printed cards from all decks
   priorityTimeoutMs?: number; // ms per player priority window; 0 = disabled (default 30000)
+  allowPrivilegedActions?: boolean; // default true; host can disable to enforce coded rules only
 }
 
 export interface PlayLootPayload {
@@ -393,7 +400,9 @@ export interface DestroyCardPayload {
 
 export interface CoverMonsterPayload {
   slotIndex: number;
-  cardId: string; // loot card (ambush) being placed as a cover
+  cardId: string; // card being placed as a cover
+  instanceId?: string; // if set, move existing CardInPlay from its zone (preserves counters)
+  stackItemId?: string; // if set, also remove this item from the stack atomically
 }
 
 export interface MoveItemPayload {
@@ -420,9 +429,12 @@ export interface GainTreasurePayload {
 
 export interface ReturnToDeckPayload {
   cardId: string; // card ID to put back
-  deckType: 'loot' | 'treasure' | 'monster'; // which deck
+  deckType: 'loot' | 'treasure' | 'monster' | 'room'; // which deck
   position: 'top' | 'bottom'; // where to put it
   fromHand?: boolean; // if true, remove it from the player's hand first
+  fromDiscard?: boolean; // if true, remove it from the matching discard pile first
+  fromInstanceId?: string; // if set, remove existing CardInPlay by instanceId from any zone first
+  stackItemId?: string; // if set, also remove this item from the stack atomically
 }
 
 export interface ResolveEventPayload {
@@ -431,10 +443,22 @@ export interface ResolveEventPayload {
 
 export interface AddSlotPayload {
   slotType: 'monster' | 'shop' | 'room';
+  cardId?: string; // monster only: place this specific card instead of drawing from deck top
+  instanceId?: string; // paired with cardId to identify the exact CardInPlay instance
 }
 
 export interface PlaceInRoomPayload {
-  instanceId: string; // item instanceId to move into the room area
+  instanceId?: string; // CardInPlay instanceId (items, shop, monster, room zones)
+  cardId?: string;     // cardId for hand cards (no instanceId yet)
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room'; // if set, pop from that discard pile
+  stackItemId?: string; // if set, also remove this item from the stack atomically
+}
+
+export interface ReplaceRoomSlotPayload {
+  newInstanceId?: string; // instanceId of card being moved in (or newCardId for hand)
+  newCardId?: string;     // cardId when source is hand or discard
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room'; // if set, pop newCardId from that discard
+  replaceInstanceId: string; // room slot instanceId to discard and replace
 }
 
 export interface ReturnRoomCardPayload {
@@ -463,4 +487,28 @@ export interface SadVotePayload {
 
 export interface FlipCardPayload {
   instanceId: string; // the CardInPlay instanceId to flip
+}
+
+export interface MoveToHandPayload {
+  cardId: string;
+  instanceId?: string;   // if set, move existing CardInPlay (preserves nothing — hand holds cardIds only)
+  targetPlayerId: string;
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room';  // if set, remove from that discard pile
+  stackItemId?: string;  // if set, also remove this item from the stack atomically
+}
+
+export interface PlaceInShopPayload {
+  cardId: string;
+  instanceId?: string;   // if set, move existing CardInPlay (counters preserved)
+  slotIndex: number;
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room';  // if set, remove from that discard pile
+  stackItemId?: string;  // if set, also remove this item from the stack atomically
+}
+
+export interface MoveToItemsPayload {
+  cardId: string;
+  instanceId?: string;   // if set, move existing CardInPlay (counters preserved)
+  targetPlayerId: string;
+  deckType?: 'loot' | 'treasure' | 'monster' | 'room';  // if set, remove from that discard pile
+  stackItemId?: string;  // if set, also remove this item from the stack atomically
 }

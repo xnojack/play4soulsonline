@@ -6,7 +6,7 @@ import { CardAction } from '../cards/CardComponent';
 import { StatDisplay } from './StatDisplay';
 import { HandPanel } from './HandPanel';
 import { getSocket } from '../../socket/client';
-import { Draggable } from '../board/DnDPrimitives';
+import { Draggable, Droppable } from '../board/DnDPrimitives';
 
 /** Pre-warms a single card in the cache */
 function CardPreloader({ cardId }: { cardId: string }) {
@@ -129,6 +129,10 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
     : [];
 
   return (
+    <Droppable
+      id={`drop-player-${player.id}`}
+      payload={{ targetZone: 'player', targetZoneId: player.id }}
+    >
     <motion.div
       data-zone={`player-${player.id}`}
       animate={
@@ -185,44 +189,50 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
           {player.souls.map((soul) => {
             const isGeneric = soul.cardId === '';
             if (isGeneric) {
-              // Generic souls have no backing card — render a simple token with a direct remove button
               return (
-                <div
+                <Draggable
                   key={soul.instanceId}
-                  className="relative group"
-                  title="Generic soul (1 soul point)"
+                  id={`soul-${soul.instanceId}`}
+                  payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
                 >
-                  <img
-                    src="/card-back.png"
-                    alt="Soul"
-                    className="rounded border border-purple-700/40"
-                    style={{ width: 52, height: 71, objectFit: 'cover' }}
-                  />
-                  {isMe && (
-                    <button
-                      onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-900/80 border border-red-500/60 text-red-300 text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Remove this soul"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+                  <div className="relative group" title="Generic soul (1 soul point)">
+                    <img
+                      src="/card-back.png"
+                      alt="Soul"
+                      className="rounded border border-purple-700/40"
+                      style={{ width: 52, height: 71, objectFit: 'cover' }}
+                    />
+                    {isMe && (
+                      <button
+                        onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-900/80 border border-red-500/60 text-red-300 text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove this soul"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </Draggable>
               );
             }
             return (
-              <ResolvedCard
+              <Draggable
                 key={soul.instanceId}
-                instance={soul}
-                size="xs"
-                showCounters={false}
-                alwaysPopover={isMe}
-                actions={isMe ? [{
-                  label: 'Remove Soul',
-                  onClick: () => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId }),
-                  variant: 'danger',
-                }] : undefined}
-              />
+                id={`soul-${soul.instanceId}`}
+                payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
+              >
+                <ResolvedCard
+                  instance={soul}
+                  size="xs"
+                  showCounters={false}
+                  alwaysPopover={isMe}
+                  actions={isMe ? [{
+                    label: 'Remove Soul',
+                    onClick: () => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId }),
+                    variant: 'danger',
+                  }] : undefined}
+                />
+              </Draggable>
             );
           })}
           <SoulValueBadge souls={player.souls} kills={player.kills} />
@@ -253,9 +263,10 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
               <Draggable
                 id={`char-${player.characterInstanceId}`}
                 payload={{
-                  type: 'character',
-                  instanceId: player.characterInstanceId,
                   cardId: player.characterCardId || (charInstance?.cardId ?? ''),
+                  instanceId: player.characterInstanceId,
+                  sourceZone: 'character',
+                  sourceZoneId: player.id,
                 }}
               >
                 <ResolvedCard
@@ -303,6 +314,10 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
         )}
 
         {/* Items */}
+        <Droppable
+          id={`drop-items-${player.id}`}
+          payload={{ targetZone: 'items', targetZoneId: player.id }}
+        >
         <div className="flex-1 min-w-[200px]">
           <span className="text-sm text-fs-parchment/40 block mb-1">
             Items
@@ -314,7 +329,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
                 <Draggable
                   key={item.instanceId}
                   id={`item-${item.instanceId}`}
-                  payload={{ type: 'item', instanceId: item.instanceId, cardId: item.cardId }}
+                  payload={{ cardId: item.cardId, instanceId: item.instanceId, sourceZone: 'items', sourceZoneId: player.id }}
                 >
                   <ItemCard
                     item={item}
@@ -336,6 +351,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
             )}
           </div>
         </div>
+        </Droppable>
 
         {/* My hand - only visible to player */}
         {isMe && (
@@ -347,15 +363,21 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
 
       {/* Curses */}
       {player.curses.length > 0 && (
-        <div className="mt-1">
-          <span className="text-sm text-red-400/70 block mb-0.5">Curses</span>
-          <div className="flex gap-1 flex-wrap content-start">
-            {player.curses.map((curse) => (
-              <ResolvedCard key={curse.instanceId} instance={curse} size="xs" showCounters={false} />
-            ))}
-          </div>
-        </div>
-      )}
+         <div className="mt-1">
+           <span className="text-sm text-red-400/70 block mb-0.5">Curses</span>
+           <div className="flex gap-1 flex-wrap content-start">
+             {player.curses.map((curse) => (
+               <Draggable
+                 key={curse.instanceId}
+                 id={`curse-${curse.instanceId}`}
+                 payload={{ cardId: curse.cardId, instanceId: curse.instanceId, sourceZone: 'curse', sourceZoneId: player.id }}
+               >
+                 <ResolvedCard instance={curse} size="xs" showCounters={false} />
+               </Draggable>
+             ))}
+           </div>
+         </div>
+       )}
 
        {/* Kill trophies */}
        {player.kills.length > 0 && (
@@ -363,11 +385,18 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
            <span className="text-sm text-orange-400/70 block mb-0.5">Kills ({player.kills.length})</span>
            <div className="flex gap-1 flex-wrap content-start">
              {player.kills.map((kill) => (
-               <ResolvedCard key={kill.instanceId} instance={kill} size="xs" showCounters={false} />
+               <Draggable
+                 key={kill.instanceId}
+                 id={`kill-${kill.instanceId}`}
+                 payload={{ cardId: kill.cardId, instanceId: kill.instanceId, sourceZone: 'kill', sourceZoneId: player.id }}
+               >
+                 <ResolvedCard instance={kill} size="xs" showCounters={false} />
+               </Draggable>
              ))}
            </div>
          </div>
        )}
-     </motion.div>
-   );
- }
+      </motion.div>
+    </Droppable>
+    );
+  }

@@ -17,6 +17,8 @@ import { CardModal } from '../cards/CardModal';
 import { DiceResultToast } from '../dice/DiceRoller';
 import { Button } from '../ui/Button';
 import { AttributionFooter } from '../ui/AttributionFooter';
+import { ActionGuidance } from './ActionGuidance';
+import { SoundManager } from '../audio/SoundManager';
 import { useIsHost, useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
 
 export function GameBoard() {
@@ -33,6 +35,7 @@ export function GameBoard() {
     if (localStorage.getItem('hideOrientationHint')) return false;
     return window.matchMedia('(pointer: coarse) and (orientation: portrait)').matches;
   });
+  const [helpMode, setHelpMode] = React.useState(() => localStorage.getItem('helpMode') === '1');
 
   React.useEffect(() => {
     if (localStorage.getItem('hideOrientationHint')) return;
@@ -123,6 +126,17 @@ export function GameBoard() {
           <Button size="sm" variant="ghost" onClick={() => setCardSearchOpen(true)}>
             Card Search
           </Button>
+          <button
+            onClick={() => {
+              const next = !helpMode;
+              setHelpMode(next);
+              localStorage.setItem('helpMode', next ? '1' : '0');
+            }}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${helpMode ? 'bg-fs-gold/20 border-fs-gold/40 text-fs-gold' : 'text-fs-parchment/30 border-fs-gold/10 hover:text-fs-parchment/60'}`}
+            title="Keep guidance visible"
+          >
+            ?
+          </button>
           {isHost && (
             <Button size="sm" variant="ghost" onClick={handleRestart}>
               Restart
@@ -238,8 +252,10 @@ export function GameBoard() {
       <CardModal />
       <CardSearch />
       <PriorityBanner />
+      <ActionGuidance helpMode={helpMode} />
       <TurnActionBar />
       <CardFlightLayer />
+      <SoundManager />
     </div>
     </DnDProvider>
   );

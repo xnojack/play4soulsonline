@@ -35,8 +35,7 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
   return (
     <Droppable
       id={`drop-give-compact-${player.id}`}
-      payload={{ kind: 'give-item', toPlayerId: player.id }}
-      accepts={(drag) => drag.type === 'item' || drag.type === 'loot-hand'}
+      payload={{ targetZone: 'player', targetZoneId: player.id }}
     >
     <div className="relative flex-shrink-0">
       <button

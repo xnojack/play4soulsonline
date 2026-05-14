@@ -3,15 +3,18 @@ import { useGameStore } from '../../store/gameStore';
 import { MonsterSlotComponent } from './MonsterSlot';
 import { ShopSlotComponent } from './ShopSlot';
 import { DeckZone } from './DeckZone';
-import { DeckBrowserModal } from './DeckBrowserModal';
 import { ResolvedCard } from './CardResolver';
 import { getSocket } from '../../socket/client';
 import { useIsMyTurn } from '../../hooks/useMyPlayer';
 import { CardAction } from '../cards/CardComponent';
+import { StackTop } from '../stack/StackTop';
+import { InlineDeckBrowser } from './InlineDeckBrowser';
+import { AnimatePresence } from 'framer-motion';
+import { Draggable, Droppable } from './DnDPrimitives';
+import { playSound } from '../audio/SoundManager';
 
 type DeckType = 'loot' | 'treasure' | 'monster' | 'room' | 'eternal';
-type BrowseDeckType = DeckType | null;
-type BrowseInitialTab = `discard_${DeckType}`;
+type InlineTabKey = DeckType | `discard_${DeckType}`;
 
 /** A fake shop slot that lets the active player buy the top card of the treasure deck blind */
 function BuyDeckTopSlot() {
@@ -48,8 +51,7 @@ function BuyDeckTopSlot() {
 
 export function SharedTable() {
   const game = useGameStore((s) => s.game);
-  const [browseDeck, setBrowseDeck] = useState<BrowseDeckType | null>(null);
-  const [browseInitialTab, setBrowseInitialTab] = useState<BrowseInitialTab | undefined>(undefined);
+  const [inlineBrowser, setInlineBrowser] = useState<{ deckType: DeckType; initialTab?: InlineTabKey } | null>(null);
   // Feature 1: track which room card instanceId is being returned to a player
   const [returningCard, setReturningCard] = useState<string | null>(null);
   // Feature 4: track whether slot-picker for "Flip & Attack" is open
@@ -73,7 +75,8 @@ export function SharedTable() {
   const nonSpectatorPlayers = game.players.filter((p) => !p.isSpectator);
 
   return (
-    <div className="panel pt-2 px-2 pb-0">
+    <div className="table-felt p-4">
+      {/* Main row: Monsters | Shop | Room | Stack | Bonus Souls — wraps if narrow */}
       <div className="flex gap-4 flex-wrap content-start items-start">
         {/* Monster slots */}
         <div className="flex-1 min-w-[220px]">
@@ -156,10 +159,9 @@ export function SharedTable() {
           </div>
         </div>
 
-        {/* Room + Bonus Souls */}
-        {(game.roomSlots.length > 0 || game.roomDeckCount > 0 || game.roomDiscard.length > 0 || game.bonusSouls.length > 0) && (
-          <div className="flex-1 min-w-[220px]">
-            <div className="flex gap-3 flex-wrap content-start items-start">
+        {/* Room + Stack + Bonus Souls */}
+        <div className="flex-1 min-w-[220px]">
+          <div className="flex gap-3 flex-wrap content-start items-start">
               {(game.roomSlots.length > 0 || game.roomDeckCount > 0 || game.roomDiscard.length > 0) && (
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -174,6 +176,10 @@ export function SharedTable() {
                       </button>
                     )}
                   </div>
+                  <Droppable
+                    id="drop-room"
+                    payload={{ targetZone: 'room' }}
+                  >
                   <div className="flex gap-2 flex-wrap content-start">
                     {game.roomSlots.length === 0 && (
                       <div className="w-[107px] h-[78px] rounded border border-dashed border-fs-gold/20 flex items-center justify-center text-sm text-fs-parchment/20">
@@ -198,14 +204,25 @@ export function SharedTable() {
                       ];
                       return (
                         <div key={slot.instanceId} className="flex flex-col items-center gap-1">
-                          <ResolvedCard
-                            instance={slot}
-                            size="sm"
-                            landscape
-                            actions={roomActions}
-                            alwaysPopover
-                            popoverBelow
-                          />
+                          <Droppable
+                            id={`drop-room-slot-${slot.instanceId}`}
+                            payload={{ targetZone: 'room', targetZoneId: slot.instanceId }}
+                            highlightInset="inset-0"
+                          >
+                          <Draggable
+                            id={`room-${slot.instanceId}`}
+                            payload={{ cardId: slot.cardId, instanceId: slot.instanceId, sourceZone: 'room' }}
+                          >
+                            <ResolvedCard
+                              instance={slot}
+                              size="sm"
+                              landscape
+                              actions={roomActions}
+                              alwaysPopover
+                              popoverBelow
+                            />
+                          </Draggable>
+                          </Droppable>
                           {isReturning && (
                             <div className="flex flex-col gap-0.5 bg-fs-darker border border-fs-gold/20 rounded p-1">
                               {nonSpectatorPlayers.map((p) => (
@@ -229,10 +246,25 @@ export function SharedTable() {
                       );
                     })}
                   </div>
+                  </Droppable>
                 </div>
               )}
 
-              {game.bonusSouls.length > 0 && (
+               {/* Stack */}
+               <div className="flex flex-col gap-1">
+                 <div className="section-title text-sm">Stack</div>
+                 <Droppable
+                   id="drop-stack"
+                   payload={{ targetZone: 'stack' }}
+                   highlightInset="-inset-2"
+                 >
+                   <div className="min-h-[160px]">
+                     <StackTop />
+                   </div>
+                 </Droppable>
+               </div>
+
+               {game.bonusSouls.length > 0 && (
                 <div className="flex flex-col gap-1">
                   <div className="section-title text-sm">Bonus Souls</div>
                   <div className="flex gap-1.5 flex-wrap content-start">
@@ -271,8 +303,7 @@ export function SharedTable() {
                 </div>
               )}
             </div>
-          </div>
-        )}
+           </div>
 
       </div>
 
@@ -284,30 +315,38 @@ export function SharedTable() {
           count={game.treasureDeckCount}
           topDiscardCardId={topTreasureDiscard}
           deckType="treasure"
-          onBrowse={() => setBrowseDeck('treasure')}
-          onDraw={() => getSocket().emit('action:gain_treasure', { playerId: game.myPlayerId, count: 1 })}
+          onBrowse={() => setInlineBrowser({ deckType: 'treasure' })}
+          onDraw={() => { playSound('cardFlip'); getSocket().emit('action:gain_treasure', { playerId: game.myPlayerId, count: 1 }); }}
           discardCount={game.treasureDiscard.length}
-          onBrowseDiscard={() => { setBrowseDeck('treasure'); setBrowseInitialTab('discard_treasure'); }}
+          onBrowseDiscard={() => setInlineBrowser({ deckType: 'treasure', initialTab: 'discard_treasure' })}
+          discardIsDroppable
+          discardIsDraggable
+          deckIsDroppable
         />
         <DeckZone
           label="Loot"
           count={game.lootDeckCount}
           topDiscardCardId={topLootDiscard}
           deckType="loot"
-          onBrowse={() => setBrowseDeck('loot')}
-          onDraw={() => getSocket().emit('action:draw_loot', { playerId: game.myPlayerId, count: 1 })}
+          onBrowse={() => setInlineBrowser({ deckType: 'loot' })}
+          onDraw={() => { playSound('cardFlip'); getSocket().emit('action:draw_loot', { playerId: game.myPlayerId, count: 1 }); }}
           discardCount={game.lootDiscard.length}
-          onBrowseDiscard={() => { setBrowseDeck('loot'); setBrowseInitialTab('discard_loot'); }}
+          onBrowseDiscard={() => setInlineBrowser({ deckType: 'loot', initialTab: 'discard_loot' })}
           discardIsDroppable
+          discardIsDraggable
+          deckIsDroppable
         />
         <DeckZone
           label="Monster"
           count={game.monsterDeckCount}
           topDiscardCardId={topMonsterDiscard}
           deckType="monster"
-          onBrowse={() => setBrowseDeck('monster')}
+          onBrowse={() => setInlineBrowser({ deckType: 'monster' })}
           discardCount={game.monsterDiscard.length}
-          onBrowseDiscard={() => { setBrowseDeck('monster'); setBrowseInitialTab('discard_monster'); }}
+          onBrowseDiscard={() => setInlineBrowser({ deckType: 'monster', initialTab: 'discard_monster' })}
+          discardIsDroppable
+          discardIsDraggable
+          deckIsDroppable
         />
         {game.roomDeckCount > 0 && (
           <DeckZone
@@ -315,22 +354,26 @@ export function SharedTable() {
             count={game.roomDeckCount}
             topDiscardCardId={topRoomDiscard}
             deckType="room"
-            onBrowse={() => setBrowseDeck('room')}
+            onBrowse={() => setInlineBrowser({ deckType: 'room' })}
             discardCount={game.roomDiscard.length}
-            onBrowseDiscard={() => { setBrowseDeck('room'); setBrowseInitialTab('discard_room'); }}
+            onBrowseDiscard={() => setInlineBrowser({ deckType: 'room', initialTab: 'discard_room' })}
+            discardIsDroppable
+            discardIsDraggable
+            deckIsDroppable
           />
         )}
       </div>
 
-      {/* Deck browser modal */}
-      {browseDeck && (
-        <DeckBrowserModal
-          isOpen={true}
-          deckType={browseDeck as DeckType}
-          initialTab={browseInitialTab}
-          onClose={() => { setBrowseDeck(null); setBrowseInitialTab(undefined); }}
-        />
-      )}
+      {/* Inline deck browser */}
+      <AnimatePresence>
+        {inlineBrowser && (
+          <InlineDeckBrowser
+            deckType={inlineBrowser.deckType}
+            initialTab={inlineBrowser.initialTab}
+            onClose={() => setInlineBrowser(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

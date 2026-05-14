@@ -2,13 +2,8 @@ import React from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DragPayload, DropPayload, useDragState } from './DnDProvider';
+import { UniversalDrag, UniversalDrop, useDragState } from './DnDProvider';
 
-/**
- * Wraps any element to make it draggable. The element retains all its
- * pointer interactions (clicks, hovers) — drag only activates after the
- * pointer moves 8px (set in DnDProvider activationConstraint).
- */
 export function Draggable({
   id,
   payload,
@@ -17,7 +12,7 @@ export function Draggable({
   className = '',
 }: {
   id: string;
-  payload: DragPayload;
+  payload: UniversalDrag;
   disabled?: boolean;
   children: React.ReactNode;
   className?: string;
@@ -45,32 +40,22 @@ export function Draggable({
   );
 }
 
-/**
- * Wraps any element to make it a drop target. When a compatible drag is
- * active, a gold ring fades in. When the dragged item is hovering directly
- * over this zone, the ring intensifies to bright gold/green.
- */
 export function Droppable({
   id,
   payload,
-  accepts,
   children,
   className = '',
   highlightInset = '-inset-1',
 }: {
   id: string;
-  payload: DropPayload;
-  /** Predicate: returns true if the currently-active drag is acceptable here */
-  accepts: (drag: DragPayload) => boolean;
+  payload: UniversalDrop;
   children: React.ReactNode;
   className?: string;
-  /** Tailwind inset for the highlight ring (default -inset-1) */
   highlightInset?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id, data: payload });
   const { activeDrag } = useDragState();
-  const isAcceptable = activeDrag ? accepts(activeDrag) : false;
-  const showHighlight = isAcceptable;
+  const showHighlight = !!activeDrag;
 
   return (
     <div ref={setNodeRef} className={`relative ${className}`}>

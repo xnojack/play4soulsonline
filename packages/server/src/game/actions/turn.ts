@@ -3,6 +3,7 @@ import { createLogEntry } from '../GameRoom';
 import { resetPriority, allPassedPriority, resolveTopOfStack, pushStack } from '../stack';
 import { drawFromDeck, putOnTopOfDeck, putOnBottomOfDeck } from '../decks';
 import { getCardById } from '../../db/cards';
+import { findAndRemoveCardInstance } from './items';
 
 /** Start the action phase (called after start-of-turn triggered abilities resolve) */
 export function beginActionPhase(state: GameState): GameState {
@@ -282,19 +283,26 @@ export function discardLoot(
   };
 }
 
-/** Return a card from hand (or discard) back to a deck */
+/** Return a card from any zone back to a deck */
 export function returnToDeck(
   state: GameState,
   playerId: string,
   cardId: string,
-  deckType: 'loot' | 'treasure' | 'monster',
+  deckType: 'loot' | 'treasure' | 'monster' | 'room',
   position: 'top' | 'bottom',
-  fromHand: boolean
+  fromHand: boolean,
+  fromDiscard?: boolean,
+  fromInstanceId?: string,
 ): GameState {
   let newState = state;
 
-  // Remove from hand if requested
-  if (fromHand) {
+  // Remove from source zone
+  if (fromInstanceId) {
+    // Move existing CardInPlay out of whichever zone holds it
+    const { newState: afterRemove, instance } = findAndRemoveCardInstance(state, cardId, fromInstanceId);
+    if (!instance) return state; // instance not found — bail
+    newState = afterRemove;
+  } else if (fromHand) {
     const player = state.players.find((p) => p.id === playerId);
     if (!player || !player.handCardIds.includes(cardId)) return state;
     newState = {
@@ -305,6 +313,22 @@ export function returnToDeck(
           : p
       ),
     };
+  } else if (fromDiscard) {
+    // Strip from the matching discard pile
+    switch (deckType) {
+      case 'loot':
+        newState = { ...newState, lootDiscard: newState.lootDiscard.filter((id) => id !== cardId) };
+        break;
+      case 'treasure':
+        newState = { ...newState, treasureDiscard: newState.treasureDiscard.filter((id) => id !== cardId) };
+        break;
+      case 'monster':
+        newState = { ...newState, monsterDiscard: newState.monsterDiscard.filter((id) => id !== cardId) };
+        break;
+      case 'room':
+        newState = { ...newState, roomDiscard: newState.roomDiscard.filter((id) => id !== cardId) };
+        break;
+    }
   }
 
   const placeOnDeck = position === 'top' ? putOnTopOfDeck : putOnBottomOfDeck;
@@ -333,6 +357,12 @@ export function returnToDeck(
       return {
         ...newState,
         monsterDeck: placeOnDeck(newState.monsterDeck, cardId),
+        log: [...newState.log, log],
+      };
+    case 'room':
+      return {
+        ...newState,
+        roomDeck: placeOnDeck(newState.roomDeck, cardId),
         log: [...newState.log, log],
       };
     default:

@@ -13,22 +13,18 @@ import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { useCard } from '../board/CardResolver';
 import { SERVER_URL } from '../../config';
+import {
+  UniversalDrag,
+  UniversalDrop,
+  resolveDropActions,
+  getAllAvailableActions,
+} from './DropActionResolver';
 
-/** Payload attached to draggables — encodes what is being dragged. */
-export type DragPayload =
-  | { type: 'loot-hand'; cardId: string }
-  | { type: 'item'; instanceId: string; cardId: string }
-  | { type: 'character'; instanceId: string; cardId: string };
-
-/** Payload attached to droppables — encodes what targets accept what. */
-export type DropPayload =
-  | { kind: 'play-loot' }
-  | { kind: 'discard-loot' }
-  | { kind: 'give-item'; toPlayerId: string }
-  | { kind: 'attack-monster'; slotIndex: number };
+export type { UniversalDrag, UniversalDrop };
+import { DropContextMenu } from './DropContextMenu';
 
 interface DnDContextValue {
-  activeDrag: DragPayload | null;
+  activeDrag: UniversalDrag | null;
 }
 
 export const DnDStateContext = React.createContext<DnDContextValue>({ activeDrag: null });
@@ -37,21 +33,14 @@ export function useDragState() {
   return React.useContext(DnDStateContext);
 }
 
-/**
- * Global Drag-and-Drop provider for the game board.
- *
- * Activation constraint of 8px means clicks/taps still pass through to card popovers —
- * a true drag gesture must move the pointer 8px before DnD takes over.
- *
- * Drag types and accepted drop kinds:
- *   loot-hand → play-loot, discard-loot, give-item
- *   item      → give-item
- *   (attack-monster requires no draggable — uses character drag from PlayerArea — currently we
- *    expose attack-monster as a drop target only; no draggable currently maps to it. Reserved
- *    for future expansion.)
- */
 export function DnDProvider({ children }: { children: React.ReactNode }) {
-  const [activeDrag, setActiveDrag] = useState<DragPayload | null>(null);
+  const [activeDrag, setActiveDrag] = useState<UniversalDrag | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    actions: { label: string; action: string; payload: Record<string, unknown> }[];
+    stackSourceId?: string; // set when drag source is 'stack', triggers resolve_top after action
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -59,62 +48,40 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const data = event.active.data.current as DragPayload | undefined;
+    const data = event.active.data.current as UniversalDrag | undefined;
     if (data) setActiveDrag(data);
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     setActiveDrag(null);
-    const drag = event.active.data.current as DragPayload | undefined;
-    const drop = event.over?.data.current as DropPayload | undefined;
-    if (!drag || !drop) return;
+    const drag = event.active.data.current as UniversalDrag | undefined;
+    const drop = event.over?.data.current as UniversalDrop | undefined;
+    if (!drag || !drop || !event.over) return;
 
-    const socket = getSocket();
+    const game = useGameStore.getState().game;
+    if (!game) return;
+    let actions = resolveDropActions(drag, drop, game);
 
-    // Loot card from hand
-    if (drag.type === 'loot-hand') {
-      if (drop.kind === 'play-loot') {
-        socket.emit('action:play_loot', { cardId: drag.cardId, targets: [] });
-        return;
+    if (actions.length === 0) {
+      actions = getAllAvailableActions(drag, game);
+      if (actions.length === 0) return;
+    }
+    if (actions.length === 1) {
+      getSocket().emit(actions[0].action, actions[0].payload);
+      // Stack-source drags: dismiss the stack item (no side effects) after placement
+      if (drag.sourceZone === 'stack' && actions[0].action !== 'action:cancel_stack_item') {
+        getSocket().emit('action:dismiss_stack_item', { stackItemId: drag.instanceId });
       }
-      if (drop.kind === 'discard-loot') {
-        socket.emit('action:discard_loot', { cardId: drag.cardId });
-        return;
-      }
-      if (drop.kind === 'give-item') {
-        socket.emit('action:trade_card', {
-          cardId: drag.cardId,
-          toPlayerId: drop.toPlayerId,
-          fromHand: true,
-        });
-        return;
-      }
+      return;
     }
 
-    // Item card from player area
-    if (drag.type === 'item') {
-      if (drop.kind === 'give-item') {
-        const myId = useGameStore.getState().game?.myPlayerId;
-        if (drop.toPlayerId === myId) return; // can't give to self
-        socket.emit('action:trade_card', {
-          instanceId: drag.instanceId,
-          toPlayerId: drop.toPlayerId,
-          fromHand: false,
-        });
-        return;
-      }
-    }
-
-    // Character card → declare attack on a monster
-    if (drag.type === 'character') {
-      if (drop.kind === 'attack-monster') {
-        socket.emit('action:declare_attack', {
-          targetType: 'monster_slot',
-          targetSlotIndex: drop.slotIndex,
-        });
-        return;
-      }
-    }
+    const rect = event.over.rect;
+    setContextMenu({
+      x: rect.left + rect.width / 2 - 70,
+      y: rect.top + rect.height / 2,
+      actions,
+      stackSourceId: drag.sourceZone === 'stack' ? drag.instanceId : undefined,
+    });
   }, []);
 
   const handleDragCancel = useCallback(() => {
@@ -136,16 +103,23 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
           {activeDrag ? <DragPreview payload={activeDrag} /> : null}
         </DragOverlay>
       </DndContext>
+      {contextMenu && (
+        <DropContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          actions={contextMenu.actions}
+          stackSource={!!contextMenu.stackSourceId}
+          stackItemId={contextMenu.stackSourceId}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </DnDStateContext.Provider>
   );
 }
 
-/** Floating card preview that follows the cursor while dragging. */
-function DragPreview({ payload }: { payload: DragPayload }) {
-  const cardId = payload.cardId;
-  const card = useCard(cardId);
+function DragPreview({ payload }: { payload: UniversalDrag }) {
+  const card = useCard(payload.cardId);
   if (!card) {
-    // Show a simple placeholder until the card data loads
     return (
       <div className="w-[78px] h-[107px] rounded bg-fs-darker border-2 border-fs-gold/60 shadow-2xl rotate-3 opacity-90" />
     );

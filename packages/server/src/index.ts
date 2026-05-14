@@ -32,6 +32,11 @@ app.use('/cards', express.static(path.join(publicDir, 'cards')));
 // Also serve from data/cards — DATA_DIR defaults to /app/data (absolute path)
 app.use('/cards', express.static(path.join(DATA_DIR, 'cards')));
 
+// ─── Sound effects ────────────────────────────────────────────────────────────
+// data/sounds/ first (custom hoster overrides), then bundled defaults
+app.use('/sounds', express.static(path.join(DATA_DIR, 'sounds')));
+app.use('/sounds', express.static(path.join(publicDir, 'sounds')));
+
 // ─── REST API ─────────────────────────────────────────────────────────────────
 app.use('/api', apiRouter);
 

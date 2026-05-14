@@ -108,6 +108,7 @@ export class GameRoom {
       edenPickOptions: [],
       sadVotes: {},
       priorityTimeoutMs: 30000,
+      allowPrivilegedActions: true,
     };
   }
 
@@ -296,6 +297,7 @@ export class GameRoom {
     includeRooms: boolean;
     excludeNeverPrinted?: boolean;
     priorityTimeoutMs?: number;
+    allowPrivilegedActions?: boolean;
   }): string | null {
     if (this.state.phase !== 'lobby') return 'Game already started';
     const nonSpectators = this.state.players.filter((p) => !p.isSpectator);
@@ -555,6 +557,7 @@ export class GameRoom {
       phase: 'active',
       activeSets: options.activeSets,
       priorityTimeoutMs: typeof options.priorityTimeoutMs === 'number' ? options.priorityTimeoutMs : 30000,
+      allowPrivilegedActions: options.allowPrivilegedActions !== false,
       turn: {
         activePlayerId: firstPlayer.id,
         phase: 'start',
@@ -791,6 +794,7 @@ export class GameRoom {
       edenPickOptions: [],
       sadVotes: {},
       priorityTimeoutMs: 30000,
+      allowPrivilegedActions: true,
     };
   }
 }
