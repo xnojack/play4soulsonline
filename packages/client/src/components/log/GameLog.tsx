@@ -12,6 +12,7 @@ const TYPE_ICONS: Record<string, string> = {
   stack: '📚',
   phase: '🔄',
   info: 'ℹ',
+  chat: '💬',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ const TYPE_COLORS: Record<string, string> = {
   stack: 'text-orange-400',
   phase: 'text-fs-parchment/60',
   info: 'text-fs-parchment/70',
+  chat: 'text-cyan-400',
 };
 
 export function GameLog() {

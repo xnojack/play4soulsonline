@@ -2103,6 +2103,25 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
   // ─── Cursor sharing ────────────────────────────────────────────────────────────
 
+  /** Player chat — appears in the game log */
+  socket.on('action:chat', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!isObject(raw) || !isNonEmptyString(raw.message)) return sendError(socket, 'Invalid payload');
+    const msg = raw.message.toString().slice(0, 280);
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+    const state = room.getState();
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return;
+
+    const log = createLogEntry('chat', `${player.name}: ${msg}`, ctx.playerId);
+    room.addLog('chat', `${player.name}: ${msg}`, ctx.playerId);
+    broadcastLog(io, ctx.roomId, [log]);
+  }));
+
   /** Broadcast mouse cursor position to room — exempt from rate limiter */
   socket.on('action:cursor_move', (raw) => {
     if (!isObject(raw) || !isNumber(raw.x) || !isNumber(raw.y)) return;

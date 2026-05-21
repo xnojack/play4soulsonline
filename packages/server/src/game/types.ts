@@ -206,7 +206,8 @@ export type LogEntryType =
   | 'soul_gain'
   | 'stack'
   | 'phase'
-  | 'info';
+  | 'info'
+  | 'chat';
 
 export interface LogEntry {
   id: string;
