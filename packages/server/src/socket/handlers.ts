@@ -2101,7 +2101,28 @@ export function registerHandlers(io: Server, socket: Socket): void {
     broadcastState(io, ctx.roomId);
   }));
 
-  // ─── Disconnect ────────────────────────────────────────────────────────────────
+  // ─── Cursor sharing ────────────────────────────────────────────────────────────
+
+  /** Broadcast mouse cursor position to room — exempt from rate limiter */
+  socket.on('action:cursor_move', (raw) => {
+    if (!isObject(raw) || !isNumber(raw.x) || !isNumber(raw.y)) return;
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+    const state = room.getState();
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return;
+
+    socket.to(ctx.roomId).emit('cursor:move', {
+      playerId: ctx.playerId,
+      playerName: player.name,
+      x: raw.x,
+      y: raw.y,
+    });
+  });
+
+  // ─── Disconnect ─────────────────────────────────────────────────────────────────
 
   socket.on('disconnect', () => {
     const ctx = socketPlayerMap.get(socket.id);
@@ -2113,6 +2134,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (room) {
       room.setConnected(ctx.playerId, false);
       broadcastState(io, ctx.roomId);
+      socket.to(ctx.roomId).emit('cursor:remove', ctx.playerId);
 
       // If all non-spectator players are now disconnected, schedule cleanup
       if (room.allDisconnected) {

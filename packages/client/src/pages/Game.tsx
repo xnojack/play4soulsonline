@@ -6,6 +6,8 @@ import { GameBoard } from '../components/board/GameBoard';
 import { EdenPickModal } from '../components/board/EdenPickModal';
 import { SadVoteModal } from '../components/board/SadVoteModal';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
+import { RemoteCursors } from '../components/board/RemoteCursors';
+import { useCursorBroadcast } from '../hooks/useCursorBroadcast';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { useIsHost } from '../hooks/useMyPlayer';
@@ -33,6 +35,7 @@ export function Game() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const game = useGameStore((s) => s.game);
+  useCursorBroadcast();
   const gameOverInfo = useGameStore((s) => s.gameOverInfo);
   const setGameOver = useGameStore((s) => s.setGameOver);
   const error = useGameStore((s) => s.error);
@@ -108,6 +111,9 @@ export function Game() {
   return (
     <>
       <GameBoard />
+
+      {/* Remote player cursors */}
+      <RemoteCursors />
 
       {/* Eden starting-item pick — blocks interaction until all Edens have chosen */}
       <EdenPickModal />

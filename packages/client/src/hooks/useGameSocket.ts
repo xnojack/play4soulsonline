@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { connectSocket, getSocket } from '../socket/client';
 import { useGameStore } from '../store/gameStore';
+import { useCursorStore } from '../store/cursorStore';
 
 export function useGameSocket() {
   const {
@@ -14,6 +15,9 @@ export function useGameSocket() {
     setDeckContents,
     setReconnectToken,
   } = useGameStore();
+  const setCursor = useCursorStore((s) => s.setCursor);
+  const removeCursor = useCursorStore((s) => s.removeCursor);
+  const clearCursors = useCursorStore((s) => s.clearCursors);
 
   useEffect(() => {
     const socket = connectSocket();
@@ -26,6 +30,7 @@ export function useGameSocket() {
 
     const onDisconnect = () => {
       setConnected(false);
+      clearCursors();
     };
 
     const onConnectError = (err: Error) => {
@@ -64,6 +69,14 @@ export function useGameSocket() {
       sessionStorage.setItem('fs_reconnect_token', payload.token);
     };
 
+    const onCursorMove = (payload: { playerId: string; playerName: string; x: number; y: number }) => {
+      setCursor(payload.playerId, { playerName: payload.playerName, x: payload.x, y: payload.y, color: '' });
+    };
+
+    const onCursorRemove = (playerId: string) => {
+      removeCursor(playerId);
+    };
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('connect_error', onConnectError);
@@ -74,6 +87,8 @@ export function useGameSocket() {
     socket.on('game:error', onGameError);
     socket.on('deck:contents', onDeckContents);
     socket.on('room:token', onRoomToken);
+    socket.on('cursor:move', onCursorMove);
+    socket.on('cursor:remove', onCursorRemove);
 
     if (socket.connected) {
       setConnected(true);
@@ -92,6 +107,8 @@ export function useGameSocket() {
       socket.off('game:error', onGameError);
       socket.off('deck:contents', onDeckContents);
       socket.off('room:token', onRoomToken);
+      socket.off('cursor:move', onCursorMove);
+      socket.off('cursor:remove', onCursorRemove);
     };
   }, []);
 }
