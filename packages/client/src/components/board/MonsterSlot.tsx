@@ -159,15 +159,24 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
           </div>
         )}
         {isEmpty ? (
-          <div className="w-[117px] h-[160px] rounded border-2 border-dashed border-fs-gold/20 flex flex-col items-center justify-center text-fs-parchment/20 text-sm text-center gap-1">
-            <span>Empty</span>
-            {isActiveTurn && game?.turn.currentAttack === null && (
+          <div className="w-[117px] h-[160px] rounded border-2 flex flex-col items-center justify-center gap-1 transition-colors">
+            {!isActiveTurn || game?.turn.currentAttack !== null ? (
+              <>
+                <span className="text-fs-parchment/20 text-sm">Empty</span>
+              </>
+            ) : (
               <button
                 onClick={() => getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex })}
-                className="text-xs px-1 py-0.5 rounded border border-red-700/40 text-red-500/60 hover:text-red-400 hover:bg-red-900/20 transition-colors mt-1"
+                className="w-full h-full rounded border-2 border-red-700/40 hover:border-red-500 bg-red-900/20 hover:bg-red-900/40 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors"
                 title="Flip top of monster deck into this slot and attack"
               >
-                Flip &amp; Attack
+                <span className="text-2xl">⚔️</span>
+                <span className="text-sm font-display text-red-400">
+                  Flip &amp; Attack
+                </span>
+                <span className="text-xs text-fs-parchment/50">
+                  (slot {slot.slotIndex + 1})
+                </span>
               </button>
             )}
           </div>

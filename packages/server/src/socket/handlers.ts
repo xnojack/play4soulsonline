@@ -1496,7 +1496,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
   /** Add an extra monster or shop slot */
   socket.on('action:add_slot', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
-    if (!validatePayload(raw, ['slotType'], ['cardId', 'instanceId'])) return sendError(socket, 'Invalid payload');
+    if (!validatePayload(raw, ['slotType'])) return sendError(socket, 'Invalid payload');
     const payload = raw as AddSlotPayload;
     if (!['monster', 'shop', 'room'].includes(payload.slotType)) return sendError(socket, 'Invalid slot type');
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { MonsterSlotComponent } from './MonsterSlot';
 import { ShopSlotComponent } from './ShopSlot';
@@ -49,13 +49,86 @@ function BuyDeckTopSlot() {
   );
 }
 
+/** A card-sized button in the monster section that flips the top monster card into a chosen slot and attacks */
+function FlipAttackSlot() {
+  const game = useGameStore((s) => s.game);
+  const isMyTurn = useIsMyTurn();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const isActiveTurn = game?.turn.activePlayerId === game?.myPlayerId;
+  const canFlip =
+    isMyTurn &&
+    isActiveTurn &&
+    (game?.monsterDeckCount ?? 0) > 0 &&
+    game?.turn.currentAttack === null;
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
+
+  return (
+    <div ref={ref} className="flex flex-col items-center gap-1 min-w-[130px] relative">
+      <div className="section-title text-center text-sm mb-0.5 text-fs-parchment/40">
+        Monster Deck
+      </div>
+      <button
+        onClick={() => canFlip && setDropdownOpen(true)}
+        disabled={!canFlip}
+        className={`w-[117px] h-[160px] rounded border-2 flex flex-col items-center justify-center gap-1 transition-colors ${
+          canFlip
+            ? 'border-red-700/40 hover:border-red-500 bg-red-900/20 hover:bg-red-900/40 cursor-pointer'
+            : 'border-red-700/10 bg-fs-darker/30 cursor-not-allowed'
+        }`}
+        title="Flip top of monster deck into a slot and attack"
+      >
+        <span className="text-2xl">⚔️</span>
+        <span className={`text-sm font-display ${canFlip ? 'text-red-400' : 'text-fs-parchment/20'}`}>
+          Flip &amp; Attack
+        </span>
+        <span className={`text-xs ${canFlip ? 'text-fs-parchment/50' : 'text-fs-parchment/20'}`}>
+          (choose slot)
+        </span>
+      </button>
+      {dropdownOpen && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-fs-darker/95 border border-red-700/50 rounded-lg p-2 flex flex-col gap-1 shadow-xl backdrop-blur-sm">
+          <span className="text-xs text-red-400/70 text-center">Flip into:</span>
+          {game?.monsterSlots?.map((slot) => (
+            <button
+              key={slot.slotIndex}
+              onClick={() => {
+                getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex });
+                setDropdownOpen(false);
+              }}
+              className="text-xs px-2 py-1 rounded border border-red-700/50 text-red-400/80 hover:text-red-300 hover:bg-red-900/20 transition-colors"
+            >
+              Slot {slot.slotIndex + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => setDropdownOpen(false)}
+            className="text-xs px-2 py-1 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SharedTable() {
   const game = useGameStore((s) => s.game);
   const [inlineBrowser, setInlineBrowser] = useState<{ deckType: DeckType; initialTab?: InlineTabKey } | null>(null);
   // Feature 1: track which room card instanceId is being returned to a player
   const [returningCard, setReturningCard] = useState<string | null>(null);
-  // Feature 4: track whether slot-picker for "Flip & Attack" is open
-  const [flippingAttack, setFlippingAttack] = useState(false);
   const isMyTurn = useIsMyTurn();
 
   if (!game) return null;
@@ -66,10 +139,6 @@ export function SharedTable() {
   const topRoomDiscard = game.roomDiscard[game.roomDiscard.length - 1];
 
   const isActiveTurn = game.turn.activePlayerId === game.myPlayerId;
-  const canFlipAttack =
-    isActiveTurn &&
-    game.monsterDeckCount > 0 &&
-    game.turn.currentAttack === null;
 
   // Non-spectator players for "Return to player" picker
   const nonSpectatorPlayers = game.players.filter((p) => !p.isSpectator);
@@ -82,58 +151,21 @@ export function SharedTable() {
         <div className="flex-1 min-w-[220px]">
           <div className="flex items-center justify-between mb-1">
             <div className="section-title text-sm">Monsters</div>
-            <div className="flex items-center gap-2">
-              {canFlipAttack && (
-                <div className="relative">
-                  {flippingAttack ? (
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-red-400/70">Flip into:</span>
-                      {game.monsterSlots.map((slot) => (
-                        <button
-                          key={slot.slotIndex}
-                          onClick={() => {
-                            getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex });
-                            setFlippingAttack(false);
-                          }}
-                          className="text-xs px-1.5 py-0.5 rounded border border-red-700/50 text-red-400/80 hover:text-red-300 hover:bg-red-900/20 transition-colors"
-                          title={`Flip top of monster deck into monster slot ${slot.slotIndex + 1}`}
-                        >
-                          Slot {slot.slotIndex + 1}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setFlippingAttack(false)}
-                        className="text-xs px-1 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setFlippingAttack(true)}
-                      className="text-xs px-1.5 py-0.5 rounded border border-red-700/40 text-red-500/60 hover:text-red-400 hover:bg-red-900/20 transition-colors"
-                      title="Flip top of monster deck into a slot and attack"
-                    >
-                      Flip &amp; Attack
-                    </button>
-                  )}
-                </div>
-              )}
-              {isActiveTurn && (
-                <button
-                  onClick={() => getSocket().emit('action:add_slot', { slotType: 'monster' })}
-                  className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-                  title="Add a monster slot"
-                >
-                  + Slot
-                </button>
-              )}
-            </div>
+            {isActiveTurn && (
+              <button
+                onClick={() => getSocket().emit('action:add_slot', { slotType: 'monster' })}
+                className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
+                title="Add a monster slot"
+              >
+                + Slot
+              </button>
+            )}
           </div>
           <div className="flex gap-2 flex-wrap content-start">
             {game.monsterSlots.map((slot) => (
               <MonsterSlotComponent key={slot.slotIndex} slot={slot} />
             ))}
+            <FlipAttackSlot />
           </div>
         </div>
 

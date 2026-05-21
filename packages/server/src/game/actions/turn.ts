@@ -314,20 +314,40 @@ export function returnToDeck(
       ),
     };
   } else if (fromDiscard) {
-    // Strip from the matching discard pile
+    // Strip exactly one copy from the matching discard pile
     switch (deckType) {
-      case 'loot':
-        newState = { ...newState, lootDiscard: newState.lootDiscard.filter((id) => id !== cardId) };
+      case 'loot': {
+        const d = [...newState.lootDiscard];
+        const idx = d.lastIndexOf(cardId);
+        if (idx === -1) return state;
+        d.splice(idx, 1);
+        newState = { ...newState, lootDiscard: d };
         break;
-      case 'treasure':
-        newState = { ...newState, treasureDiscard: newState.treasureDiscard.filter((id) => id !== cardId) };
+      }
+      case 'treasure': {
+        const d = [...newState.treasureDiscard];
+        const idx = d.lastIndexOf(cardId);
+        if (idx === -1) return state;
+        d.splice(idx, 1);
+        newState = { ...newState, treasureDiscard: d };
         break;
-      case 'monster':
-        newState = { ...newState, monsterDiscard: newState.monsterDiscard.filter((id) => id !== cardId) };
+      }
+      case 'monster': {
+        const d = [...newState.monsterDiscard];
+        const idx = d.lastIndexOf(cardId);
+        if (idx === -1) return state;
+        d.splice(idx, 1);
+        newState = { ...newState, monsterDiscard: d };
         break;
-      case 'room':
-        newState = { ...newState, roomDiscard: newState.roomDiscard.filter((id) => id !== cardId) };
+      }
+      case 'room': {
+        const d = [...newState.roomDiscard];
+        const idx = d.lastIndexOf(cardId);
+        if (idx === -1) return state;
+        d.splice(idx, 1);
+        newState = { ...newState, roomDiscard: d };
         break;
+      }
     }
   }
 
