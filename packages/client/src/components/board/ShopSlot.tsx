@@ -70,7 +70,7 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
       payload={{ targetZone: 'shop', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1"
+      className="flex flex-col items-center gap-1 min-w-[110px] max-w-[180px] flex-1"
       data-zone={`shop-${slot.slotIndex}`}
     >
       <div className="section-title text-center text-sm mb-0.5 flex items-center gap-1">
@@ -92,7 +92,7 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
             </span>
           ) : (
             <button
-              className={`text-sm ml-1 font-body font-normal px-1 rounded hover:bg-fs-gold/10 transition-colors ${
+              className={`text-sm ml-1 font-body font-normal px-1 md:px-2 rounded hover:bg-fs-gold/10 transition-colors ${
                 cost < 0 ? 'text-green-400' : cost === 0 ? 'text-purple-400' : 'text-fs-gold/50'
               }`}
               title="Click to change cost"
@@ -126,7 +126,7 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
         {canPurchase && (
           <button
             onClick={handlePurchase}
-            className={`text-xs px-3 py-1 rounded border transition-colors font-display ${
+            className={`text-xs px-2 py-1 md:px-3 md:py-1 rounded border transition-colors font-display ${
               cost <= 0
                 ? 'border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70'
                 : 'border-fs-gold/30 text-fs-parchment hover:bg-fs-brown/40 hover:border-fs-gold/50'

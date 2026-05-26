@@ -254,10 +254,10 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
       <div className="border-t border-fs-gold/10 my-1" />
 
       {/* Character + Items + Hand (horizontal when space permits) */}
-      <div className="flex gap-3 flex-wrap content-start items-start">
-        {/* Character card */}
-        {player.characterInstanceId && (
-          <div className="flex flex-col items-center gap-0.5 min-w-[120px] max-w-[180px] flex-1">
+      <div className="flex gap-2 md:gap-3 flex-wrap content-start items-start">
+         {/* Character card */}
+         {player.characterInstanceId && (
+          <div className="flex flex-col items-center gap-0.5 min-w-[100px] md:min-w-[120px] max-w-[180px] flex-1">
             <span className="text-sm text-fs-parchment/40">Character</span>
             {isMe ? (
               <Draggable
@@ -318,7 +318,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
           id={`drop-items-${player.id}`}
           payload={{ targetZone: 'items', targetZoneId: player.id }}
         >
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[160px] md:min-w-[200px]">
           <span className="text-sm text-fs-parchment/40 block mb-1">
             Items
             {isMe && <span className="text-fs-parchment/20 ml-1">(click to act)</span>}
@@ -355,7 +355,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
 
         {/* My hand - only visible to player */}
         {isMe && (
-          <div className="flex-1 min-w-[200px]">
+    <div className="flex-1 min-w-[160px] md:min-w-[200px]">
             <HandPanel player={player} />
           </div>
         )}

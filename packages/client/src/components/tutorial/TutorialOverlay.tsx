@@ -65,7 +65,7 @@ export function TutorialOverlay() {
     }
   }, []);
 
-  const updateSpotlight = useCallback(() => {
+const updateSpotlight = useCallback(() => {
     const step = TUTORIAL_STEPS[currentStep];
     if (!step) {
       setSpotlight(null);
@@ -76,6 +76,7 @@ export function TutorialOverlay() {
       setSpotlight(null);
       return;
     }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     const rect = el.getBoundingClientRect();
     const padding = 20;
     setSpotlight({

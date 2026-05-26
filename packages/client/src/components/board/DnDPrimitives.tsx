@@ -29,7 +29,7 @@ export function Draggable({
       style={{
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.35 : 1,
-        touchAction: 'manipulation',
+        touchAction: 'none',
       }}
       className={className}
       {...attributes}

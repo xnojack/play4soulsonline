@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { SharedTable } from './SharedTable';
@@ -9,7 +9,8 @@ import { CardFlightLayer } from './CardFlightLayer';
 import { useCardFlightDetector } from '../../hooks/useCardFlightDetector';
 import { PlayerArea } from '../player/PlayerArea';
 import { OpponentArea } from '../player/OpponentArea';
-import { CompactOpponent } from '../player/CompactOpponent';
+import { MobileOpponentList } from '../player/MobileOpponentList';
+import { LogToast } from '../log/LogToast';
 import { TheStack } from '../stack/TheStack';
 import { GameLog } from '../log/GameLog';
 import { ChatInput } from '../log/ChatInput';
@@ -29,49 +30,48 @@ export function GameBoard() {
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
   useCardFlightDetector();
-  const [showHint, setShowHint] = React.useState(() => !localStorage.getItem('hideCardHint'));
-  const [showOpponents, setShowOpponents] = React.useState(true);
-  const [showStackLog, setShowStackLog] = React.useState(true);
-  const [showOrientationHint, setShowOrientationHint] = React.useState(() => {
-    if (localStorage.getItem('hideOrientationHint')) return false;
-    return window.matchMedia('(pointer: coarse) and (orientation: portrait)').matches;
-  });
-  const [helpMode, setHelpMode] = React.useState(() => localStorage.getItem('helpMode') === '1');
-
-  React.useEffect(() => {
-    if (localStorage.getItem('hideOrientationHint')) return;
-    const mq = window.matchMedia('(pointer: coarse) and (orientation: portrait)');
-    const handler = (e: MediaQueryListEvent) => setShowOrientationHint(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  const [showHint, setShowHint] = useState(() => !localStorage.getItem('hideCardHint'));
+  const [showOpponents, setShowOpponents] = useState(true);
+  const [showStackLog, setShowStackLog] = useState(() => window.innerWidth >= 768);
+  const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
+  const [isPortrait, setIsPortrait] = useState(() => window.innerWidth < window.innerHeight);
+  const [helpMode, setHelpMode] = useState(() => localStorage.getItem('helpMode') === '1');
 
   const dismissHint = () => {
     localStorage.setItem('hideCardHint', '1');
     setShowHint(false);
   };
 
-  const dismissOrientationHint = () => {
-    localStorage.setItem('hideOrientationHint', '1');
-    setShowOrientationHint(false);
-  };
+  useEffect(() => {
+    const checkOrientation = () => setIsPortrait(window.innerWidth < window.innerHeight);
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
 
   if (!game) return null;
 
   const myPlayer = game.players.find((p) => p.id === game.myPlayerId);
-  const opponents = game.players.filter(
-    (p) => p.id !== game.myPlayerId && !p.isSpectator
-  );
   const spectators = game.players.filter((p) => p.isSpectator);
+  const allPlayers = game.players.filter((p) => !p.isSpectator);
+  const activePlayerId = game.turn.activePlayerId;
+  const priorityPlayerId = game.priorityQueue[0] ?? null;
 
-  const activePlayer = game.players.find((p) => p.id === game.turn.activePlayerId);
+  // Sort all players: active player first, then by priorityQueue order
+  const sortedPlayers = [...allPlayers].sort((a, b) => {
+    if (a.id === activePlayerId) return -1;
+    if (b.id === activePlayerId) return 1;
+    const ai = game.priorityQueue.indexOf(a.id);
+    const bi = game.priorityQueue.indexOf(b.id);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
 
-  // Guidance text shown in the topbar
+  const activePlayer = game.players.find((p) => p.id === activePlayerId);
+
   const turnHint = isMyTurn
     ? 'Your turn'
     : `${activePlayer?.name ?? '?'}'s turn`;
 
-  // Bottom bar is visible when it's your turn or you have priority
   const showBottomBar = game.phase === 'active' && (isMyTurn || hasPriority);
 
   const handleRestart = () => {
@@ -82,50 +82,66 @@ export function GameBoard() {
   return (
     <DnDProvider>
     <div className="h-screen flex flex-col bg-fs-darker overflow-hidden">
+      {/* Portrait overlay — blocks everything */}
+      {isPortrait && (
+        <div className="fixed inset-0 z-[9999] bg-fs-darker flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="text-6xl">↻</div>
+            <div className="font-display text-fs-gold text-2xl font-bold">
+              Rotate to Landscape
+            </div>
+            <div className="text-fs-parchment/60 text-sm">
+              This app works best in landscape mode.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
-      <div className="bg-fs-dark border-b border-fs-gold/20 px-4 py-2 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="font-display text-fs-gold font-bold">Four Souls</span>
-          <span className="text-sm text-fs-parchment/40">Room: {game.roomId}</span>
-          <span className={`text-sm px-2 py-0.5 rounded ${isMyTurn ? 'bg-fs-gold/20 text-fs-gold' : 'text-fs-parchment/40'}`}>
+      <div className="bg-fs-dark border-b border-fs-gold/20 px-3 md:px-4 py-2 flex items-center justify-between flex-shrink-0 gap-2">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+          <span className="font-display text-fs-gold font-bold text-sm md:text-base">Four Souls</span>
+          <span className="text-xs md:text-sm text-fs-parchment/40">Room: {game.roomId}</span>
+          <span className={`text-xs md:text-sm px-2 py-0.5 rounded ${isMyTurn ? 'bg-fs-gold/20 text-fs-gold' : 'text-fs-parchment/40'}`}>
             {turnHint}
           </span>
-          <span className="text-sm text-fs-parchment/30">
-            ¢ Pool: {game.coinPool}
+          <span className="text-xs md:text-sm text-fs-parchment/30">
+            ¢ {game.coinPool}
           </span>
           {showHint && (
-            <span className="flex items-center gap-1.5 text-sm text-fs-parchment/40 italic border-l border-fs-gold/20 pl-3 ml-1">
-              Tip: Hover over cards to see actions. Click to view full details.
+            <span className="flex items-center gap-1.5 text-xs md:text-sm text-fs-parchment/40 italic border-l border-fs-gold/20 pl-2 md:pl-3 ml-0 md:ml-1">
+              Tip: Hover cards for actions.
               <button
                 onClick={dismissHint}
-                className="text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors leading-none not-italic flex-shrink-0"
+                className="text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors leading-none flex-shrink-0"
                 title="Dismiss"
               >✕</button>
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
           <a
             href="https://foursouls.com/rules/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-fs-parchment/20 hover:text-fs-parchment/50 transition-colors"
+            className="hidden md:inline text-[10px] text-fs-parchment/20 hover:text-fs-parchment/50 transition-colors"
             title="Official Four Souls rules"
           >
             Rules
           </a>
-          <span className="text-fs-parchment/10 text-[10px]">|</span>
+          <span className="hidden md:inline text-fs-parchment/10 text-[10px]">|</span>
           <a
             href="https://foursouls.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-fs-parchment/20 hover:text-fs-parchment/50 transition-colors"
+            className="hidden md:inline text-[10px] text-fs-parchment/20 hover:text-fs-parchment/50 transition-colors"
             title="Card data & artwork © Edmund McMillen / Maestro Media — unofficial fan companion"
           >
             foursouls.com
           </a>
           <Button size="sm" variant="ghost" onClick={() => setCardSearchOpen(true)}>
-            Card Search
+            <span className="hidden sm:inline">Card Search</span>
+            <span className="sm:hidden">🔍</span>
           </Button>
           <button
             onClick={() => {
@@ -144,62 +160,46 @@ export function GameBoard() {
             </Button>
           )}
           {spectators.length > 0 && (
-            <span className="text-sm text-fs-parchment/30">
+            <span className="hidden md:inline text-sm text-fs-parchment/30">
               {spectators.length} watching
             </span>
           )}
         </div>
       </div>
 
-      {/* Mobile opponents bar — horizontal scrollable, visible only on small screens */}
-      {opponents.length > 0 && (
-        <div className="lg:hidden flex-shrink-0 border-b border-fs-gold/10 bg-fs-dark/50">
-          <div className="flex gap-2 p-2 overflow-x-auto">
-            {opponents.map((p) => (
-              <CompactOpponent
-                key={p.id}
-                player={p}
-                isActiveTurn={game.turn.activePlayerId === p.id}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Orientation hint — touch portrait only, dismissable */}
-      {showOrientationHint && (
-        <div className="lg:hidden flex-shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-amber-900/80 border-b border-amber-700/50 text-amber-200 text-sm">
-          <span>↻ Rotate to landscape for the best experience.</span>
-          <button
-            onClick={dismissOrientationHint}
-            className="text-amber-200/60 hover:text-amber-200 transition-colors flex-shrink-0 leading-none"
-            title="Dismiss"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* Main layout */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Left: opponents sidebar — desktop only, collapsible */}
-        {opponents.length > 0 && (
-          <div className={`hidden lg:block flex-shrink-0 overflow-y-auto border-r border-fs-gold/10 transition-all duration-200 ${showOpponents ? 'w-80' : 'w-0'}`}>
-            <div className="p-2 space-y-2 w-80">
-              <div className="section-title px-1">Opponents</div>
-              {opponents.map((p) => (
-                <OpponentArea
-                  key={p.id}
-                  player={p}
-                  isActiveTurn={game.turn.activePlayerId === p.id}
+        {/* Left: all players sidebar — condensed on mobile, full on desktop */}
+        {sortedPlayers.length > 0 && (
+          <div className={`flex flex-shrink-0 overflow-y-auto border-r border-fs-gold/10 transition-all duration-200 ${showOpponents ? 'w-40 lg:w-80' : 'w-0 lg:w-0'}`}>
+            <div className="p-2 space-y-2 w-40 lg:w-80">
+              <div className="section-title px-1 text-xs sm:text-sm">Players</div>
+              {/* Desktop: full OpponentArea */}
+              <div className="hidden lg:block">
+                {sortedPlayers.map((p) => (
+                  <OpponentArea
+                    key={p.id}
+                    player={p}
+                    isActiveTurn={activePlayerId === p.id}
+                    hasPriority={priorityPlayerId === p.id && priorityPlayerId !== activePlayerId}
+                  />
+                ))}
+              </div>
+              {/* Mobile: condensed list with tap-to-expand */}
+              <div className="lg:hidden">
+                <MobileOpponentList
+                  players={sortedPlayers}
+                  activePlayerId={activePlayerId}
+                  priorityPlayerId={priorityPlayerId}
+                  onSelectPlayer={setSelectedOpponentId}
                 />
-              ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Left sidebar toggle tab — desktop only, shown when there are opponents */}
-        {opponents.length > 0 && (
+        {/* Left sidebar toggle tab — desktop only */}
+        {sortedPlayers.length > 0 && (
           <button
             onClick={() => setShowOpponents((v) => !v)}
             className="hidden lg:flex flex-shrink-0 items-center justify-center w-4 self-stretch bg-fs-dark hover:bg-fs-brown/40 border-r border-fs-gold/10 text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors z-10"
@@ -219,22 +219,21 @@ export function GameBoard() {
               <PlayerArea player={myPlayer} isMe={true} />
             </div>
           )}
-          {/* Bottom padding when action bar is visible so content isn't hidden */}
           {showBottomBar && <div className="h-14" />}
         </div>
 
-        {/* Right stack+log toggle tab — desktop only */}
+        {/* Right stack+log toggle tab — visible on mobile and desktop */}
         <button
           onClick={() => setShowStackLog((v) => !v)}
-          className="hidden lg:flex flex-shrink-0 items-center justify-center w-4 self-stretch bg-fs-dark hover:bg-fs-brown/40 border-l border-fs-gold/10 text-fs-parchment/30 hover:text-fs-parchment/70 transition-colors z-10"
+          className="hidden sm:flex flex-shrink-0 items-center justify-center w-8 lg:w-5 self-stretch bg-fs-dark hover:bg-fs-brown/60 border-l border-fs-gold/40 text-fs-parchment/60 hover:text-fs-parchment transition-colors z-10"
           title={showStackLog ? 'Hide stack/log panel' : 'Show stack/log panel'}
         >
-          <span className="text-[10px] leading-none">{showStackLog ? '›' : '‹'}</span>
+          <span className="text-lg leading-none">{showStackLog ? '›' : '‹'}</span>
         </button>
 
-        {/* Right: stack + log — collapsible, sections scroll independently with min-height */}
-        <div className={`flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-hidden overflow-y-auto transition-all duration-200 ${showStackLog ? 'w-72' : 'w-0 overflow-hidden'}`}>
-          <div className="w-72 flex flex-col min-h-screen">
+        {/* Right: stack + log — visible on mobile landscape+, togglable */}
+        <div className={`hidden sm:flex flex-shrink-0 flex flex-col border-l border-fs-gold/10 overflow-hidden overflow-y-auto transition-all duration-200 ${showStackLog ? 'w-40 lg:w-72' : 'w-0 overflow-hidden'}`}>
+          <div className="w-40 lg:w-72 flex flex-col min-h-screen">
             <div className="min-h-[200px] flex-1 overflow-y-auto border-b border-fs-gold/10">
               <TheStack />
             </div>
@@ -257,7 +256,35 @@ export function GameBoard() {
       <ActionGuidance helpMode={helpMode} />
       <TurnActionBar />
       <CardFlightLayer />
+      <LogToast />
       <SoundManager />
+
+      {/* Mobile opponent detail modal */}
+      {selectedOpponentId && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-fs-darker/95 flex flex-col overflow-y-auto">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-fs-gold/20 bg-fs-dark flex-shrink-0">
+            <span className="font-display text-fs-gold text-sm">Player Detail</span>
+            <button
+              onClick={() => setSelectedOpponentId(null)}
+              className="text-fs-parchment/50 hover:text-fs-parchment text-xl px-2 py-1"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-3">
+            {(() => {
+              const opp = game.players.find((p) => p.id === selectedOpponentId);
+              if (!opp) return null;
+              return (
+                <OpponentArea
+                  player={opp}
+                  isActiveTurn={game.turn.activePlayerId === opp.id}
+                />
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
     </DnDProvider>
   );

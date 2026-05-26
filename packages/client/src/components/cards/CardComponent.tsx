@@ -112,6 +112,15 @@ export function CardComponent({
     if (!popoverWidth || !popoverHeight) return;
 
     const margin = 8;
+
+    if (window.innerWidth < 768) {
+      setPopoverCoords({
+        top: (window.innerHeight - popoverHeight) / 2,
+        left: (window.innerWidth - popoverWidth) / 2,
+      });
+      return;
+    }
+
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
     const above = spaceAbove >= spaceBelow;
@@ -347,9 +356,9 @@ export function CardComponent({
                         Counters: {instance.genericCounters}
                       </span>
                       <div className="flex gap-1">
-                        <button
-                          className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
-                          title="Remove counter"
+                      <button
+                           className="w-6 h-6 md:w-8 md:h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
+                           title="Remove counter"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (instance.genericCounters > 0) {
@@ -361,9 +370,9 @@ export function CardComponent({
                             }
                           }}
                         >−</button>
-                        <button
-                          className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
-                          title="Add counter"
+                     <button
+                           className="w-6 h-6 md:w-8 md:h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
+                           title="Add counter"
                           onClick={(e) => {
                             e.stopPropagation();
                             getSocket().emit('action:add_counter', {

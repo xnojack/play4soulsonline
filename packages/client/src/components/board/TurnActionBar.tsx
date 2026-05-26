@@ -129,7 +129,7 @@ export function TurnActionBar() {
         exit={{ y: 80 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3">
           {/* Left: Turn indicator */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
@@ -138,7 +138,7 @@ export function TurnActionBar() {
           </div>
 
           {/* Center: Turn phase breadcrumbs */}
-          <div className="flex-1 flex items-center justify-center gap-1">
+          <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
             {/* Draw Loot */}
             <PhaseButton
               label="Draw Loot"
@@ -264,7 +264,7 @@ function PhaseButton({
     <button
       onClick={isClickable ? onClick : undefined}
       disabled={!isClickable}
-      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-display transition-colors ${
+      className={`flex items-center gap-0.5 md:gap-1 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-lg text-xs md:text-sm font-display transition-colors ${
         done
           ? 'bg-fs-green/20 text-green-400/70 border border-green-700/30'
           : active && isClickable

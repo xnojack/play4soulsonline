@@ -81,7 +81,9 @@ export function StackTop() {
       <div className="section-title text-sm">Stack Top</div>
 
       {!topItem ? (
-        <div className="text-sm text-fs-parchment/30 italic py-4">Stack is empty</div>
+        <div className="w-[117px] h-[160px] rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-sm text-fs-parchment/20">
+          Stack is empty
+        </div>
       ) : (topItem.type === 'dice_roll' || topItem.type === 'attack_roll') ? (
         // ── Dice roll / attack roll ──────────────────────────────────────────
         <div className={`flex flex-col items-center gap-2 ${topCanceled ? 'opacity-40 grayscale' : ''}`}>

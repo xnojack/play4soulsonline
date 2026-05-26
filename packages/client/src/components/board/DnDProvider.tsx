@@ -22,6 +22,7 @@ import {
 
 export type { UniversalDrag, UniversalDrop };
 import { DropContextMenu } from './DropContextMenu';
+import { useDragEdgeScroll } from '../../hooks/useDragEdgeScroll';
 
 interface DnDContextValue {
   activeDrag: UniversalDrag | null;
@@ -87,6 +88,9 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
   const handleDragCancel = useCallback(() => {
     setActiveDrag(null);
   }, []);
+
+  // Edge scrolling during drag
+  useDragEdgeScroll(!!activeDrag);
 
   const ctxValue = useMemo(() => ({ activeDrag }), [activeDrag]);
 

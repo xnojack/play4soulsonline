@@ -8,9 +8,10 @@ import { Droppable } from '../board/DnDPrimitives';
 interface OpponentAreaProps {
   player: ClientPlayer;
   isActiveTurn: boolean;
+  hasPriority?: boolean;
 }
 
-export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
+export function OpponentArea({ player, isActiveTurn, hasPriority }: OpponentAreaProps) {
   const characterCards = useGameStore((s) => s.game?.characterCards ?? {});
 
   // Resolve character card instance — same fallback pattern as PlayerArea
@@ -83,6 +84,9 @@ export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
           {!player.connected && (
             <span className="text-xs text-yellow-600">⚡</span>
           )}
+          {hasPriority && (
+            <span className="text-xs text-fs-gold" title="Has priority">⚡ Priority</span>
+          )}
         </div>
 
         {/* Souls */}
@@ -135,9 +139,9 @@ export function OpponentArea({ player, isActiveTurn }: OpponentAreaProps) {
          )}
        </div>
 
-      {/* Hand count (face-down cards) */}
+      {/* Hand count (face-down cards) — hidden on desktop, shown on mobile */}
       {player.handCount > 0 && (
-        <div className="flex gap-0.5 mt-1.5 flex-wrap">
+        <div className="flex gap-0.5 mt-1.5 flex-wrap lg:hidden">
           {Array.from({ length: Math.min(player.handCount, 8) }).map((_, i) => (
             <div
               key={i}

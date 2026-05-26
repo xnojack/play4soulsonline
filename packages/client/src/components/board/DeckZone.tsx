@@ -90,7 +90,7 @@ export function DeckZone({
             {onBrowse && count > 0 && (
               <button
                 onClick={onBrowse}
-                className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-gold/60 hover:text-fs-gold hover:border-fs-gold/60 transition-colors w-full text-center"
+                className="text-xs px-2 py-0.5 md:py-1 rounded border border-fs-gold/30 text-fs-gold/60 hover:text-fs-gold hover:border-fs-gold/60 transition-colors w-full text-center"
                 title={`Browse ${label} deck`}
               >
                 Browse
@@ -100,7 +100,7 @@ export function DeckZone({
               <button
                 onClick={onDraw}
                 disabled={count === 0}
-                className={`text-xs px-2 py-0.5 rounded border transition-colors w-full text-center ${
+                className={`text-xs px-2 py-0.5 md:py-1 rounded border transition-colors w-full text-center ${
                   count > 0
                     ? 'border-green-700/50 text-green-400/70 hover:text-green-300 hover:border-green-600 cursor-pointer'
                     : 'border-gray-700 text-gray-600 cursor-not-allowed'

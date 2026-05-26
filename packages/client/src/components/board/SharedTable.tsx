@@ -23,10 +23,10 @@ function BuyDeckTopSlot() {
   const canBuy = isMyTurn && (game?.treasureDeckCount ?? 0) > 0;
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[130px]">
-      <div className="section-title text-center text-sm mb-0.5 text-fs-parchment/40">
-        Deck Top
-      </div>
+   <div className="flex flex-col items-center gap-1 min-w-[120px]">
+       <div className="section-title text-center text-sm mb-0.5 text-fs-parchment/40">
+         Deck Top
+       </div>
       <button
         onClick={() => getSocket().emit('action:buy_top_treasure')}
         disabled={!canBuy}
@@ -75,7 +75,7 @@ function FlipAttackSlot() {
   }, [dropdownOpen]);
 
   return (
-    <div ref={ref} className="flex flex-col items-center gap-1 min-w-[130px] relative">
+    <div ref={ref} className="flex flex-col items-center gap-1 min-w-[120px] relative">
       <div className="section-title text-center text-sm mb-0.5 text-fs-parchment/40">
         Monster Deck
       </div>
@@ -144,11 +144,11 @@ export function SharedTable() {
   const nonSpectatorPlayers = game.players.filter((p) => !p.isSpectator);
 
   return (
-    <div className="table-felt p-4">
+    <div className="table-felt p-3">
       {/* Main row: Monsters | Shop | Room | Stack | Bonus Souls — wraps if narrow */}
-      <div className="flex gap-4 flex-wrap content-start items-start">
+      <div className="flex gap-2 flex-wrap content-start items-start">
         {/* Monster slots */}
-        <div className="flex-1 min-w-[220px]">
+          <div className="flex-1 min-w-[420px]">
           <div className="flex items-center justify-between mb-1">
             <div className="section-title text-sm">Monsters</div>
             {isActiveTurn && (
@@ -161,7 +161,7 @@ export function SharedTable() {
               </button>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap content-start">
+          <div className="flex gap-1 flex-wrap content-start">
             {game.monsterSlots.map((slot) => (
               <MonsterSlotComponent key={slot.slotIndex} slot={slot} />
             ))}
@@ -169,8 +169,8 @@ export function SharedTable() {
           </div>
         </div>
 
-        {/* Shop slots + buy-top slot */}
-        <div className="flex-1 min-w-[220px]">
+      {/* Shop slots + buy-top slot */}
+          <div className="flex-1 min-w-[420px]">
           <div className="flex items-center justify-between mb-1">
             <div className="section-title text-sm">Shop</div>
             {isActiveTurn && (
@@ -183,7 +183,7 @@ export function SharedTable() {
               </button>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap content-start">
+          <div className="flex gap-1 flex-wrap content-start">
             {game.shopSlots.map((slot) => (
               <ShopSlotComponent key={slot.slotIndex} slot={slot} />
             ))}
@@ -191,11 +191,11 @@ export function SharedTable() {
           </div>
         </div>
 
-        {/* Room + Stack + Bonus Souls */}
-        <div className="flex-1 min-w-[220px]">
-          <div className="flex gap-3 flex-wrap content-start items-start">
+    {/* Room + Stack + Bonus Souls */}
+          <div className="flex-1 min-w-[320px]">
+          <div className="w-full flex gap-3 justify-between items-start">
               {(game.roomSlots.length > 0 || game.roomDeckCount > 0 || game.roomDiscard.length > 0) && (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 items-start">
                   <div className="flex items-center gap-2 mb-0.5">
                     <div className="section-title text-sm">Room</div>
                     {isActiveTurn && game.roomDeckCount > 0 && (
@@ -247,7 +247,7 @@ export function SharedTable() {
                           >
                             <ResolvedCard
                               instance={slot}
-                              size="sm"
+                              size="md"
                               landscape
                               actions={roomActions}
                               alwaysPopover
@@ -282,8 +282,8 @@ export function SharedTable() {
                 </div>
               )}
 
-               {/* Stack */}
-               <div className="flex flex-col gap-1">
+            {/* Stack */}
+                <div className="flex flex-col gap-1 items-center">
                  <div className="section-title text-sm">Stack</div>
                  <Droppable
                    id="drop-stack"
@@ -296,8 +296,8 @@ export function SharedTable() {
                  </Droppable>
                </div>
 
-               {game.bonusSouls.length > 0 && (
-                <div className="flex flex-col gap-1">
+           {game.bonusSouls.length > 0 && (
+                 <div className="flex flex-col gap-1 items-end">
                   <div className="section-title text-sm">Bonus Souls</div>
                   <div className="flex gap-1.5 flex-wrap content-start">
                     {game.bonusSouls.map((bs) => {
@@ -341,7 +341,7 @@ export function SharedTable() {
 
       {/* Decks — own row for full-width spread */}
       <div className="flex gap-3 flex-wrap content-start mt-2 pt-2 border-t border-fs-gold/10">
-        <div className="section-title text-sm self-start pt-0.5 min-w-[40px]">Decks</div>
+        <div className="section-title text-sm w-full mb-0">Decks</div>
         <DeckZone
           label="Treasure"
           count={game.treasureDeckCount}

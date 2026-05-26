@@ -115,13 +115,13 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
       payload={{ targetZone: 'monster', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 min-w-[120px] max-w-[180px] flex-1"
+      className="flex flex-col items-center gap-1 min-w-[110px] max-w-[180px] flex-1"
       data-zone={`monster-${slot.slotIndex}`}
     >
       <div className="section-title text-center text-sm mb-0.5">Monster {slot.slotIndex + 1}</div>
 
       {/* Stack display */}
-      <div className="relative">
+      <div className="relative md:relative-scale">
         <AnimatePresence>
           {isUnderAttack && (
             <motion.div
@@ -212,7 +212,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
               {canAttack && (
                 <button
                   onClick={handleAttack}
-                  className="text-xs px-3 py-1 rounded border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
+                  className="text-xs px-2 py-1 md:px-3 md:py-1 rounded border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
                 >
                   Attack
                 </button>
@@ -289,7 +289,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => handleApplyDamage(1)}
-            className="w-5 h-5 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-xs font-bold"
+            className="w-5 h-5 md:w-7 md:h-7 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-xs font-bold"
             title="Deal 1 damage"
           >-</button>
           <div className="flex gap-0.5">
@@ -305,7 +305,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
           </div>
           <button
             onClick={handleHeal}
-            className="w-5 h-5 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-xs font-bold"
+            className="w-5 h-5 md:w-7 md:h-7 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-xs font-bold"
             title="Heal 1"
           >+</button>
         </div>

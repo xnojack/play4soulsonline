@@ -99,13 +99,13 @@ export function ActionGuidance({ helpMode = false }: { helpMode?: boolean }) {
         exit={{ opacity: 0, y: -10 }}
         className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-fs-dark/95 border border-fs-gold/40 rounded-lg px-4 py-2 backdrop-blur-sm shadow-xl"
       >
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-1.5 md:gap-3 text-sm">
           <span className="text-fs-parchment/50 text-xs">Your options:</span>
           {options.slice(0, 3).map((opt, i) => (
             <button
               key={i}
               onClick={opt.action}
-              className="flex items-center gap-1 px-2 py-1 rounded bg-fs-brown/60 border border-fs-gold/30 text-fs-parchment hover:bg-fs-brown hover:border-fs-gold/60 transition-colors"
+              className="flex items-center gap-1 px-1.5 py-0.5 md:px-2 md:py-1 rounded bg-fs-brown/60 border border-fs-gold/30 text-xs md:text-sm text-fs-parchment hover:bg-fs-brown hover:border-fs-gold/60 transition-colors"
             >
               <span className="text-xs">{opt.icon}</span>
               <span>{opt.label}</span>
