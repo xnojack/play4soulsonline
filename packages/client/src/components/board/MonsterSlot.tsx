@@ -287,27 +287,29 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
       {/* HP Tracker — only for non-event, non-player-curse monsters with HP */}
       {topCard && maxHp > 0 && !isEvent && !isPlayerCurse && (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => handleApplyDamage(1)}
-            className="w-5 h-5 md:w-7 md:h-7 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-xs font-bold"
-            title="Deal 1 damage"
-          >-</button>
-          <div className="flex gap-0.5">
-            {Array.from({ length: Math.min(maxHp, 10) }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full border ${
-                  i < currentHp ? 'bg-red-500 border-red-400' : 'bg-fs-darker border-gray-700'
-                }`}
-              />
-            ))}
+        <button
+             onClick={() => handleApplyDamage(1)}
+             className="w-5 h-5 md:w-7 md:h-7 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-xs font-bold"
+             title="Deal 1 damage"
+           >-❤</button>
+       <div className="flex gap-0.5">
+             {Array.from({ length: Math.min(maxHp, 10) }).map((_, i) => (
+               <span
+                 key={i}
+                 className={`text-xs ${
+                   i < currentHp ? 'text-red-500' : 'text-gray-700'
+                 }`}
+               >
+                 {i < currentHp ? '❤' : '♡'}
+               </span>
+             ))}
             {maxHp > 10 && <span className="text-sm text-fs-parchment/40">{currentHp}/{maxHp}</span>}
           </div>
-          <button
-            onClick={handleHeal}
-            className="w-5 h-5 md:w-7 md:h-7 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-xs font-bold"
-            title="Heal 1"
-          >+</button>
+       <button
+             onClick={handleHeal}
+             className="w-5 h-5 md:w-7 md:h-7 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-xs font-bold"
+             title="Heal 1"
+           >+❤</button>
         </div>
       )}
 

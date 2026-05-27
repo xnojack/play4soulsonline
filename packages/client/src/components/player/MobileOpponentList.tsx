@@ -62,7 +62,7 @@ export function MobileOpponentList({ players, activePlayerId, priorityPlayerId, 
                   </span>
                 )}
                 <span>
-                  <span className="text-orange-400/60">⚔</span> {atk}
+                  <span className="text-orange-400/60">🗡</span> {atk}
                 </span>
               </div>
               <div className="text-[10px] text-fs-parchment/40 flex items-center gap-2 flex-wrap">

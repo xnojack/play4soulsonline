@@ -40,7 +40,7 @@ export function CardTooltip({ card, instance }: CardTooltipProps) {
           )}
           {card.atk !== null && (
             <span className="text-orange-400">
-              ⚔ {card.atk}{instance?.atkCounters ? `+${instance.atkCounters}` : ''}
+               🗡 {card.atk}{instance?.atkCounters ? `+${instance.atkCounters}` : ''}
             </span>
           )}
           {card.evasion !== null && (

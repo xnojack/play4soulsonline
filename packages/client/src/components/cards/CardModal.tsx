@@ -41,7 +41,7 @@ export function CardModal() {
                   <StatBlock label="HP" value={modalCard.hp} color="text-pink-400" icon="❤" />
                 )}
                 {modalCard.atk !== null && (
-                  <StatBlock label="ATK" value={modalCard.atk} color="text-orange-400" icon="⚔" />
+                  <StatBlock label="ATK" value={modalCard.atk} color="text-orange-400" icon="🗡" />
                 )}
                 {modalCard.evasion !== null && (
                   <StatBlock label="DC" value={modalCard.evasion} color="text-blue-400" icon="🛡" />

@@ -73,73 +73,72 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
       {/* Main stat row */}
       <div className="flex gap-4 items-center flex-wrap">
         {/* HP */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-pink-400 text-sm font-bold" title="Hit Points">❤</span>
+       <div className="flex items-center gap-1.5">
           <div className="flex gap-0.5">
-            {Array.from({ length: maxHp }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full border ${
-                  i < player.effectiveHp
-                    ? 'bg-pink-500 border-pink-400'
-                    : 'bg-fs-darker border-gray-700'
-                }`}
-              />
-            ))}
-          </div>
+             {Array.from({ length: maxHp }).map((_, i) => (
+               <span
+                 key={i}
+                 className={`text-sm ${
+                   i < player.effectiveHp ? 'text-red-500' : 'text-gray-700'
+                 }`}
+               >
+                 {i < player.effectiveHp ? '❤' : '♡'}
+               </span>
+             ))}
+           </div>
           <span className="text-sm text-fs-parchment/60 font-mono">
             {player.effectiveHp}/{maxHp}
           </span>
           {isMe && (
             <div className="flex gap-1 ml-0.5">
-              <StatButton
-                onClick={() => applyDamage(1)}
-                label="-1"
-                title="Take 1 damage"
-                color="text-red-400 border-red-700/50 hover:bg-red-900/30"
-              />
-              <StatButton
-                onClick={heal}
-                label="+1"
-                title="Heal 1 HP"
-                color="text-green-400 border-green-700/50 hover:bg-green-900/30"
-              />
-              <StatButton
-                onClick={() => changeBaseHp(-1)}
-                label="↓max"
-                title="Reduce max HP by 1"
-                color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
-              />
-              <StatButton
-                onClick={() => changeBaseHp(1)}
-                label="↑max"
-                title="Increase max HP by 1"
-                color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
-              />
+             <StatButton
+                 onClick={() => applyDamage(1)}
+                 label="-❤"
+                 title="Take 1 damage"
+                 color="text-red-400 border-red-700/50 hover:bg-red-900/30"
+               />
+               <StatButton
+                 onClick={heal}
+                 label="+❤"
+                 title="Heal 1 HP"
+                 color="text-green-400 border-green-700/50 hover:bg-green-900/30"
+               />
+               <StatButton
+                  onClick={() => changeBaseHp(-1)}
+                  label="↓max♡"
+                  title="Reduce max HP by 1"
+                  color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
+                />
+                <StatButton
+                  onClick={() => changeBaseHp(1)}
+                  label="↑max❤"
+                  title="Increase max HP by 1"
+                  color="text-pink-300/50 border-pink-700/30 hover:bg-pink-900/20"
+                />
             </div>
           )}
         </div>
 
         {/* ATK */}
         <div className="flex items-center gap-1.5">
-          <span className="text-orange-400 text-sm font-bold" title="Attack">⚔</span>
+          <span className="text-orange-400 text-sm font-bold" title="Attack">🗡</span>
           <span className="text-sm font-display font-semibold text-fs-parchment">
             {player.effectiveAtk}
           </span>
           {isMe && (
             <div className="flex gap-1 ml-0.5">
-              <StatButton
-                onClick={() => changeBaseAtk(-1)}
-                label="-1"
-                title="Reduce ATK by 1"
-                color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
-              />
-              <StatButton
-                onClick={() => changeBaseAtk(1)}
-                label="+1"
-                title="Increase ATK by 1"
-                color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
-              />
+            <StatButton
+                 onClick={() => changeBaseAtk(-1)}
+                 label="-🗡"
+                 title="Reduce ATK by 1"
+                 color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
+               />
+               <StatButton
+                 onClick={() => changeBaseAtk(1)}
+                 label="+🗡"
+                 title="Increase ATK by 1"
+                 color="text-orange-300/50 border-orange-700/30 hover:bg-orange-900/20"
+               />
             </div>
           )}
         </div>
@@ -152,18 +151,18 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
           </span>
           {isMe && (
             <div className="flex gap-1">
-              <StatButton
-                onClick={() => changeCoins(-1)}
-                label="-1"
-                title="Spend 1 coin"
-                color="text-fs-parchment/60 border-fs-gold/30 hover:bg-fs-gold/10"
-              />
-              <StatButton
-                onClick={() => changeCoins(1)}
-                label="+1"
-                title="Gain 1 coin"
-                color="text-fs-gold border-fs-gold/30 hover:bg-fs-gold/10"
-              />
+             <StatButton
+                 onClick={() => changeCoins(-1)}
+                 label="-¢"
+                 title="Spend 1 coin"
+                 color="text-fs-parchment/60 border-fs-gold/30 hover:bg-fs-gold/10"
+               />
+               <StatButton
+                 onClick={() => changeCoins(1)}
+                 label="+¢"
+                 title="Gain 1 coin"
+                 color="text-fs-gold border-fs-gold/30 hover:bg-fs-gold/10"
+               />
             </div>
           )}
         </div>

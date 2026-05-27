@@ -72,7 +72,7 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
           </div>
           <div className="flex items-center gap-2 text-xs text-fs-parchment/60">
             <span>❤ {player.effectiveHp}</span>
-            <span>⚔ {player.effectiveAtk}</span>
+            <span>🗡 {player.effectiveAtk}</span>
             <span>¢ {player.coins}</span>
             {player.souls.length > 0 && (
               <span className="text-purple-400">♦ {player.souls.length}</span>
