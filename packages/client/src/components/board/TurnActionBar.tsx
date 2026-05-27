@@ -5,24 +5,43 @@ import { getSocket } from '../../socket/client';
 import { useIsMyTurn, useHasPriority, useMyPlayer } from '../../hooks/useMyPlayer';
 import { DiceRoller } from '../dice/DiceRoller';
 
+interface TurnActionBarProps {
+  onScrollToPlayer?: () => void;
+}
+
 /**
- * Sticky bottom action bar — visible when:
- * - It's your turn (full bar with turn phases + end turn)
- * - You have priority but it's not your turn (compact bar with pass/respond)
- * - There are stack items and you're involved
+ * Sticky bottom action bar — always visible during active game phase.
+ * - Your turn: full bar with turn phases + end turn
+ * - Priority (not your turn): compact bar with pass/respond
+ * - Idle: status-only bar showing whose turn it is + who has priority
  */
-export function TurnActionBar() {
+export function TurnActionBar({ onScrollToPlayer }: TurnActionBarProps) {
   const game = useGameStore((s) => s.game);
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
   const myPlayer = useMyPlayer();
 
-  if (!game || !myPlayer || myPlayer.isSpectator) return null;
+  if (!game) return null;
   if (game.phase !== 'active') return null;
+  if (myPlayer?.isSpectator) return null;
 
-  // Show the bar when it's your turn OR you have priority
-  const showBar = isMyTurn || hasPriority;
-  if (!showBar) return null;
+  const activePlayer = game.players.find((p) => p.id === game.turn.activePlayerId);
+  const priorityPlayer = game.priorityQueue[0]
+    ? game.players.find((p) => p.id === game.priorityQueue[0])
+    : null;
+  const priorityIsActive = priorityPlayer?.id === activePlayer?.id;
+
+  /** My Cards button — shown on all states, mobile only */
+  const myCardsButton = onScrollToPlayer && (
+    <button
+      onClick={onScrollToPlayer}
+      className="lg:hidden flex items-center gap-1 px-2 py-1 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/50 text-xs transition-colors flex-shrink-0"
+      title="Scroll to your cards"
+    >
+      <span>👤</span>
+      <span className="hidden sm:inline">My Cards</span>
+    </button>
+  );
 
   const stackLength = game.stack.length;
   const turn = game.turn;
@@ -34,7 +53,6 @@ export function TurnActionBar() {
   const inAttack = !!turn.currentAttack;
   const stackEmpty = stackLength === 0;
 
-  // Attack dice visibility
   const attackPhase = turn.currentAttack?.phase;
   const hasAttackDeclarationOnStack =
     game.stack.some((i) => i.type === 'attack_declaration' && !i.isCanceled);
@@ -42,27 +60,13 @@ export function TurnActionBar() {
     isMyTurn && inAttack && !hasAttackDeclarationOnStack &&
     (attackPhase === 'declared' || attackPhase === 'rolling');
 
-  const handleEndTurn = () => {
-    getSocket().emit('action:end_turn');
-  };
+  const handleEndTurn = () => getSocket().emit('action:end_turn');
+  const handlePassPriority = () => getSocket().emit('action:pass_priority');
+  const handleResolveTop = () => getSocket().emit('action:resolve_top');
+  const handleDrawLoot = () => getSocket().emit('action:draw_loot', { playerId: myPlayer!.id, count: 1 });
+  const handleGrantLootPlay = () => getSocket().emit('action:grant_loot_play');
 
-  const handlePassPriority = () => {
-    getSocket().emit('action:pass_priority');
-  };
-
-  const handleResolveTop = () => {
-    getSocket().emit('action:resolve_top');
-  };
-
-  const handleDrawLoot = () => {
-    getSocket().emit('action:draw_loot', { playerId: myPlayer.id, count: 1 });
-  };
-
-  const handleGrantLootPlay = () => {
-    getSocket().emit('action:grant_loot_play');
-  };
-
-  // Non-active-turn player: compact priority bar
+  // ── Priority (not your turn) ─────────────────────────────────────────────
   if (!isMyTurn && hasPriority) {
     const timeoutRemaining = game?.priorityTimeoutRemaining ?? 0;
     const isUrgent = timeoutRemaining > 0 && timeoutRemaining <= 5;
@@ -77,10 +81,9 @@ export function TurnActionBar() {
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
-            {/* Priority indicator */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <motion.div
-                className={`w-2 h-2 rounded-full ${isUrgent ? 'bg-red-400' : 'bg-fs-gold'}`}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${isUrgent ? 'bg-red-400' : 'bg-fs-gold'}`}
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: isUrgent ? 0.5 : 1.5, repeat: Infinity }}
               />
@@ -88,19 +91,16 @@ export function TurnActionBar() {
                 You have priority
               </span>
               {stackLength > 0 && (
-                <span className="text-xs text-fs-parchment/40 ml-1">
-                  ({stackLength} on stack)
-                </span>
+                <span className="text-xs text-fs-parchment/40">({stackLength} on stack)</span>
               )}
               {timeoutRemaining > 0 && (
-                <span className={`text-xs font-display font-semibold ml-1 ${isUrgent ? 'text-red-400' : 'text-amber-400'}`}>
+                <span className={`text-xs font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-amber-400'}`}>
                   {timeoutRemaining}s
                 </span>
               )}
             </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {myCardsButton}
               <DiceRoller compact context="manual" />
               <button
                 onClick={handlePassPriority}
@@ -119,124 +119,140 @@ export function TurnActionBar() {
     );
   }
 
-  // Active turn: full action bar
-  return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/40 backdrop-blur-sm"
-        initial={{ y: 80 }}
-        animate={{ y: 0 }}
-        exit={{ y: 80 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
-        <div className="max-w-6xl mx-auto px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3">
-          {/* Left: Turn indicator */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
-              Your Turn
-            </span>
-          </div>
+  // ── Active turn ──────────────────────────────────────────────────────────
+  if (isMyTurn) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/40 backdrop-blur-sm"
+          initial={{ y: 80 }}
+          animate={{ y: 0 }}
+          exit={{ y: 80 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        >
+          <div className="max-w-6xl mx-auto px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
+                Your Turn
+              </span>
+            </div>
 
-          {/* Center: Turn phase breadcrumbs */}
-          <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
-            {/* Draw Loot */}
-            <PhaseButton
-              label="Draw Loot"
-              icon="🃏"
-              active={!lootDrawn && stackEmpty && !inAttack}
-              done={lootDrawn}
-              onClick={handleDrawLoot}
-              disabled={!stackEmpty}
-            />
-            <PhaseArrow />
+            <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
+              <PhaseButton
+                label="Draw Loot"
+                icon="🃏"
+                active={!lootDrawn && stackEmpty && !inAttack}
+                done={lootDrawn}
+                onClick={handleDrawLoot}
+                disabled={!stackEmpty}
+              />
+              <PhaseArrow />
+              <PhaseButton
+                label="Play Loot"
+                icon="✋"
+                active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
+                done={lootPlayed}
+                hint={lootPlaysRemaining > 0 ? `${lootPlaysRemaining} play${lootPlaysRemaining !== 1 ? 's' : ''} remaining` : 'Loot played'}
+              />
+              <PhaseArrow />
+              <PhaseButton
+                label="Buy"
+                icon="💰"
+                active={!inAttack && stackEmpty}
+                done={hasPurchased}
+                disabled={inAttack || !stackEmpty}
+                hint={hasPurchased ? `${turn.purchasesMade} bought` : undefined}
+              />
+              <PhaseArrow />
+              <PhaseButton
+                label="Attack"
+                icon="⚔"
+                active={!inAttack && !hasAttacked && stackEmpty}
+                done={hasAttacked}
+                disabled={inAttack || !stackEmpty}
+                hint={inAttack ? 'In combat' : undefined}
+              />
+              <PhaseArrow />
+              <button
+                onClick={handleEndTurn}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-display font-semibold text-sm transition-colors ${
+                  stackEmpty
+                    ? 'bg-fs-gold text-fs-dark hover:bg-fs-gold-light shadow-lg shadow-fs-gold/20'
+                    : 'bg-amber-900/60 text-amber-300 border border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
+                }`}
+                title={stackEmpty ? 'End your turn' : `Force end turn — ${stackLength} stack item${stackLength !== 1 ? 's' : ''} will be discarded`}
+              >
+                {stackEmpty ? 'End Turn' : 'End Turn ⚠'}
+              </button>
+            </div>
 
-            {/* Play Loot */}
-            <PhaseButton
-              label="Play Loot"
-              icon="✋"
-              active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
-              done={lootPlayed}
-              hint={lootPlaysRemaining > 0 ? `${lootPlaysRemaining} play${lootPlaysRemaining !== 1 ? 's' : ''} remaining` : 'Loot played'}
-            />
-            <PhaseArrow />
-
-            {/* Buy */}
-            <PhaseButton
-              label="Buy"
-              icon="💰"
-              active={!inAttack && stackEmpty}
-              done={hasPurchased}
-              disabled={inAttack || !stackEmpty}
-              hint={hasPurchased ? `${turn.purchasesMade} bought` : undefined}
-            />
-            <PhaseArrow />
-
-            {/* Attack */}
-            <PhaseButton
-              label="Attack"
-              icon="⚔"
-              active={!inAttack && !hasAttacked && stackEmpty}
-              done={hasAttacked}
-              disabled={inAttack || !stackEmpty}
-              hint={inAttack ? 'In combat' : undefined}
-            />
-            <PhaseArrow />
-
-            {/* End Turn */}
-            <button
-              onClick={handleEndTurn}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-display font-semibold text-sm transition-colors ${
-                stackEmpty
-                  ? 'bg-fs-gold text-fs-dark hover:bg-fs-gold-light shadow-lg shadow-fs-gold/20'
-                  : 'bg-amber-900/60 text-amber-300 border border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
-              }`}
-              title={stackEmpty ? 'End your turn' : `Force end turn — ${stackLength} stack item${stackLength !== 1 ? 's' : ''} will be discarded`}
-            >
-              {stackEmpty ? 'End Turn' : 'End Turn ⚠'}
-            </button>
-          </div>
-
-          {/* Right: Dice + loot play grant + Stack actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
-            <button
-              onClick={handleGrantLootPlay}
-              className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-              title="Grant yourself an extra loot play this turn"
-            >
-              +1 Play
-            </button>
-
-            {/* Priority/Stack controls */}
-            {hasPriority && stackLength > 0 && (
-              <>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {myCardsButton}
+              <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
+              <button
+                onClick={handleGrantLootPlay}
+                className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
+                title="Grant yourself an extra loot play this turn"
+              >
+                +1 Play
+              </button>
+              {hasPriority && stackLength > 0 && (
+                <>
+                  <button
+                    onClick={handlePassPriority}
+                    className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-parchment/70 text-sm hover:bg-fs-gold/10 transition-colors"
+                  >
+                    Pass
+                  </button>
+                  <button
+                    onClick={handleResolveTop}
+                    className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-gold text-sm hover:bg-fs-gold/10 transition-colors"
+                    title="Resolve top of stack immediately"
+                  >
+                    Resolve
+                  </button>
+                </>
+              )}
+              {hasPriority && stackLength === 0 && (
                 <button
                   onClick={handlePassPriority}
-                  className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-parchment/70 text-sm hover:bg-fs-gold/10 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-fs-gold/30 text-fs-parchment/50 text-sm hover:bg-fs-gold/10 transition-colors"
                 >
-                  Pass
+                  Pass Priority
                 </button>
-                <button
-                  onClick={handleResolveTop}
-                  className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-gold text-sm hover:bg-fs-gold/10 transition-colors"
-                  title="Resolve top of stack immediately"
-                >
-                  Resolve
-                </button>
-              </>
-            )}
-            {hasPriority && stackLength === 0 && (
-              <button
-                onClick={handlePassPriority}
-                className="px-3 py-1.5 rounded-lg border border-fs-gold/30 text-fs-parchment/50 text-sm hover:bg-fs-gold/10 transition-colors"
-              >
-                Pass Priority
-              </button>
-            )}
+              )}
+            </div>
           </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // ── Idle — not your turn, no priority ───────────────────────────────────
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/90 border-t border-fs-gold/20 backdrop-blur-sm">
+      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 text-sm flex-1 min-w-0">
+          <span className="text-fs-parchment/50">
+            <span className="text-fs-parchment/80 font-display">
+              {activePlayer?.id === myPlayer?.id ? 'Your turn' : `${activePlayer?.name ?? '?'}'s turn`}
+            </span>
+          </span>
+          {priorityPlayer && !priorityIsActive && (
+            <span className="text-fs-parchment/40 text-xs flex items-center gap-1">
+              <span className="text-fs-gold">⚡</span>
+              <span>{priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority</span>
+            </span>
+          )}
+          {priorityIsActive && priorityPlayer && (
+            <span className="text-fs-parchment/30 text-xs">
+              {priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority
+            </span>
+          )}
         </div>
-      </motion.div>
-    </AnimatePresence>
+        {myCardsButton}
+      </div>
+    </div>
   );
 }
 
@@ -285,3 +301,4 @@ function PhaseArrow() {
     <span className="text-fs-parchment/15 text-xs mx-0.5">→</span>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { SharedTable } from './SharedTable';
@@ -19,9 +19,7 @@ import { CardModal } from '../cards/CardModal';
 import { DiceResultToast } from '../dice/DiceRoller';
 import { Button } from '../ui/Button';
 import { AttributionFooter } from '../ui/AttributionFooter';
-import { ActionGuidance } from './ActionGuidance';
-import { SoundManager } from '../audio/SoundManager';
-import { useIsHost, useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
+import { SoundManager } from '../audio/SoundManager';import { useIsHost, useIsMyTurn, useHasPriority } from '../../hooks/useMyPlayer';
 
 export function GameBoard() {
   const game = useGameStore((s) => s.game);
@@ -35,7 +33,8 @@ export function GameBoard() {
   const [showStackLog, setShowStackLog] = useState(() => window.innerWidth >= 768);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string | null>(null);
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth < window.innerHeight);
-  const [helpMode, setHelpMode] = useState(() => localStorage.getItem('helpMode') === '1');
+  const playerAreaRef = useRef<HTMLDivElement>(null);
+  const centerScrollRef = useRef<HTMLDivElement>(null);
 
   const dismissHint = () => {
     localStorage.setItem('hideCardHint', '1');
@@ -71,8 +70,6 @@ export function GameBoard() {
   const turnHint = isMyTurn
     ? 'Your turn'
     : `${activePlayer?.name ?? '?'}'s turn`;
-
-  const showBottomBar = game.phase === 'active' && (isMyTurn || hasPriority);
 
   const handleRestart = () => {
     if (!confirm('Reset game to lobby? All game state will be lost.')) return;
@@ -143,17 +140,6 @@ export function GameBoard() {
             <span className="hidden sm:inline">Card Search</span>
             <span className="sm:hidden">🔍</span>
           </Button>
-          <button
-            onClick={() => {
-              const next = !helpMode;
-              setHelpMode(next);
-              localStorage.setItem('helpMode', next ? '1' : '0');
-            }}
-            className={`text-xs px-2 py-1 rounded border transition-colors ${helpMode ? 'bg-fs-gold/20 border-fs-gold/40 text-fs-gold' : 'text-fs-parchment/30 border-fs-gold/10 hover:text-fs-parchment/60'}`}
-            title="Keep guidance visible"
-          >
-            ?
-          </button>
           {isHost && (
             <Button size="sm" variant="ghost" onClick={handleRestart}>
               Restart
@@ -210,16 +196,15 @@ export function GameBoard() {
         )}
 
         {/* Center: table + player area scroll together as one column */}
-        <div className="flex-1 overflow-y-auto min-w-0 min-h-0">
+        <div ref={centerScrollRef} className="flex-1 overflow-y-auto min-w-0 min-h-0 pb-[112px] md:pb-[88px]">
           <div className="pt-2 px-2">
             <SharedTable />
           </div>
           {myPlayer && (
-            <div className="border-t border-fs-gold/20 mt-2 px-2 pb-2">
+            <div ref={playerAreaRef} className="border-t border-fs-gold/20 mt-2 px-2 pb-2">
               <PlayerArea player={myPlayer} isMe={true} />
             </div>
           )}
-          {showBottomBar && <div className="h-14" />}
         </div>
 
         {/* Right stack+log toggle tab — visible on mobile and desktop */}
@@ -253,9 +238,9 @@ export function GameBoard() {
       <CardModal />
       <CardSearch />
       <PriorityBanner />
-      <ActionGuidance helpMode={helpMode} />
-      <TurnActionBar />
-      <CardFlightLayer />
+      <TurnActionBar onScrollToPlayer={() => {
+          playerAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }} />      <CardFlightLayer />
       <LogToast />
       <SoundManager />
 
