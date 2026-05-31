@@ -6,7 +6,7 @@ import { getSocket } from '../../socket/client';
 interface DropContextMenuProps {
   x: number;
   y: number;
-  actions: { label: string; action: string; payload: Record<string, unknown> }[];
+  actions: { label: string; action: string; payload: Record<string, unknown>; onClick?: () => void }[];
   onClose: () => void;
   stackSource?: boolean;    // if true, also dismiss the stack item after any non-cancel action
   stackItemId?: string;     // the stack item UUID to dismiss
@@ -25,9 +25,13 @@ export function DropContextMenu({ x, y, actions, onClose, stackSource, stackItem
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  const handleAction = (action: string, payload: Record<string, unknown>) => {
-    getSocket().emit(action, payload);
-    if (stackSource && stackItemId && action !== 'action:cancel_stack_item') {
+  const handleAction = (a: { action: string; payload: Record<string, unknown>; onClick?: () => void }) => {
+    if (a.onClick) {
+      a.onClick();
+    } else {
+      getSocket().emit(a.action, a.payload);
+    }
+    if (stackSource && stackItemId && a.action !== 'action:cancel_stack_item') {
       getSocket().emit('action:dismiss_stack_item', { stackItemId });
     }
     onClose();
@@ -47,7 +51,7 @@ export function DropContextMenu({ x, y, actions, onClose, stackSource, stackItem
         {actions.map((a, i) => (
           <button
             key={i}
-            onClick={() => handleAction(a.action, a.payload)}
+            onClick={() => handleAction(a)}
             className="w-full text-left px-3 py-1.5 text-sm text-fs-parchment hover:bg-fs-gold/20 transition-colors"
           >
             {a.label}

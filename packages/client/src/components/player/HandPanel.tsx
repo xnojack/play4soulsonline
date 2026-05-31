@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ClientPlayer, useGameStore } from '../../store/gameStore';
 import { ResolvedCard } from '../board/CardResolver';
-import { CardAction } from '../cards/CardComponent';
 import { Button } from '../ui/Button';
 import { getSocket } from '../../socket/client';
 import { useHasPriority } from '../../hooks/useMyPlayer';
@@ -29,12 +28,16 @@ export function HandPanel({ player }: HandPanelProps) {
     getSocket().emit('action:play_loot', { cardId, targets: [] });
   };
 
-  const handleDiscardCard = (cardId: string) => {
+  // TODO: wire to automation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleDiscardCard = (cardId: string) => {
     playSound('cardSlide');
     getSocket().emit('action:discard_loot', { cardId });
   };
 
-  const handleTradeCard = (cardId: string, toPlayerId: string) => {
+  // TODO: wire to automation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleTradeCard = (cardId: string, toPlayerId: string) => {
     playSound('cardSlide');
     getSocket().emit('action:trade_card', { cardId, toPlayerId, fromHand: true });
   };
@@ -53,9 +56,8 @@ export function HandPanel({ player }: HandPanelProps) {
   ) ?? [];
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="section-title">Your Hand ({player.handCount} cards)</span>
+    <div className="flex flex-col gap-2 h-full">
+      <div className="flex items-center gap-1 flex-shrink-0">
         <Button size="sm" variant="ghost" onClick={() => setSharing(!sharing)}>
           Share Hand
         </Button>
@@ -98,12 +100,13 @@ export function HandPanel({ player }: HandPanelProps) {
         )}
       </AnimatePresence>
 
-      {/* Cards in hand */}
+      {/* Cards in hand — Droppable fills remaining height so entire right side is a drop target */}
       <Droppable
         id={`drop-hand-${player.id}`}
         payload={{ targetZone: 'hand', targetZoneId: player.id }}
+        className="flex-1 min-h-0"
       >
-      <div className="flex gap-2 flex-wrap content-start" data-zone="my-hand">
+      <div className="flex gap-2 flex-wrap content-start min-h-full overflow-y-auto" style={{ maxHeight: 160 }} data-zone="my-hand">
         {player.handCardIds.length === 0 && (
           <div className="text-sm text-fs-parchment/30 italic">No cards in hand</div>
         )}
@@ -115,11 +118,11 @@ export function HandPanel({ player }: HandPanelProps) {
           >
             <HandCardSlot
               cardId={cardId}
+              idx={idx}
+              playerId={player.id}
               canPlay={canPlayLoot}
               otherPlayers={otherPlayers}
               onPlay={() => handlePlayCard(cardId)}
-              onDiscard={() => handleDiscardCard(cardId)}
-              onTrade={(toPlayerId) => handleTradeCard(cardId, toPlayerId)}
             />
           </Draggable>
         ))}
@@ -131,38 +134,20 @@ export function HandPanel({ player }: HandPanelProps) {
 
 function HandCardSlot({
   cardId,
-  canPlay,
-  otherPlayers,
-  onPlay,
-  onDiscard,
-  onTrade,
+  idx,
+  playerId,
+  canPlay: _canPlay,
+  otherPlayers: _otherPlayers,
+  onPlay: _onPlay,
 }: {
   cardId: string;
+  idx: number;
+  playerId: string;
   canPlay: boolean;
   otherPlayers: { id: string; name: string }[];
   onPlay: () => void;
-  onDiscard: () => void;
-  onTrade: (toPlayerId: string) => void;
+  // TODO: wire to automation: onDiscard, onTrade, canPlay, otherPlayers
 }) {
-  const [givingTo, setGivingTo] = useState(false);
-
-  const actions: CardAction[] = givingTo
-    ? [
-        ...otherPlayers.map((p) => ({
-          label: `→ ${p.name}`,
-          onClick: () => { onTrade(p.id); setGivingTo(false); },
-          variant: 'ghost' as const,
-        })),
-        { label: 'Cancel', onClick: () => setGivingTo(false), variant: 'ghost' as const },
-      ]
-    : [
-        ...(canPlay ? [{ label: 'Play', onClick: onPlay, variant: 'default' as const }] : []),
-        { label: 'Discard', onClick: onDiscard, variant: 'danger' as const },
-        ...(otherPlayers.length > 0
-          ? [{ label: 'Give to…', onClick: () => setGivingTo(true), variant: 'ghost' as const }]
-          : []),
-      ];
-
   return (
     <ResolvedCard
       instance={{
@@ -177,8 +162,6 @@ function HandCardSlot({
         flipped: false,
       }}
       size="sm"
-      actions={actions}
-      alwaysPopover
       showCounters={false}
     />
   );

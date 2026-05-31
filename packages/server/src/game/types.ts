@@ -429,13 +429,14 @@ export interface GainTreasurePayload {
 }
 
 export interface ReturnToDeckPayload {
-  cardId: string; // card ID to put back
-  deckType: 'loot' | 'treasure' | 'monster' | 'room'; // which deck
-  position: 'top' | 'bottom'; // where to put it
-  fromHand?: boolean; // if true, remove it from the player's hand first
-  fromDiscard?: boolean; // if true, remove it from the matching discard pile first
-  fromInstanceId?: string; // if set, remove existing CardInPlay by instanceId from any zone first
-  stackItemId?: string; // if set, also remove this item from the stack atomically
+  cardId: string;
+  deckType: 'loot' | 'treasure' | 'monster' | 'room';
+  position: 'top' | 'bottom' | 'random';
+  fromHand?: boolean;
+  fromDiscard?: boolean;
+  fromInstanceId?: string;
+  stackItemId?: string;
+  offset?: number;
 }
 
 export interface ResolveEventPayload {

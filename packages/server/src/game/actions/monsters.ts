@@ -290,14 +290,10 @@ export function killMonster(
       ],
     };
   } else {
-    // Curse monsters with HP and normal monsters both go to kills (trophies)
+    // Curse monsters with HP and normal monsters go to monster discard
     newState = {
       ...newState,
-      players: newState.players.map((p) =>
-        p.id === activePlayerId
-          ? { ...p, kills: [...p.kills, deadInstance] }
-          : p
-      ),
+      monsterDiscard: [...newState.monsterDiscard, deadInstance.cardId],
     };
   }
 

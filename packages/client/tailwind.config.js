@@ -6,7 +6,7 @@ export default {
       colors: {
         'fs-dark': '#111114',
         'fs-darker': '#0a0a0c',
-        'fs-brown': '#1e1a24',
+        'fs-brown': '#0d1929',
         'fs-gold': '#c9a227',
         'fs-gold-light': '#e8b84b',
         'fs-red': '#b01c1c',
@@ -16,6 +16,10 @@ export default {
         'fs-soul': '#6644cc',
         'fs-stone': '#2a2830',
         'fs-bone': '#cfc9b8',
+        'fs-navy': '#002A47',
+        'fs-link': '#0094FF',
+        'fs-link-hover': '#00CCFF',
+        'fs-link-active': '#00FFFF',
       },
       fontFamily: {
         display: ['"Permanent Marker"', 'Fredoka', '"Comic Sans MS"', 'cursive'],

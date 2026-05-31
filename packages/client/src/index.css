@@ -4,8 +4,34 @@
 
 @layer base {
   html {
-    background-color: #111114;
     color: #e8e0d0;
+    background-color: #000;
+    background-image:
+      url('/bg/StarLayer01.png'),
+      url('/bg/StarLayer02.png'),
+      url('/bg/StarLayer03.png'),
+      url('/bg/StarLayer04.png'),
+      url('/bg/StarLayer05.png'),
+      url('/bg/FourSoulsBackground.png');
+    background-size:
+      600px 400px,
+      600px 400px,
+      600px 400px,
+      600px 400px,
+      600px 400px,
+      1200px 800px;
+    background-repeat: repeat;
+    background-attachment: fixed;
+    animation: planetariumBackground 120s linear infinite;
+  }
+
+  @keyframes planetariumBackground {
+    from {
+      background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+    }
+    to {
+      background-position: -7200px 4800px, -6000px 4000px, -4800px 3200px, -3600px 2400px, -2400px 1600px, -1200px 800px;
+    }
   }
 
   body {
@@ -27,8 +53,19 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c9a227;
+    background: #0094FF;
     border-radius: 3px;
+  }
+
+  a {
+    color: #0094FF;
+    transition: color 150ms;
+  }
+  a:hover {
+    color: #00CCFF;
+  }
+  a:active {
+    color: #00FFFF;
   }
 }
 
@@ -66,11 +103,11 @@
   }
 
   .panel {
-    @apply bg-fs-brown/80 border border-fs-gold/30 rounded-lg backdrop-blur-sm;
+    @apply bg-fs-brown/90 border border-fs-link/20 rounded-lg backdrop-blur-sm;
   }
 
   .section-title {
-    @apply font-display text-fs-gold text-base uppercase tracking-wider;
+    @apply font-display text-fs-link text-base uppercase tracking-wider;
   }
 
   .table-felt {

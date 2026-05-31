@@ -1,6 +1,7 @@
 import React from 'react';
 import { ResolvedCard, useCard } from './CardResolver';
 import { Draggable, Droppable } from './DnDPrimitives';
+import { DECK_TOP_SENTINEL } from './DropActionResolver';
 
 interface DeckZoneProps {
   label: string;
@@ -20,6 +21,8 @@ interface DeckZoneProps {
   discardIsDraggable?: boolean;
   /** If true, the deck face is a drop target (for return-to-deck drops) */
   deckIsDroppable?: boolean;
+  /** If true, the deck face is draggable (draws top card when dropped on hand) */
+  deckIsDraggable?: boolean;
 }
 
 export function DeckZone({
@@ -34,6 +37,7 @@ export function DeckZone({
   discardIsDroppable = false,
   discardIsDraggable = false,
   deckIsDroppable = false,
+  deckIsDraggable = false,
 }: DeckZoneProps) {
   const topDiscard = useCard(topDiscardCardId);
 
@@ -73,17 +77,22 @@ export function DeckZone({
       <div className="flex gap-2">
         {/* Deck */}
         <div className="flex flex-col items-center gap-1" data-zone={`${deckType}-deck`}>
-          {/* Card back image as deck face — optionally droppable */}
-          {deckIsDroppable ? (
-            <Droppable
-              id={`drop-deck-${deckType}`}
-              payload={{ targetZone: 'deck', targetZoneId: deckType }}
-            >
-              {deckFace}
-            </Droppable>
-          ) : (
-            deckFace
-          )}
+          {/* Card back image as deck face — optionally droppable and/or draggable */}
+          {(() => {
+            const face = deckIsDroppable ? (
+              <Droppable id={`drop-deck-${deckType}`} payload={{ targetZone: 'deck', targetZoneId: deckType }}>
+                {deckFace}
+              </Droppable>
+            ) : deckFace;
+            return deckIsDraggable && count > 0 ? (
+              <Draggable
+                id={`drag-deck-${deckType}`}
+                payload={{ cardId: DECK_TOP_SENTINEL, sourceZone: 'deck', sourceZoneId: deckType }}
+              >
+                {face}
+              </Draggable>
+            ) : face;
+          })()}
 
           {/* Browse and Draw buttons — shown simultaneously when available */}
           <div className="flex flex-col gap-0.5 w-full">

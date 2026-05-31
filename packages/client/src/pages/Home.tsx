@@ -97,17 +97,17 @@ export function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-fs-darker flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <img
             src="/foursouls-logo.png"
             alt="The Binding of Isaac: Four Souls"
-            className="mx-auto max-h-32 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+            className="mx-auto max-h-40 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
             draggable={false}
           />
-          <p className="text-fs-parchment/40 text-xs mt-2 font-display tracking-widest uppercase">
+          <p className="text-fs-parchment/40 text-sm mt-2 font-display tracking-widest uppercase">
             Unofficial Online Companion
           </p>
         </div>
@@ -121,7 +121,7 @@ export function Home() {
 
         {/* Landing — pick a mode */}
         {mode === null && (
-          <div className="panel p-6 space-y-3">
+          <div className="panel p-8 space-y-3">
             <Button className="w-full" onClick={() => setMode('create')}>
               Create Game
             </Button>
@@ -133,9 +133,9 @@ export function Home() {
 
         {/* Create Game */}
         {mode === 'create' && (
-          <div className="panel p-6 space-y-4">
+          <div className="panel p-8 space-y-4">
             <div>
-              <label className="block text-xs text-fs-parchment/60 mb-1 font-display">
+              <label className="block text-sm text-fs-parchment/60 mb-1.5 font-display">
                 Your Name
               </label>
               <input
@@ -145,7 +145,7 @@ export function Home() {
                 placeholder="Enter your name..."
                 maxLength={32}
                 autoFocus
-                className="w-full bg-fs-darker border border-fs-gold/30 rounded px-3 py-2 text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-gold"
+                className="w-full bg-fs-darker border border-fs-link/30 rounded px-4 py-3 text-base text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-link"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               />
             </div>
@@ -163,9 +163,9 @@ export function Home() {
 
         {/* Join Game */}
         {mode === 'join' && (
-          <div className="panel p-6 space-y-4">
+          <div className="panel p-8 space-y-4">
             <div>
-              <label className="block text-xs text-fs-parchment/60 mb-1 font-display">
+              <label className="block text-sm text-fs-parchment/60 mb-1.5 font-display">
                 Room Code
               </label>
               <input
@@ -175,12 +175,12 @@ export function Home() {
                 placeholder="ABCDEF"
                 maxLength={6}
                 autoFocus
-                className="w-full bg-fs-darker border border-fs-gold/30 rounded px-3 py-2 text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-gold font-display text-xl tracking-widest text-center"
+                className="w-full bg-fs-darker border border-fs-link/30 rounded px-4 py-3 text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-link font-display text-2xl tracking-widest text-center"
                 onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
               />
             </div>
             <div>
-              <label className="block text-xs text-fs-parchment/60 mb-1 font-display">
+              <label className="block text-sm text-fs-parchment/60 mb-1.5 font-display">
                 Your Name
               </label>
               <input
@@ -189,7 +189,7 @@ export function Home() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name..."
                 maxLength={32}
-                className="w-full bg-fs-darker border border-fs-gold/30 rounded px-3 py-2 text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-gold"
+                className="w-full bg-fs-darker border border-fs-link/30 rounded px-4 py-3 text-base text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-link"
                 onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
               />
             </div>

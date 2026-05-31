@@ -7,15 +7,19 @@ import { DiceRoller } from '../dice/DiceRoller';
 
 interface TurnActionBarProps {
   onScrollToPlayer?: () => void;
+  /** When true, render inline (no fixed positioning, no slide-in animation) for embedding in a layout section. */
+  inline?: boolean;
+  /** When true, render only the inner content row with no container wrapper (bg, border, animation).
+   *  Use when embedding inside an existing styled container like BottomBar. */
+  bare?: boolean;
 }
 
 /**
- * Sticky bottom action bar — always visible during active game phase.
- * - Your turn: full bar with turn phases + end turn
- * - Priority (not your turn): compact bar with pass/respond
- * - Idle: status-only bar showing whose turn it is + who has priority
+ * Turn action bar — turn phases + priority actions.
+ * Default mode: sticky bottom overlay (fixed positioning).
+ * Inline mode (`inline=true`): renders as a regular flex child for embedding in the bottom section.
  */
-export function TurnActionBar({ onScrollToPlayer }: TurnActionBarProps) {
+export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }: TurnActionBarProps) {
   const game = useGameStore((s) => s.game);
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
@@ -71,49 +75,58 @@ export function TurnActionBar({ onScrollToPlayer }: TurnActionBarProps) {
     const timeoutRemaining = game?.priorityTimeoutRemaining ?? 0;
     const isUrgent = timeoutRemaining > 0 && timeoutRemaining <= 5;
 
+    const innerContent = (
+      <div className={`${bare ? '' : inline ? '' : 'max-w-5xl mx-auto'} px-3 md:px-4 py-2 flex items-center justify-between gap-3`}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <motion.div
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${isUrgent ? 'bg-red-400' : 'bg-fs-gold'}`}
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: isUrgent ? 0.5 : 1.5, repeat: Infinity }}
+          />
+          <span className={`text-sm font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-fs-gold'}`}>
+            You have priority
+          </span>
+          {stackLength > 0 && (
+            <span className="text-xs text-fs-parchment/40">({stackLength} on stack)</span>
+          )}
+          {timeoutRemaining > 0 && (
+            <span className={`text-xs font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-amber-400'}`}>
+              {timeoutRemaining}s
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {myCardsButton}
+          <DiceRoller compact context="manual" />
+          <button
+            onClick={handlePassPriority}
+            className={`px-4 py-1.5 rounded-lg border-2 font-display font-semibold text-sm transition-colors ${
+              isUrgent
+                ? 'border-red-500/80 text-red-400 hover:bg-red-900/20'
+                : 'border-fs-gold/60 text-fs-gold hover:bg-fs-gold/10'
+            }`}
+          >
+            Pass
+          </button>
+        </div>
+      </div>
+    );
+
+    if (bare) return innerContent;
+
+    const containerCls = inline
+      ? 'bg-fs-darker/70 border border-fs-gold/30 rounded-lg backdrop-blur-sm'
+      : 'fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/50 backdrop-blur-sm';
     return (
       <AnimatePresence>
         <motion.div
-          className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/50 backdrop-blur-sm"
-          initial={{ y: 60 }}
-          animate={{ y: 0 }}
-          exit={{ y: 60 }}
+          className={containerCls}
+          initial={inline ? false : { y: 60 }}
+          animate={inline ? {} : { y: 0 }}
+          exit={inline ? {} : { y: 60 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <motion.div
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${isUrgent ? 'bg-red-400' : 'bg-fs-gold'}`}
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: isUrgent ? 0.5 : 1.5, repeat: Infinity }}
-              />
-              <span className={`text-sm font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-fs-gold'}`}>
-                You have priority
-              </span>
-              {stackLength > 0 && (
-                <span className="text-xs text-fs-parchment/40">({stackLength} on stack)</span>
-              )}
-              {timeoutRemaining > 0 && (
-                <span className={`text-xs font-display font-semibold ${isUrgent ? 'text-red-400' : 'text-amber-400'}`}>
-                  {timeoutRemaining}s
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {myCardsButton}
-              <DiceRoller compact context="manual" />
-              <button
-                onClick={handlePassPriority}
-                className={`px-4 py-1.5 rounded-lg border-2 font-display font-semibold text-sm transition-colors ${
-                  isUrgent
-                    ? 'border-red-500/80 text-red-400 hover:bg-red-900/20'
-                    : 'border-fs-gold/60 text-fs-gold hover:bg-fs-gold/10'
-                }`}
-              >
-                Pass
-              </button>
-            </div>
-          </div>
+          {innerContent}
         </motion.div>
       </AnimatePresence>
     );
@@ -121,137 +134,155 @@ export function TurnActionBar({ onScrollToPlayer }: TurnActionBarProps) {
 
   // ── Active turn ──────────────────────────────────────────────────────────
   if (isMyTurn) {
+    const innerContent = (
+      <div className={`${bare ? '' : inline ? '' : 'max-w-6xl mx-auto'} px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3`}>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
+            Your Turn
+          </span>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
+          <PhaseButton
+            label="Draw Loot"
+            icon="🃏"
+            active={!lootDrawn && stackEmpty && !inAttack}
+            done={lootDrawn}
+            onClick={handleDrawLoot}
+            disabled={!stackEmpty}
+          />
+          <PhaseArrow />
+          <PhaseButton
+            label="Play Loot"
+            icon="✋"
+            active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
+            done={lootPlayed}
+            hint={lootPlaysRemaining > 0 ? `${lootPlaysRemaining} play${lootPlaysRemaining !== 1 ? 's' : ''} remaining` : 'Loot played'}
+          />
+          <PhaseArrow />
+          <PhaseButton
+            label="Buy"
+            icon="💰"
+            active={!inAttack && stackEmpty}
+            done={hasPurchased}
+            disabled={inAttack || !stackEmpty}
+            hint={hasPurchased ? `${turn.purchasesMade} bought` : undefined}
+          />
+          <PhaseArrow />
+          <PhaseButton
+            label="Attack"
+            icon="⚔"
+            active={!inAttack && !hasAttacked && stackEmpty}
+            done={hasAttacked}
+            disabled={inAttack || !stackEmpty}
+            hint={inAttack ? 'In combat' : undefined}
+          />
+          <PhaseArrow />
+          <button
+            onClick={handleEndTurn}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-display font-semibold text-sm transition-colors ${
+              stackEmpty
+                ? 'bg-fs-gold text-fs-dark hover:bg-fs-gold-light shadow-lg shadow-fs-gold/20'
+                : 'bg-amber-900/60 text-amber-300 border border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
+            }`}
+            title={stackEmpty ? 'End your turn' : `Force end turn — ${stackLength} stack item${stackLength !== 1 ? 's' : ''} will be discarded`}
+          >
+            {stackEmpty ? 'End Turn' : 'End Turn ⚠'}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {myCardsButton}
+          <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
+          <button
+            onClick={handleGrantLootPlay}
+            className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
+            title="Grant yourself an extra loot play this turn"
+          >
+            +1 Play
+          </button>
+          {hasPriority && stackLength > 0 && (
+            <>
+              <button
+                onClick={handlePassPriority}
+                className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-parchment/70 text-sm hover:bg-fs-gold/10 transition-colors"
+              >
+                Pass
+              </button>
+              <button
+                onClick={handleResolveTop}
+                className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-gold text-sm hover:bg-fs-gold/10 transition-colors"
+                title="Resolve top of stack immediately"
+              >
+                Resolve
+              </button>
+            </>
+          )}
+          {hasPriority && stackLength === 0 && (
+            <button
+              onClick={handlePassPriority}
+              className="px-3 py-1.5 rounded-lg border border-fs-gold/30 text-fs-parchment/50 text-sm hover:bg-fs-gold/10 transition-colors"
+            >
+              Pass Priority
+            </button>
+          )}
+        </div>
+      </div>
+    );
+
+    if (bare) return innerContent;
+
+    const containerCls = inline
+      ? 'bg-fs-darker/70 border border-fs-gold/30 rounded-lg backdrop-blur-sm'
+      : 'fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/40 backdrop-blur-sm';
     return (
       <AnimatePresence>
         <motion.div
-          className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/95 border-t-2 border-fs-gold/40 backdrop-blur-sm"
-          initial={{ y: 80 }}
-          animate={{ y: 0 }}
-          exit={{ y: 80 }}
+          className={containerCls}
+          initial={inline ? false : { y: 80 }}
+          animate={inline ? {} : { y: 0 }}
+          exit={inline ? {} : { y: 80 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <div className="max-w-6xl mx-auto px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
-                Your Turn
-              </span>
-            </div>
-
-            <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
-              <PhaseButton
-                label="Draw Loot"
-                icon="🃏"
-                active={!lootDrawn && stackEmpty && !inAttack}
-                done={lootDrawn}
-                onClick={handleDrawLoot}
-                disabled={!stackEmpty}
-              />
-              <PhaseArrow />
-              <PhaseButton
-                label="Play Loot"
-                icon="✋"
-                active={lootPlaysRemaining > 0 && stackEmpty && !inAttack}
-                done={lootPlayed}
-                hint={lootPlaysRemaining > 0 ? `${lootPlaysRemaining} play${lootPlaysRemaining !== 1 ? 's' : ''} remaining` : 'Loot played'}
-              />
-              <PhaseArrow />
-              <PhaseButton
-                label="Buy"
-                icon="💰"
-                active={!inAttack && stackEmpty}
-                done={hasPurchased}
-                disabled={inAttack || !stackEmpty}
-                hint={hasPurchased ? `${turn.purchasesMade} bought` : undefined}
-              />
-              <PhaseArrow />
-              <PhaseButton
-                label="Attack"
-                icon="⚔"
-                active={!inAttack && !hasAttacked && stackEmpty}
-                done={hasAttacked}
-                disabled={inAttack || !stackEmpty}
-                hint={inAttack ? 'In combat' : undefined}
-              />
-              <PhaseArrow />
-              <button
-                onClick={handleEndTurn}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-display font-semibold text-sm transition-colors ${
-                  stackEmpty
-                    ? 'bg-fs-gold text-fs-dark hover:bg-fs-gold-light shadow-lg shadow-fs-gold/20'
-                    : 'bg-amber-900/60 text-amber-300 border border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
-                }`}
-                title={stackEmpty ? 'End your turn' : `Force end turn — ${stackLength} stack item${stackLength !== 1 ? 's' : ''} will be discarded`}
-              >
-                {stackEmpty ? 'End Turn' : 'End Turn ⚠'}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {myCardsButton}
-              <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
-              <button
-                onClick={handleGrantLootPlay}
-                className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-                title="Grant yourself an extra loot play this turn"
-              >
-                +1 Play
-              </button>
-              {hasPriority && stackLength > 0 && (
-                <>
-                  <button
-                    onClick={handlePassPriority}
-                    className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-parchment/70 text-sm hover:bg-fs-gold/10 transition-colors"
-                  >
-                    Pass
-                  </button>
-                  <button
-                    onClick={handleResolveTop}
-                    className="px-3 py-1.5 rounded-lg border border-fs-gold/40 text-fs-gold text-sm hover:bg-fs-gold/10 transition-colors"
-                    title="Resolve top of stack immediately"
-                  >
-                    Resolve
-                  </button>
-                </>
-              )}
-              {hasPriority && stackLength === 0 && (
-                <button
-                  onClick={handlePassPriority}
-                  className="px-3 py-1.5 rounded-lg border border-fs-gold/30 text-fs-parchment/50 text-sm hover:bg-fs-gold/10 transition-colors"
-                >
-                  Pass Priority
-                </button>
-              )}
-            </div>
-          </div>
+          {innerContent}
         </motion.div>
       </AnimatePresence>
     );
   }
 
   // ── Idle — not your turn, no priority ───────────────────────────────────
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/90 border-t border-fs-gold/20 backdrop-blur-sm">
-      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 text-sm flex-1 min-w-0">
-          <span className="text-fs-parchment/50">
-            <span className="text-fs-parchment/80 font-display">
-              {activePlayer?.id === myPlayer?.id ? 'Your turn' : `${activePlayer?.name ?? '?'}'s turn`}
-            </span>
+  const idleInnerContent = (
+    <div className={`${bare ? '' : inline ? '' : 'max-w-6xl mx-auto'} px-4 py-2 flex items-center justify-between gap-4`}>
+      <div className="flex items-center gap-3 text-sm flex-1 min-w-0">
+        <span className="text-fs-parchment/50">
+          <span className="text-fs-parchment/80 font-display">
+            {activePlayer?.id === myPlayer?.id ? 'Your turn' : `${activePlayer?.name ?? '?'}'s turn`}
           </span>
-          {priorityPlayer && !priorityIsActive && (
-            <span className="text-fs-parchment/40 text-xs flex items-center gap-1">
-              <span className="text-fs-gold">⚡</span>
-              <span>{priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority</span>
-            </span>
-          )}
-          {priorityIsActive && priorityPlayer && (
-            <span className="text-fs-parchment/30 text-xs">
-              {priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority
-            </span>
-          )}
-        </div>
-        {myCardsButton}
+        </span>
+        {priorityPlayer && !priorityIsActive && (
+          <span className="text-fs-parchment/40 text-xs flex items-center gap-1">
+            <span className="text-fs-gold">⚡</span>
+            <span>{priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority</span>
+          </span>
+        )}
+        {priorityIsActive && priorityPlayer && (
+          <span className="text-fs-parchment/30 text-xs">
+            {priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority
+          </span>
+        )}
       </div>
+      {myCardsButton}
+    </div>
+  );
+
+  if (bare) return idleInnerContent;
+
+  const idleCls = inline
+    ? 'bg-fs-darker/60 border border-fs-gold/20 rounded-lg backdrop-blur-sm'
+    : 'fixed bottom-0 left-0 right-0 z-40 bg-fs-dark/90 border-t border-fs-gold/20 backdrop-blur-sm';
+  return (
+    <div className={idleCls}>
+      {idleInnerContent}
     </div>
   );
 }

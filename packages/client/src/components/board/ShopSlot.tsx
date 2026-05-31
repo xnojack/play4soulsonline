@@ -7,13 +7,14 @@ import { useIsMyTurn, useMyPlayer } from '../../hooks/useMyPlayer';
 import { Draggable, Droppable } from './DnDPrimitives';
 import { playSound } from '../audio/SoundManager';
 
-interface ShopSlotProps {
-  slot: ShopSlotType;
-}
-
 const DEFAULT_COST = 10;
 
-export function ShopSlotComponent({ slot }: ShopSlotProps) {
+interface ShopSlotProps {
+  slot: ShopSlotType;
+  size?: 'xs' | 'sm' | 'md';
+}
+
+export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
   const isMyTurn = useIsMyTurn();
   const myPlayer = useMyPlayer();
   const game = useGameStore((s) => s.game);
@@ -62,6 +63,11 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
       onClick: () => getSocket().emit('action:destroy_card', { instanceId: topCard.instanceId }),
       variant: 'danger',
     });
+    actions.push({
+      label: 'Set cost…',
+      onClick: () => { setCostInput(String(cost)); setEditingCost(true); },
+      variant: 'ghost',
+    });
   }
 
   return (
@@ -70,42 +76,17 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
       payload={{ targetZone: 'shop', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 min-w-[110px] max-w-[180px] flex-1"
+      className="flex flex-col items-center gap-1 flex-shrink-0"
       data-zone={`shop-${slot.slotIndex}`}
     >
-      <div className="section-title text-center text-sm mb-0.5 flex items-center gap-1">
-        Shop {slot.slotIndex + 1}
-        {topCardData && (
-          editingCost ? (
-            <span className="flex items-center gap-0.5">
-              <input
-                autoFocus
-                type="number"
-                value={costInput}
-                onChange={(e) => setCostInput(e.target.value)}
-                onBlur={handleSetCost}
-                onKeyDown={(e) => e.key === 'Enter' && handleSetCost()}
-                className="w-12 text-sm bg-fs-darker border border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
-                placeholder={String(cost)}
-              />
-              <span className="text-fs-gold/50 text-sm">¢</span>
-            </span>
-          ) : (
-            <button
-              className={`text-sm ml-1 font-body font-normal px-1 md:px-2 rounded hover:bg-fs-gold/10 transition-colors ${
-                cost < 0 ? 'text-green-400' : cost === 0 ? 'text-purple-400' : 'text-fs-gold/50'
-              }`}
-              title="Click to change cost"
-              onClick={() => { setCostInput(String(cost)); setEditingCost(true); }}
-            >
-              {cost < 0 ? `+${Math.abs(cost)}¢ back` : cost === 0 ? 'free' : `${cost}¢`}
-            </button>
-          )
-        )}
-      </div>
-
       {!slot.card ? (
-        <div className="w-[117px] h-[160px] rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-sm">
+        <div
+          className="rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-sm"
+          style={{
+            width: size === 'sm' ? 78 : size === 'xs' ? 52 : 117,
+            height: size === 'sm' ? 107 : size === 'xs' ? 71 : 160,
+          }}
+        >
           Empty
         </div>
       ) : (
@@ -116,7 +97,7 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
         >
          <ResolvedCard
             instance={slot.card}
-            size="md"
+            size={size}
             actions={actions.length > 0 ? actions : undefined}
             alwaysPopover
           />
@@ -136,6 +117,23 @@ export function ShopSlotComponent({ slot }: ShopSlotProps) {
               ? (cost < 0 ? `Take (+${Math.abs(cost)}¢)` : 'Take')
               : `Buy for ${cost}¢`}
           </button>
+        )}
+
+        {/* Inline cost editor — shown when Set cost… action is triggered */}
+        {editingCost && (
+          <span className="flex items-center gap-0.5">
+            <input
+              autoFocus
+              type="number"
+              value={costInput}
+              onChange={(e) => setCostInput(e.target.value)}
+              onBlur={handleSetCost}
+              onKeyDown={(e) => e.key === 'Enter' && handleSetCost()}
+              className="w-12 text-xs bg-fs-darker border border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
+              placeholder={String(cost)}
+            />
+            <span className="text-fs-gold/50 text-xs">¢</span>
+          </span>
         )}
         </div>
       )}

@@ -96,13 +96,13 @@ function JoinForm({ roomId, onJoined }: JoinFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-fs-darker flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <h1 className="font-display text-3xl font-bold text-fs-gold mb-1">Join Lobby</h1>
           <div className="flex items-center justify-center gap-2">
             <span className="text-fs-parchment/40 text-sm">Room:</span>
-            <span className="font-display text-fs-gold-light text-xl tracking-widest font-bold">
+            <span className="font-display text-fs-link-hover text-2xl tracking-widest font-bold">
               {roomId}
             </span>
           </div>
@@ -114,9 +114,9 @@ function JoinForm({ roomId, onJoined }: JoinFormProps) {
           </div>
         )}
 
-        <div className="panel p-6 space-y-4">
+        <div className="panel p-8 space-y-4">
           <div>
-            <label className="block text-xs text-fs-parchment/60 mb-1 font-display">
+            <label className="block text-sm text-fs-parchment/60 mb-1.5 font-display">
               Your Name
             </label>
             <input
@@ -126,7 +126,7 @@ function JoinForm({ roomId, onJoined }: JoinFormProps) {
               placeholder="Enter your name…"
               maxLength={32}
               autoFocus
-              className="w-full bg-fs-darker border border-fs-gold/30 rounded px-3 py-2 text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-gold"
+              className="w-full bg-fs-darker border border-fs-link/30 rounded px-4 py-3 text-base text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-link"
               onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
             />
           </div>
@@ -251,19 +251,19 @@ export function Lobby() {
   const spectators = players.filter((p) => p.isSpectator);
 
   return (
-    <div className="min-h-screen bg-fs-darker flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-xl pb-8">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="font-display text-3xl font-bold text-fs-gold mb-1">Game Lobby</h1>
           <div className="flex items-center justify-center gap-2">
             <span className="text-fs-parchment/40 text-sm">Room Code:</span>
-            <span className="font-display text-fs-gold-light text-xl tracking-widest font-bold">
+            <span className="font-display text-fs-link-hover text-2xl tracking-widest font-bold">
               {roomId}
             </span>
             <button
               onClick={() => navigator.clipboard.writeText(roomId ?? '')}
-              className="text-xs text-fs-parchment/30 hover:text-fs-parchment transition-colors"
+              className="text-xs text-fs-parchment/30 hover:text-fs-link transition-colors"
               title="Copy room code"
             >
               Copy
@@ -278,7 +278,7 @@ export function Lobby() {
         )}
 
         {/* Players */}
-        <div className="panel p-4 mb-4">
+          <div className="panel p-6 mb-4">
           <div className="section-title mb-3">Players ({nonSpectators.length})</div>
           {nonSpectators.length === 0 ? (
             <div className="text-fs-parchment/30 text-sm italic">Waiting for players…</div>
@@ -291,7 +291,7 @@ export function Lobby() {
                   />
                   <span className="text-fs-parchment">{p.name}</span>
                   {p.id === game?.hostPlayerId && (
-                    <span className="text-xs text-fs-gold/60">(host)</span>
+                    <span className="text-xs text-fs-link/60">(host)</span>
                   )}
                   {!p.connected && (
                     <span className="text-xs text-yellow-600/70">disconnected</span>
@@ -316,14 +316,14 @@ export function Lobby() {
         </div>
 
         {/* Invite hint */}
-        <div className="panel p-3 mb-4 text-center text-xs text-fs-parchment/40">
-          Share the room code <span className="text-fs-gold font-display tracking-widest">{roomId}</span>{' '}
+        <div className="panel p-4 mb-4 text-center text-sm text-fs-parchment/50">
+          Share the room code <span className="text-fs-link font-display tracking-widest">{roomId}</span>{' '}
           or send this link:{' '}
           <button
             onClick={() =>
               navigator.clipboard.writeText(window.location.href)
             }
-            className="underline hover:text-fs-parchment transition-colors"
+            className="underline hover:text-fs-link transition-colors"
           >
             Copy lobby link
           </button>
@@ -331,12 +331,12 @@ export function Lobby() {
 
         {/* Card sets (host only) */}
         {isHost && (
-          <div className="panel p-4 mb-4">
+        <div className="panel p-6 mb-4">
             <div className="flex items-center justify-between mb-2">
               <div className="section-title">Card Sets</div>
               <div className="flex gap-2">
-                <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-parchment transition-colors">All</button>
-                <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-parchment transition-colors">None</button>
+                <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">All</button>
+                <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">None</button>
               </div>
             </div>
             {availableSets.length === 0 ? (
@@ -375,7 +375,7 @@ export function Lobby() {
                     max={10}
                     value={bonusSoulCount}
                     onChange={(e) => setBonusSoulCount(Math.max(1, Math.min(10, Number(e.target.value))))}
-                    className="w-14 bg-fs-darker border border-fs-gold/30 rounded px-2 py-0.5 text-fs-parchment text-sm focus:outline-none focus:border-fs-gold"
+                    className="w-14 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
                   />
                 </label>
               )}
@@ -405,7 +405,7 @@ export function Lobby() {
                   max={120}
                   value={priorityTimeoutSeconds}
                   onChange={(e) => setPriorityTimeoutSeconds(Math.max(0, Math.min(120, Number(e.target.value))))}
-                  className="w-16 bg-fs-darker border border-fs-gold/30 rounded px-2 py-0.5 text-fs-parchment text-sm focus:outline-none focus:border-fs-gold"
+                    className="w-16 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
                 />
               </label>
             </div>
@@ -423,12 +423,12 @@ export function Lobby() {
             {starting ? 'Starting…' : 'Start Game'}
           </Button>
         ) : (
-          <div className="text-center text-fs-parchment/40 text-sm panel p-4">
+          <div className="text-center text-fs-parchment/50 text-sm panel p-5">
             Waiting for the host to start the game…
           </div>
         )}
       </div>
-      <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-fs-darker/80 backdrop-blur-sm border-t border-fs-gold/10">
+      <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-black/60 backdrop-blur-sm border-t border-fs-gold/10">
         <AttributionFooter compact />
       </div>
     </div>

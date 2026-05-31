@@ -10,7 +10,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://foursouls.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-fs-parchment/50 transition-colors"
+          className="underline text-fs-link/50 hover:text-fs-link transition-colors"
         >
           foursouls.com
         </a>
@@ -19,7 +19,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://foursouls.com/rules/"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-fs-parchment/50 transition-colors"
+          className="underline text-fs-link/50 hover:text-fs-link transition-colors"
         >
           Rules
         </a>
@@ -29,16 +29,16 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://github.com/xnojack/play4soulsonline"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-fs-parchment/50 transition-colors"
+          className="underline text-fs-link/50 hover:text-fs-link transition-colors"
         >
           PRs welcome
         </a>
         {' '}&mdash;{' '}
-        <Link to="/privacy" className="underline hover:text-fs-parchment/50 transition-colors">
+        <Link to="/privacy" className="underline text-fs-link/50 hover:text-fs-link transition-colors">
           Privacy
         </Link>
         {' '}&middot;{' '}
-        <Link to="/terms" className="underline hover:text-fs-parchment/50 transition-colors">
+        <Link to="/terms" className="underline text-fs-link/50 hover:text-fs-link transition-colors">
           Terms
         </Link>
       </p>
@@ -64,7 +64,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://github.com/xnojack/play4soulsonline"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           PRs welcome.
         </a>
@@ -74,7 +74,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://foursouls.com/rules/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           Rules
         </a>
@@ -83,7 +83,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://foursouls.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           foursouls.com
         </a>
@@ -92,7 +92,7 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
           href="https://maestromedia.com/collections/binding-of-isaac-four-souls"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           maestromedia.com
         </a>
@@ -100,14 +100,14 @@ export function AttributionFooter({ compact = false }: { compact?: boolean }) {
       <p className="text-xs text-fs-parchment/30">
         <Link
           to="/privacy"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           Privacy Policy
         </Link>
         {' '}&middot;{' '}
         <Link
           to="/terms"
-          className="text-fs-gold/50 hover:text-fs-gold underline transition-colors"
+          className="text-fs-link/50 hover:text-fs-link underline transition-colors"
         >
           Terms of Service
         </Link>

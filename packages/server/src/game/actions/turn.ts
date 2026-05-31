@@ -289,18 +289,30 @@ export function returnToDeck(
   playerId: string,
   cardId: string,
   deckType: 'loot' | 'treasure' | 'monster' | 'room',
-  position: 'top' | 'bottom',
+  position: 'top' | 'bottom' | 'random',
   fromHand: boolean,
   fromDiscard?: boolean,
   fromInstanceId?: string,
+  offset?: number,
 ): GameState {
+  // ── Card-type validation ──────────────────────────────────────────────────
+  const cardData = getCardById(cardId);
+  if (cardData) {
+    const ct = cardData.cardType;
+    const valid =
+      (deckType === 'loot'     && ct === 'Loot') ||
+      (deckType === 'treasure' && (ct === 'Treasure' || cardData.isEternal)) ||
+      (deckType === 'monster'  && ct === 'Monster') ||
+      (deckType === 'room'     && ct === 'Room');
+    if (!valid) return state;
+  }
+
   let newState = state;
 
   // Remove from source zone
   if (fromInstanceId) {
-    // Move existing CardInPlay out of whichever zone holds it
     const { newState: afterRemove, instance } = findAndRemoveCardInstance(state, cardId, fromInstanceId);
-    if (!instance) return state; // instance not found — bail
+    if (!instance) return state;
     newState = afterRemove;
   } else if (fromHand) {
     const player = state.players.find((p) => p.id === playerId);
@@ -309,12 +321,11 @@ export function returnToDeck(
       ...newState,
       players: newState.players.map((p) =>
         p.id === playerId
-          ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== cardId) }
+          ? { ...p, handCardIds: p.handCardIds.filter((id: string) => id !== cardId) }
           : p
       ),
     };
   } else if (fromDiscard) {
-    // Strip exactly one copy from the matching discard pile
     switch (deckType) {
       case 'loot': {
         const d = [...newState.lootDiscard];
@@ -351,40 +362,49 @@ export function returnToDeck(
     }
   }
 
-  const placeOnDeck = position === 'top' ? putOnTopOfDeck : putOnBottomOfDeck;
-  const card = getCardById(cardId);
+  // ── Deck insertion helper (supports top, bottom, offset, random) ──────────
+  function insertIntoDeck(deck: string[]): string[] {
+    const d = [...deck];
+    if (position === 'random') {
+      const idx = Math.floor(Math.random() * (d.length + 1));
+      d.splice(idx, 0, cardId);
+      return d;
+    }
+    if (position === 'top') {
+      if (offset && offset > 0) {
+        // offset from top: index = length - clamp(offset, 0, length)
+        const insertIdx = Math.max(0, d.length - Math.min(offset, d.length));
+        d.splice(insertIdx, 0, cardId);
+        return d;
+      }
+      return putOnTopOfDeck(d, cardId);
+    }
+    // bottom
+    if (offset && offset > 0) {
+      const insertIdx = Math.min(offset, d.length);
+      d.splice(insertIdx, 0, cardId);
+      return d;
+    }
+    return putOnBottomOfDeck(d, cardId);
+  }
+
   const player = state.players.find((p) => p.id === playerId);
+  const posLabel = position === 'random' ? 'randomly' : `on the ${position}${offset ? ` (${offset} from ${position})` : ''} of`;
   const log = createLogEntry(
     'card_play',
-    `${player?.name ?? 'Someone'} puts ${card?.name ?? cardId} on the ${position} of the ${deckType} deck`,
+    `${player?.name ?? 'Someone'} puts ${cardData?.name ?? cardId} ${posLabel} the ${deckType} deck`,
     playerId
   );
 
   switch (deckType) {
     case 'loot':
-      return {
-        ...newState,
-        lootDeck: placeOnDeck(newState.lootDeck, cardId),
-        log: [...newState.log, log],
-      };
+      return { ...newState, lootDeck: insertIntoDeck(newState.lootDeck), log: [...newState.log, log] };
     case 'treasure':
-      return {
-        ...newState,
-        treasureDeck: placeOnDeck(newState.treasureDeck, cardId),
-        log: [...newState.log, log],
-      };
+      return { ...newState, treasureDeck: insertIntoDeck(newState.treasureDeck), log: [...newState.log, log] };
     case 'monster':
-      return {
-        ...newState,
-        monsterDeck: placeOnDeck(newState.monsterDeck, cardId),
-        log: [...newState.log, log],
-      };
+      return { ...newState, monsterDeck: insertIntoDeck(newState.monsterDeck), log: [...newState.log, log] };
     case 'room':
-      return {
-        ...newState,
-        roomDeck: placeOnDeck(newState.roomDeck, cardId),
-        log: [...newState.log, log],
-      };
+      return { ...newState, roomDeck: insertIntoDeck(newState.roomDeck), log: [...newState.log, log] };
     default:
       return state;
   }

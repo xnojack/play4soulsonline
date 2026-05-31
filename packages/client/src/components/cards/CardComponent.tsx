@@ -1,22 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ClientCard, CardInPlay } from '../../store/gameStore';
-import { CardTooltip } from './CardTooltip';
 import { useGameStore } from '../../store/gameStore';
-import { Tooltip } from '../ui/Tooltip';
-import { getSocket } from '../../socket/client';
 import { SERVER_URL } from '../../config';
 import { isTouchDevice } from '../../hooks/useIsTouchDevice';
-
-/** Debounce helper for resize handlers */
-function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>): void => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  };
-}
+import { useDragState } from '../board/DnDProvider';
+import { CardHoverPreview } from './CardHoverPreview';
 
 export interface CardAction {
   label: string;
@@ -29,7 +18,7 @@ interface CardComponentProps {
   instance?: CardInPlay;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showCounters?: boolean;
-  /** If provided, hovering shows an action popover with these options */
+  /** Reserved for future automation — not wired to UI */
   actions?: CardAction[];
   /** 1-2 primary actions shown as buttons below the card */
   primaryActions?: CardAction[];
@@ -38,11 +27,11 @@ interface CardComponentProps {
   selected?: boolean;
   className?: string;
   faceDown?: boolean;
-  /** If true, the action popover opens below the card instead of above */
+  /** Reserved — kept for API compat */
   popoverBelow?: boolean;
-  /** If true, the popover opens on hover even with no game actions — enables counter row */
+  /** Reserved for future automation — not wired to UI */
   alwaysPopover?: boolean;
-  /** If true, swaps width and height so the card occupies a landscape footprint (for pre-rotated images) */
+  /** If true, swaps width and height so the card occupies a landscape footprint */
   landscape?: boolean;
 }
 
@@ -60,142 +49,76 @@ const ACTION_COLORS: Record<string, string> = {
   ghost: 'bg-transparent hover:bg-fs-darker text-fs-parchment/70 border-fs-gold/20',
 };
 
-const HOVER_OPEN_DELAY = 200;
-const HOVER_CLOSE_DELAY = 150;
+const HOVER_OPEN_DELAY = 120;
 
 export function CardComponent({
   card,
   instance,
   size = 'md',
   showCounters = true,
-  actions,
+  actions: _actions,
   primaryActions,
   onClick,
   selected = false,
   className = '',
   faceDown = false,
-  popoverBelow = false,
-  alwaysPopover = false,
+  popoverBelow: _popoverBelow,
+  alwaysPopover: _alwaysPopover,
   landscape = false,
 }: CardComponentProps) {
   const { setModalCard, setHoveredCard } = useGameStore();
+  const { activeDrag } = useDragState();
   const dim = CARD_SIZES[size];
   const containerWidth = landscape ? dim.height : dim.width;
   const containerHeight = landscape ? dim.width : dim.height;
   const isSpent = instance?.charged === false;
   const isFlipped = instance?.flipped === true;
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState<'above' | 'below'>('above');
-  const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hoverCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTouch = isTouchDevice();
 
-  const hasPopoverContent = alwaysPopover || (actions && actions.length > 0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hoverOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   const displayImageUrl = isFlipped && card.backImageUrl ? card.backImageUrl : card.imageUrl;
   const displayName = isFlipped && card.flipSideName ? card.flipSideName : card.name;
 
   const clearTimers = useCallback(() => {
     if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
-    if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
   }, []);
-
-  const measurePopover = useCallback(() => {
-    if (!containerRef.current || !popoverRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const popoverWidth = popoverRef.current.offsetWidth;
-    const popoverHeight = popoverRef.current.offsetHeight;
-    if (!popoverWidth || !popoverHeight) return;
-
-    const margin = 8;
-
-    if (window.innerWidth < 768) {
-      setPopoverCoords({
-        top: (window.innerHeight - popoverHeight) / 2,
-        left: (window.innerWidth - popoverWidth) / 2,
-      });
-      return;
-    }
-
-    const spaceAbove = rect.top;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const above = spaceAbove >= spaceBelow;
-    setPopoverPosition(above ? 'above' : 'below');
-    const top = above
-      ? rect.top - popoverHeight - 4
-      : rect.bottom + 4;
-
-    let left = rect.left + rect.width / 2 - popoverWidth / 2;
-    left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
-
-    setPopoverCoords({ top, left });
-  }, []);
-
-  useEffect(() => {
-    if (!popoverOpen) { setPopoverCoords(null); return; }
-    const id = requestAnimationFrame(() => measurePopover());
-    return () => cancelAnimationFrame(id);
-  }, [popoverOpen, measurePopover]);
-
-  useEffect(() => {
-    const handleResize = debounce(() => { if (popoverOpen) measurePopover(); }, 100);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [popoverOpen, measurePopover]);
-
-  useEffect(() => {
-    if (!popoverOpen) return;
-    const handler = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node;
-      const inCard = containerRef.current?.contains(target);
-      const inPopover = popoverRef.current?.contains(target);
-      if (!inCard && !inPopover) {
-        setPopoverOpen(false);
-        clearTimers();
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler, { passive: true });
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
-  }, [popoverOpen, clearTimers]);
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  // Close preview immediately when a drag starts
+  useEffect(() => {
+    if (activeDrag) {
+      clearTimers();
+      setPreviewOpen(false);
+    }
+  }, [activeDrag, clearTimers]);
+
   const handleMouseEnter = useCallback(() => {
-    if (faceDown || !hasPopoverContent || isTouch) return;
-    if (hoverCloseTimer.current) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
-    if (!popoverOpen && !hoverOpenTimer.current) {
+    if (faceDown || isTouch || activeDrag) return;
+    if (!previewOpen && !hoverOpenTimer.current) {
       hoverOpenTimer.current = setTimeout(() => {
-        setPopoverOpen(true);
         hoverOpenTimer.current = null;
+        if (containerRef.current) {
+          setAnchorRect(containerRef.current.getBoundingClientRect());
+        }
+        setPreviewOpen(true);
       }, HOVER_OPEN_DELAY);
     }
-  }, [faceDown, hasPopoverContent, isTouch, popoverOpen]);
+  }, [faceDown, isTouch, activeDrag, previewOpen]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!hasPopoverContent || isTouch) return;
-    if (hoverOpenTimer.current) { clearTimeout(hoverOpenTimer.current); hoverOpenTimer.current = null; }
-    if (popoverOpen && !hoverCloseTimer.current) {
-      hoverCloseTimer.current = setTimeout(() => {
-        setPopoverOpen(false);
-        hoverCloseTimer.current = null;
-      }, HOVER_CLOSE_DELAY);
-    }
-  }, [hasPopoverContent, isTouch, popoverOpen]);
+    if (isTouch) return;
+    clearTimers();
+    setPreviewOpen(false);
+  }, [isTouch, clearTimers]);
 
   const handleClick = () => {
     if (faceDown) return;
-    if (isTouch && hasPopoverContent) {
-      setPopoverOpen((v) => !v);
-      return;
-    }
     if (onClick) {
       onClick();
     } else {
@@ -207,23 +130,16 @@ export function CardComponent({
 
   return (
     <>
-      <Tooltip
-        content={!faceDown && !popoverOpen ? <CardTooltip card={card} instance={instance} /> : null}
-        delay={500}
+      <div
+        style={primaryActions && primaryActions.length > 0 ? { paddingBottom: '32px' } : undefined}
       >
         <div
-          style={primaryActions && primaryActions.length > 0 ? { paddingBottom: '32px' } : undefined}
+          ref={containerRef}
+          className={`relative inline-block select-none ${className}`}
+          style={{ width: containerWidth, height: containerHeight }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          <div
-            ref={containerRef}
-            className={`relative inline-block select-none ${className}`}
-            style={{
-              width: containerWidth,
-              height: containerHeight,
-            }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
           <motion.div
             className="w-full h-full cursor-pointer"
             style={{ rotate: isSpent ? 90 : 0 }}
@@ -309,108 +225,15 @@ export function CardComponent({
             </div>
           )}
         </div>
-          </div>
-      </Tooltip>
+      </div>
 
-      {hasPopoverContent && createPortal(
-        <AnimatePresence>
-          {popoverOpen && (
-            <motion.div
-              ref={popoverRef}
-              className={`fixed z-[9999] bg-fs-dark border border-fs-gold/40 rounded-lg shadow-2xl p-3 min-w-[180px] max-w-[calc(100vw-1rem)] ${card.abilityText ? 'w-[320px]' : ''}`}
-              style={popoverCoords
-                ? { top: popoverCoords.top, left: popoverCoords.left }
-                : { visibility: 'hidden', top: 0, left: 0 }}
-              initial={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: popoverPosition === 'below' ? -6 : 6, scale: 0.95 }}
-              transition={{ duration: 0.12 }}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <div className="text-base text-fs-gold font-display font-semibold pb-1.5 mb-2 border-b border-fs-gold/20 truncate">
-                {displayName}
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex flex-col gap-1 min-w-0 flex-shrink-0">
-                  {(actions ?? []).map((action, i) => (
-                    <button
-                      key={i}
-                      className={`text-base px-3 py-2 rounded border text-left transition-colors ${
-                        ACTION_COLORS[action.variant ?? 'default']
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPopoverOpen(false);
-                        clearTimers();
-                        action.onClick();
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                  {instance && (
-                    <div className="flex items-center justify-between px-1 pt-1.5 mt-1 border-t border-fs-gold/10">
-                      <span className="text-sm text-fs-parchment/40">
-                        Counters: {instance.genericCounters}
-                      </span>
-                      <div className="flex gap-1">
-                      <button
-                           className="w-6 h-6 md:w-8 md:h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
-                           title="Remove counter"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (instance.genericCounters > 0) {
-                              getSocket().emit('action:remove_counter', {
-                                instanceId: instance.instanceId,
-                                counterType: 'generic',
-                                amount: 1,
-                              });
-                            }
-                          }}
-                        >−</button>
-                     <button
-                           className="w-6 h-6 md:w-8 md:h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none"
-                           title="Add counter"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            getSocket().emit('action:add_counter', {
-                              instanceId: instance.instanceId,
-                              counterType: 'generic',
-                              amount: 1,
-                            });
-                          }}
-                        >+</button>
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    className="text-base px-3 py-1.5 rounded border text-left transition-colors text-fs-parchment/50 border-fs-gold/10 hover:text-fs-parchment hover:bg-fs-darker"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPopoverOpen(false);
-                      clearTimers();
-                      setModalCard(card);
-                    }}
-                  >
-                    View card
-                  </button>
-                </div>
-
-                {card.abilityText && (
-                  <div className="flex-1 min-w-0 border-l border-fs-gold/15 pl-3">
-                    <div className="text-xs uppercase tracking-wider text-fs-parchment/30 mb-1">Ability</div>
-                    <div className="text-sm text-fs-parchment/80 leading-relaxed whitespace-pre-line max-h-[200px] overflow-y-auto">
-                      {card.abilityText}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
+      {!faceDown && (
+        <CardHoverPreview
+          card={card}
+          instance={instance}
+          open={previewOpen}
+          anchorRect={anchorRect}
+        />
       )}
     </>
   );

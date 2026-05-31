@@ -704,6 +704,50 @@ export function registerHandlers(io: Server, socket: Socket): void {
     broadcastState(io, ctx.roomId);
   }));
 
+  /** Draw the top card of any deck into the requesting player's hand */
+  socket.on('action:draw_from_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload = isObject(raw) ? raw as { deckType?: string } : {};
+    if (!['loot', 'treasure', 'monster', 'room'].includes(payload.deckType ?? ''))
+      return sendError(socket, 'Invalid deck type');
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    const deckType = payload.deckType as 'loot' | 'treasure' | 'monster' | 'room';
+    const deckKey = `${deckType}Deck` as keyof typeof state;
+    const discardKey = `${deckType}Discard` as keyof typeof state;
+    const deck = state[deckKey] as string[];
+    const discard = state[discardKey] as string[];
+
+    const { drawn, newDeck, newDiscard } = drawFromDeck(deck, discard, 1);
+    if (drawn.length === 0) return sendError(socket, `${deckType} deck is empty`);
+
+    const cardId = drawn[0];
+    const card = getCardById(cardId);
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    const log = createLogEntry(
+      'card_play',
+      `${player?.name ?? 'Someone'} draws ${card?.name ?? cardId} from the ${deckType} deck`,
+      ctx.playerId,
+    );
+
+    room.setState({
+      ...state,
+      [deckKey]: newDeck,
+      [discardKey]: newDiscard,
+      players: state.players.map((p) =>
+        p.id === ctx.playerId ? { ...p, handCardIds: [...p.handCardIds, cardId] } : p
+      ),
+      log: [...state.log, log],
+    });
+    broadcastState(io, ctx.roomId);
+  }));
+
   socket.on('action:discard_loot', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
     if (!validatePayload(raw, ['cardId'])) return sendError(socket, 'Invalid payload');
@@ -726,13 +770,29 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     // Validate deckType and position values
     if (!['loot', 'treasure', 'monster', 'room'].includes(payload.deckType)) return sendError(socket, 'Invalid deck type');
-    if (!['top', 'bottom'].includes(payload.position)) return sendError(socket, 'Invalid position');
+    if (!['top', 'bottom', 'random'].includes(payload.position)) return sendError(socket, 'Invalid position');
 
     const ctx = getCtx(socket);
     if (!ctx) return;
     if (rejectIfSpectator(socket, ctx)) return;
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
+
+    // Card-type mismatch — validate before calling returnToDeck so we can send a useful error
+    const cardForCheck = getCardById(payload.cardId);
+    if (cardForCheck) {
+      const ct = cardForCheck.cardType;
+      const valid =
+        (payload.deckType === 'loot'     && ct === 'Loot') ||
+        (payload.deckType === 'treasure' && (ct === 'Treasure' || cardForCheck.isEternal)) ||
+        (payload.deckType === 'monster'  && ct === 'Monster') ||
+        (payload.deckType === 'room'     && ct === 'Room');
+      if (!valid) return sendError(socket, `A ${ct} card cannot be returned to the ${payload.deckType} deck`);
+    }
+
+    const offset = typeof (payload as any).offset === 'number'
+      ? clampInt((payload as any).offset, 0, 52, 0)
+      : undefined;
 
     room.setState(
       returnToDeck(
@@ -744,6 +804,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
         payload.fromHand ?? false,
         payload.fromDiscard ?? false,
         payload.fromInstanceId,
+        offset,
       )
     );
     if (payload.stackItemId) {
@@ -1536,28 +1597,57 @@ export function registerHandlers(io: Server, socket: Socket): void {
       room.setState(newState);
     } else if (payload.slotType === 'shop') {
       const newSlotIndex = state.shopSlots.length;
-      const { drawn, newDeck, newDiscard } = drawFromDeck(
-        state.treasureDeck, state.treasureDiscard, 1
-      );
-      const newCard = drawn[0] ? createCardInPlay(drawn[0]) : null;
-      room.setState({
-        ...state,
-        shopSlots: [...state.shopSlots, { slotIndex: newSlotIndex, card: newCard }],
-        treasureDeck: newDeck,
-        treasureDiscard: newDiscard,
-      });
+      if (payload.cardId) {
+        // Use the specific dragged card instead of drawing from deck
+        const { newState: afterRemove, instance } = findAndRemoveCardInstance(
+          state,
+          payload.cardId,
+          payload.instanceId,
+        );
+        if (!instance) return sendError(socket, 'Card not found in any zone');
+        room.setState({
+          ...afterRemove,
+          shopSlots: [...afterRemove.shopSlots, { slotIndex: newSlotIndex, card: instance }],
+        });
+      } else {
+        const { drawn, newDeck, newDiscard } = drawFromDeck(
+          state.treasureDeck, state.treasureDiscard, 1
+        );
+        const newCard = drawn[0] ? createCardInPlay(drawn[0]) : null;
+        room.setState({
+          ...state,
+          shopSlots: [...state.shopSlots, { slotIndex: newSlotIndex, card: newCard }],
+          treasureDeck: newDeck,
+          treasureDiscard: newDiscard,
+        });
+      }
     } else {
-      // room: draw a new room card and append it as a new slot
-      if (state.roomDeck.length === 0) return sendError(socket, 'Room deck is empty');
-      const { drawn, newDeck, newDiscard } = drawFromDeck(state.roomDeck, state.roomDiscard, 1);
-      if (!drawn[0]) return sendError(socket, 'Room deck is empty');
-      const newRoomCard = createCardInPlay(drawn[0]);
-      room.setState({
-        ...state,
-        roomSlots: [...state.roomSlots, newRoomCard],
-        roomDeck: newDeck,
-        roomDiscard: newDiscard,
-      });
+      // room slot
+      if (payload.cardId) {
+        // Use the specific dragged card
+        const { newState: afterRemove, instance } = findAndRemoveCardInstance(
+          state,
+          payload.cardId,
+          payload.instanceId,
+        );
+        if (!instance) return sendError(socket, 'Card not found in any zone');
+        room.setState({
+          ...afterRemove,
+          roomSlots: [...afterRemove.roomSlots, instance],
+        });
+      } else {
+        // Draw from room deck
+        if (state.roomDeck.length === 0) return sendError(socket, 'Room deck is empty');
+        const { drawn, newDeck, newDiscard } = drawFromDeck(state.roomDeck, state.roomDiscard, 1);
+        if (!drawn[0]) return sendError(socket, 'Room deck is empty');
+        const newRoomCard = createCardInPlay(drawn[0]);
+        room.setState({
+          ...state,
+          roomSlots: [...state.roomSlots, newRoomCard],
+          roomDeck: newDeck,
+          roomDiscard: newDiscard,
+        });
+      }
     }
 
     broadcastState(io, ctx.roomId);

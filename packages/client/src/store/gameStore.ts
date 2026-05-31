@@ -226,6 +226,8 @@ interface GameStore {
   setHoveredCard: (card: ClientCard | null) => void;
   setModalCard: (card: ClientCard | null) => void;
   setCardSearchOpen: (open: boolean) => void;
+  showLog: boolean;
+  setShowLog: (show: boolean) => void;
   setGameOver: (info: { winnerId: string; winnerName: string } | null) => void;
   setAvailableSets: (sets: string[]) => void;
   clearNewLogEntries: () => void;
@@ -245,6 +247,7 @@ const initialState = {
   hoveredCard: null,
   modalCard: null,
   isCardSearchOpen: false,
+  showLog: false,
   lastDiceResult: null,
   newLogEntries: [],
   gameOverInfo: null,
@@ -286,6 +289,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setHoveredCard: (card) => set({ hoveredCard: card }),
   setModalCard: (card) => set({ modalCard: card }),
   setCardSearchOpen: (open) => set({ isCardSearchOpen: open }),
+  setShowLog: (show) => set({ showLog: show }),
   setGameOver: (info) => set({ gameOverInfo: info }),
   setAvailableSets: (sets) => set({ availableSets: sets }),
   clearNewLogEntries: () => set({ newLogEntries: [] }),

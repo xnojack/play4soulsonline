@@ -167,11 +167,6 @@ export function StatDisplay({ player, isMe }: StatDisplayProps) {
           )}
         </div>
 
-        {/* Hand count */}
-        <div className="flex items-center gap-1 text-sm text-fs-parchment/50" title="Cards in hand">
-          🃏 {player.handCount}
-        </div>
-
         {/* Dice roller — inline compact */}
         {isMe && (
           <DiceRoller

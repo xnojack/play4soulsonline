@@ -72,7 +72,7 @@ export function Game() {
   if (!inRoom) {
     if (showRejoin) {
       return (
-        <div className="min-h-screen bg-fs-darker flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4">
           <div className="panel p-8 max-w-sm w-full text-center space-y-4">
             <h2 className="font-display text-fs-gold text-2xl font-bold">Rejoin Game</h2>
             <p className="text-fs-parchment/50 text-sm">
@@ -100,7 +100,7 @@ export function Game() {
     }
 
     return (
-      <div className="min-h-screen bg-fs-darker flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-fs-parchment/40 font-display text-sm">
           Reconnecting to room {roomId}…
         </div>

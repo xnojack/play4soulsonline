@@ -8,7 +8,9 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  Modifier,
 } from '@dnd-kit/core';
+import { useBoardScale } from '../../context/BoardScaleContext';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { useCard } from '../board/CardResolver';
@@ -18,11 +20,20 @@ import {
   UniversalDrop,
   resolveDropActions,
   getAllAvailableActions,
+  DECK_TOP_SENTINEL,
 } from './DropActionResolver';
 
 export type { UniversalDrag, UniversalDrop };
 import { DropContextMenu } from './DropContextMenu';
 import { useDragEdgeScroll } from '../../hooks/useDragEdgeScroll';
+
+const DECK_BACKS: Record<string, string> = {
+  treasure: '/treasure-back.png',
+  loot: '/loot-back.png',
+  monster: '/monster-back.png',
+  room: '/room-back.png',
+  eternal: '/eternal-back.png',
+};
 
 interface DnDContextValue {
   activeDrag: UniversalDrag | null;
@@ -39,8 +50,8 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
-    actions: { label: string; action: string; payload: Record<string, unknown> }[];
-    stackSourceId?: string; // set when drag source is 'stack', triggers resolve_top after action
+    actions: { label: string; action: string; payload: Record<string, unknown>; onClick?: () => void }[];
+    stackSourceId?: string;
   } | null>(null);
 
   const sensors = useSensors(
@@ -67,12 +78,22 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
       actions = getAllAvailableActions(drag, game);
       if (actions.length === 0) return;
     }
-    if (actions.length === 1) {
-      getSocket().emit(actions[0].action, actions[0].payload);
-      // Stack-source drags: dismiss the stack item (no side effects) after placement
-      if (drag.sourceZone === 'stack' && actions[0].action !== 'action:cancel_stack_item') {
+
+    /** Execute a single resolved action */
+    const executeAction = (a: typeof actions[0]) => {
+      if (a.onClick) {
+        a.onClick();
+      } else {
+        getSocket().emit(a.action, a.payload);
+      }
+      // Stack-source drags: dismiss after placement
+      if (drag.sourceZone === 'stack' && a.action !== 'action:cancel_stack_item') {
         getSocket().emit('action:dismiss_stack_item', { stackItemId: drag.instanceId });
       }
+    };
+
+    if (actions.length === 1) {
+      executeAction(actions[0]);
       return;
     }
 
@@ -89,8 +110,20 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
     setActiveDrag(null);
   }, []);
 
-  // Edge scrolling during drag
-  useDragEdgeScroll(!!activeDrag);
+  const { scale, isPanning } = useBoardScale();
+
+  // Compensate for CSS scale transform so drag translate inside the scaled
+  // container moves at the correct speed relative to the pointer.
+  const scaleModifier: Modifier = useCallback(
+    ({ transform }) => ({
+      ...transform,
+      x: transform.x / scale,
+      y: transform.y / scale,
+    }),
+    [scale],
+  );
+
+  useDragEdgeScroll(!!activeDrag, isPanning);
 
   const ctxValue = useMemo(() => ({ activeDrag }), [activeDrag]);
 
@@ -98,6 +131,7 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
     <DnDStateContext.Provider value={ctxValue}>
       <DndContext
         sensors={sensors}
+        modifiers={[scaleModifier]}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
@@ -122,6 +156,21 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
 }
 
 function DragPreview({ payload }: { payload: UniversalDrag }) {
+  // Sentinel: dragging a deck face — show the deck back image
+  if (payload.cardId === DECK_TOP_SENTINEL && payload.sourceZoneId) {
+    const backSrc = DECK_BACKS[payload.sourceZoneId] ?? '/card-back.png';
+    return (
+      <div className="rotate-3 pointer-events-none">
+        <img
+          src={backSrc}
+          alt="deck"
+          className="w-[100px] h-[137px] object-cover rounded shadow-2xl ring-2 ring-fs-gold/80 opacity-95"
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
   const card = useCard(payload.cardId);
   if (!card) {
     return (

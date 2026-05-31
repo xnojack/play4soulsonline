@@ -14,18 +14,14 @@ export function PriorityBanner() {
   const isMyTurn = useIsMyTurn();
   const myPlayer = useMyPlayer();
 
-  if (!game || !myPlayer || myPlayer.isSpectator) return null;
-  if (game.phase !== 'active') return null;
+  // Derive values needed by hooks — safe to compute even when game is null
+  const serverTimeout = game?.priorityTimeoutRemaining ?? 0;
 
-  const visible = hasPriority && !isMyTurn;
-
-  const stackLength = game.stack.length;
-  const serverTimeout = game.priorityTimeoutRemaining ?? 0;
-  const isUrgent = serverTimeout > 0 && serverTimeout <= 5;
-
-  // Local countdown that ticks smoothly each second
+  // ALL hooks must be called unconditionally, before any early return
   const [countdown, setCountdown] = useState(serverTimeout);
   const prevTimeoutRef = useRef(serverTimeout);
+
+  const visible = !!(game && myPlayer && !myPlayer.isSpectator && game.phase === 'active' && hasPriority && !isMyTurn);
 
   useEffect(() => {
     if (!visible || serverTimeout <= 0) return;
@@ -49,6 +45,13 @@ export function PriorityBanner() {
 
     return () => clearInterval(interval);
   }, [visible, serverTimeout]);
+
+  // Early-return guards — after ALL hooks
+  if (!game || !myPlayer || myPlayer.isSpectator) return null;
+  if (game.phase !== 'active') return null;
+
+  const stackLength = game.stack.length;
+  const isUrgent = serverTimeout > 0 && serverTimeout <= 5;
 
   const handlePass = () => {
     getSocket().emit('action:pass_priority');

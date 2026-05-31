@@ -1,5 +1,6 @@
 import { GameState } from '../../store/gameStore';
 import { getCardFromCache } from './CardResolver';
+import { getSocket } from '../../socket/client';
 
 export interface UniversalDrag {
   cardId: string;
@@ -17,6 +18,8 @@ export interface DropAction {
   action: string;
   payload: Record<string, unknown>;
   label: string;
+  /** When present, called instead of socket.emit(action, payload) */
+  onClick?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -34,17 +37,79 @@ function inferDeckType(cardId: string): 'loot' | 'treasure' | 'monster' | 'room'
   }
 }
 
-/** Build a pair of return-to-deck actions (top + bottom) */
+/** Validate that a card can go into the given deck type */
+function cardMatchesDeck(cardId: string, deckType: 'loot' | 'treasure' | 'monster' | 'room'): boolean {
+  const card = getCardFromCache(cardId);
+  if (!card) return true; // unknown card — allow, server will validate
+  const ct = card.cardType;
+  switch (deckType) {
+    case 'loot':     return ct === 'Loot';
+    case 'treasure': return ct === 'Treasure' || (card as any).isEternal === true;
+    case 'monster':  return ct === 'Monster';
+    case 'room':     return ct === 'Room';
+  }
+}
+
+/**
+ * Build 5 return-to-deck actions (Top, Top+offset, Bottom, Bottom+offset, Random).
+ * Type-guard: if the card is known and doesn't match the deck, returns [].
+ */
 function returnToDeckActions(
   cardId: string,
   deckType: 'loot' | 'treasure' | 'monster' | 'room',
   opts: { fromHand?: boolean; fromDiscard?: boolean; fromInstanceId?: string; stackItemId?: string },
 ): DropAction[] {
+  if (!cardMatchesDeck(cardId, deckType)) return [];
   const base = { cardId, deckType, ...opts };
   return [
-    { action: 'action:return_to_deck', payload: { ...base, position: 'top' }, label: 'Return to Top of Deck' },
-    { action: 'action:return_to_deck', payload: { ...base, position: 'bottom' }, label: 'Return to Bottom of Deck' },
+    { action: 'action:return_to_deck', payload: { ...base, position: 'top' }, label: 'Top of Deck' },
+    {
+      action: 'action:return_to_deck',
+      payload: {},
+      label: 'Top, offset…',
+      onClick: () => {
+        const raw = window.prompt('How many from the top? (1 = just under top)');
+        if (raw === null) return;
+        const offset = parseInt(raw, 10);
+        if (isNaN(offset) || offset < 1) return;
+        getSocket().emit('action:return_to_deck', { ...base, position: 'top', offset });
+      },
+    },
+    { action: 'action:return_to_deck', payload: { ...base, position: 'bottom' }, label: 'Bottom of Deck' },
+    {
+      action: 'action:return_to_deck',
+      payload: {},
+      label: 'Bottom, offset…',
+      onClick: () => {
+        const raw = window.prompt('How many from the bottom? (1 = just above bottom)');
+        if (raw === null) return;
+        const offset = parseInt(raw, 10);
+        if (isNaN(offset) || offset < 1) return;
+        getSocket().emit('action:return_to_deck', { ...base, position: 'bottom', offset });
+      },
+    },
+    { action: 'action:return_to_deck', payload: { ...base, position: 'random' }, label: 'Random' },
   ];
+}
+
+/** Deck sentinel — dragging a deck face emits a draw action for the local player */
+export const DECK_TOP_SENTINEL = '__deck_top__';
+
+function deckDragToHandActions(sourceZoneId: string, myId: string): DropAction[] {
+  switch (sourceZoneId) {
+    case 'loot':
+      return [{ action: 'action:draw_loot', payload: { playerId: myId, count: 1 }, label: 'Draw Loot' }];
+    case 'treasure':
+      return [{ action: 'action:gain_treasure', payload: { count: 1 }, label: 'Gain Treasure' }];
+    case 'eternal':
+      return [{ action: 'action:gain_eternal', payload: { playerId: myId }, label: 'Gain Eternal Item' }];
+    case 'monster':
+      return [{ action: 'action:draw_from_deck', payload: { deckType: 'monster' }, label: 'Draw Monster to Hand' }];
+    case 'room':
+      return [{ action: 'action:draw_from_deck', payload: { deckType: 'room' }, label: 'Draw Room to Hand' }];
+    default:
+      return [];
+  }
 }
 
 // ── Main resolver ─────────────────────────────────────────────────────────────
@@ -119,7 +184,8 @@ export function resolveDropActions(
       }
     }
     if (drop.targetZone === 'deck') {
-      actions.push(...returnToDeckActions(drag.cardId, 'loot', { fromHand: true }));
+      const deckType = inferDeckType(drag.cardId) ?? 'loot';
+      actions.push(...returnToDeckActions(drag.cardId, deckType, { fromHand: true }));
     }
     if (drop.targetZone === 'shop') {
       const slotIndex = parseInt(drop.targetZoneId ?? '', 10);
@@ -551,6 +617,33 @@ export function resolveDropActions(
     }
   }
 
+  // ── Deck sentinel (drag a deck face to draw a card) ─────────────────────────
+  if (drag.sourceZone === 'deck' && drag.cardId === DECK_TOP_SENTINEL && drag.sourceZoneId) {
+    if (drop.targetZone === 'hand') {
+      if (drag.sourceZoneId === 'treasure') {
+        // Explicit hand drop — draw to hand, not items
+        actions.push({ action: 'action:draw_from_deck', payload: { deckType: 'treasure' }, label: 'Draw Treasure to Hand' });
+      } else {
+        actions.push(...deckDragToHandActions(drag.sourceZoneId, myId));
+      }
+    }
+    // Treasure deck dragged to items zone → gain_treasure (goes to items, normal flow)
+    if (drop.targetZone === 'items' && drag.sourceZoneId === 'treasure') {
+      actions.push({ action: 'action:gain_treasure', payload: { count: 1 }, label: 'Gain Treasure' });
+    }
+  }
+
+  // ── add_slot drop zone (drag any card onto a +slot target) ───────────────────
+  if (drop.targetZone === 'add_slot' && drop.targetZoneId && drag.cardId !== DECK_TOP_SENTINEL) {
+    const slotType = drop.targetZoneId as 'shop' | 'monster' | 'room';
+    const instanceId = drag.sourceZone !== 'hand' ? drag.instanceId : undefined;
+    actions.push({
+      action: 'action:add_slot',
+      payload: { slotType, cardId: drag.cardId, ...(instanceId ? { instanceId } : {}) },
+      label: `Add to new ${slotType} slot`,
+    });
+  }
+
   return actions;
 }
 
@@ -579,7 +672,7 @@ export function getAllAvailableActions(
     for (const slot of game.monsterSlots) {
       actions.push({ action: 'action:cover_monster', payload: { cardId: drag.cardId, slotIndex: slot.slotIndex }, label: `Cover Monster Slot ${slot.slotIndex + 1}` });
     }
-    actions.push(...returnToDeckActions(drag.cardId, 'loot', { fromHand: true }));
+    actions.push(...returnToDeckActions(drag.cardId, inferDeckType(drag.cardId) ?? 'loot', { fromHand: true }));
     for (const p of allPlayers) {
       addPrivileged('action:move_to_hand', { cardId: drag.cardId, targetPlayerId: p.id }, `Move to ${p.name}'s Hand`);
     }

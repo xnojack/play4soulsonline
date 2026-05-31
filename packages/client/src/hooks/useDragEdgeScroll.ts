@@ -10,13 +10,13 @@ const TICK_MS = 16;
  * When the pointer is within EDGE_ZONE px of any viewport edge,
  * scrolls the main scroll container in that direction.
  */
-export function useDragEdgeScroll(isDragging: boolean) {
+export function useDragEdgeScroll(isDragging: boolean, isPanning = false) {
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!isDragging) {
+    if (!isDragging || isPanning) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -71,5 +71,5 @@ export function useDragEdgeScroll(isDragging: boolean) {
         intervalRef.current = null;
       }
     };
-  }, [isDragging]);
+  }, [isDragging, isPanning]);
 }

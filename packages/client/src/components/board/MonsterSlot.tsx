@@ -10,9 +10,10 @@ import { playSound } from '../audio/SoundManager';
 
 interface MonsterSlotProps {
   slot: MonsterSlotType;
+  size?: 'xs' | 'sm' | 'md';
 }
 
-export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
+export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
   const isMyTurn = useIsMyTurn();
   const myPlayer = useMyPlayer();
   const game = useGameStore((s) => s.game);
@@ -115,11 +116,9 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
       payload={{ targetZone: 'monster', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 min-w-[110px] max-w-[180px] flex-1"
+      className="flex flex-col items-center gap-1 flex-shrink-0"
       data-zone={`monster-${slot.slotIndex}`}
     >
-      <div className="section-title text-center text-sm mb-0.5">Monster {slot.slotIndex + 1}</div>
-
       {/* Stack display */}
       <div className="relative md:relative-scale">
         <AnimatePresence>
@@ -159,7 +158,13 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
           </div>
         )}
         {isEmpty ? (
-          <div className="w-[117px] h-[160px] rounded border-2 flex flex-col items-center justify-center gap-1 transition-colors">
+          <div
+            className="rounded border-2 flex flex-col items-center justify-center gap-1 transition-colors"
+            style={{
+              width: size === 'sm' ? 78 : size === 'xs' ? 52 : 117,
+              height: size === 'sm' ? 107 : size === 'xs' ? 71 : 160,
+            }}
+          >
             {!isActiveTurn || game?.turn.currentAttack !== null ? (
               <>
                 <span className="text-fs-parchment/20 text-sm">Empty</span>
@@ -198,7 +203,7 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
                  >
                    <ResolvedCard
                      instance={topCard}
-                     size="md"
+                     size={size}
                      actions={actions.length > 0 ? actions : undefined}
                      popoverBelow
                    />
@@ -218,15 +223,14 @@ export function MonsterSlotComponent({ slot }: MonsterSlotProps) {
                 </button>
               )}
 
-      {/* Type / soul tag — below card, above HP tracker */}
-      {!isEmpty && (isPlayerCurse || isEvent || isCurseMonster || hasSoul) && (
+      {/* Type tag — below card, above HP tracker (soul value shown on card counter, not here) */}
+      {!isEmpty && (isPlayerCurse || isEvent || isCurseMonster) && (
         <span className={`text-xs px-1.5 py-0.5 rounded ${
           isPlayerCurse ? 'bg-red-900/80 text-red-300'
           : isCurseMonster ? 'bg-orange-900/80 text-orange-300'
-          : isEvent ? 'bg-purple-900/80 text-purple-300'
-          : 'bg-yellow-900/80 text-yellow-300'
+          : 'bg-purple-900/80 text-purple-300'
         }`}>
-          {isPlayerCurse ? 'Curse' : isCurseMonster ? 'Curse Monster' : isEvent ? 'Event' : `★ ${topCardData?.soulValue ?? 1}`}
+          {isPlayerCurse ? 'Curse' : isCurseMonster ? 'Curse Monster' : 'Event'}
         </span>
       )}
 
