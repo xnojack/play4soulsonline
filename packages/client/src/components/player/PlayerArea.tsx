@@ -21,7 +21,7 @@ function SoulValueBadge({ souls, kills }: { souls: CardInPlay[]; kills: CardInPl
     <>
       {souls.map((s) => <CardPreloader key={s.instanceId} cardId={s.cardId} />)}
       {kills.map((k) => <CardPreloader key={k.instanceId} cardId={k.cardId} />)}
-      <span className={`text-sm ml-1 font-bold ${total > 0 ? 'text-purple-400' : 'text-purple-400/30'}`}>
+      <span className={`text-3xl ml-1 font-bold ${total > 0 ? 'text-purple-400' : 'text-purple-400/30'}`}>
         {total > 0 ? `${total} soul pt${total !== 1 ? 's' : ''}` : '0 souls'}
       </span>
     </>
@@ -151,7 +151,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
           ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }
           : { duration: 0.3 }
       }
-      className={`panel p-2 transition-colors relative ${
+      className={`panel p-4 transition-colors relative ${
         isActiveTurn ? 'border-fs-gold/80 bg-fs-gold/5' : ''
       } ${!player.isAlive ? 'opacity-60' : ''}`}
     >
@@ -163,7 +163,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.85 }}
             transition={{ duration: 0.2 }}
-            className="absolute -top-2 right-2 px-2 py-0.5 bg-fs-gold text-fs-darker text-xs rounded-full font-display font-bold shadow-lg pointer-events-none z-10"
+            className="absolute -top-4 right-2 px-4 py-1 bg-fs-gold text-fs-darker text-2xl rounded-full font-display font-bold shadow-lg pointer-events-none z-10"
           >
             ★ ACTIVE
           </motion.div>
@@ -171,46 +171,46 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
       </AnimatePresence>
 
       {/* Player header */}
-      <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <span className="font-display text-fs-gold-light font-semibold">
+      <div className="flex items-center gap-4 mb-1 flex-wrap">
+        <span className="font-display text-fs-gold-light font-semibold text-3xl">
           {player.name}
         </span>
         {isActiveTurn && (
-          <span className="px-1.5 py-0.5 bg-fs-gold/20 text-fs-gold text-sm rounded font-display">
+          <span className="px-3 py-1 bg-fs-gold/20 text-fs-gold text-3xl rounded font-display">
             Active
           </span>
         )}
         {player.isSpectator && (
-          <span className="text-sm text-fs-parchment/40">Spectator</span>
+          <span className="text-3xl text-fs-parchment/40">Spectator</span>
         )}
 
         {/* Souls */}
-        <div className="flex items-center gap-1 ml-2 flex-wrap">
+        <div className="flex items-center gap-2 ml-2 flex-wrap">
           {player.souls.map((soul) => {
             const isGeneric = soul.cardId === '';
             if (isGeneric) {
               return (
-                <Draggable
-                  key={soul.instanceId}
-                  id={`soul-${soul.instanceId}`}
-                  payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
-                >
-                  <div className="relative group" title="Generic soul (1 soul point)">
-                    <img
-                      src="/card-back.png"
-                      alt="Soul"
-                      className="rounded border border-purple-700/40"
-                      style={{ width: 52, height: 71, objectFit: 'cover' }}
-                    />
-                    {isMe && (
-                      <button
-                        onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-900/80 border border-red-500/60 text-red-300 text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove this soul"
-                      >
-                        ×
-                      </button>
-                    )}
+               <Draggable
+                   key={soul.instanceId}
+                   id={`soul-${soul.instanceId}`}
+                   payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
+                 >
+                   <div className="relative group" title="Generic soul (1 soul point)">
+                     <img
+                       src="/soul-back.png"
+                       alt="Soul"
+                       className="rounded border-2 border-purple-700/40"
+                       style={{ width: 52, height: 71, objectFit: 'cover' }}
+                     />
+                   {isMe && (
+                        <button
+                          onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
+                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-900/80 border border-red-500/60 text-red-300 text-sm leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove this soul"
+                        >
+                          ×
+                        </button>
+                      )}
                   </div>
                 </Draggable>
               );
@@ -223,7 +223,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
               >
                 <ResolvedCard
                   instance={soul}
-                  size="xs"
+                  size="2xs"
                   showCounters={false}
                   alwaysPopover={isMe}
                   actions={isMe ? [{
@@ -240,7 +240,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
             <button
               onClick={() => getSocket().emit('action:gain_generic_soul')}
               title="Gain a soul (from a card effect)"
-              className="text-xs px-1 py-0.5 rounded border border-purple-700/50 text-purple-400/70 hover:text-purple-300 hover:border-purple-500 transition-colors ml-1"
+              className="text-3xl h-16 px-6 rounded-lg border-2 border-purple-700/50 bg-purple-900/20 text-purple-400/70 hover:text-purple-300 hover:border-purple-500 hover:bg-purple-900/30 transition-colors ml-1"
             >
               +Soul
             </button>
@@ -251,14 +251,14 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
       {/* Stats (includes inline dice roller) */}
       <StatDisplay player={player} isMe={isMe} />
 
-      <div className="border-t border-fs-gold/10 my-1" />
+      <div className="border-t border-fs-gold/10 my-2" />
 
       {/* Character + Items + Hand (horizontal when space permits) */}
-      <div className="flex gap-2 md:gap-3 flex-wrap content-start items-start">
+      <div className="flex gap-4 md:gap-6 flex-wrap content-start items-start">
          {/* Character card */}
          {player.characterInstanceId && (
-          <div className="flex flex-col items-center gap-0.5 min-w-[100px] md:min-w-[120px] max-w-[180px] flex-1">
-            <span className="text-sm text-fs-parchment/40">Character</span>
+          <div className="flex flex-col items-center gap-4 min-w-[200px] md:min-w-[240px] max-w-[360px] flex-1">
+            <span className="text-3xl text-fs-parchment/40">Character</span>
             {isMe ? (
               <Draggable
                 id={`char-${player.characterInstanceId}`}
@@ -318,12 +318,12 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
           id={`drop-items-${player.id}`}
           payload={{ targetZone: 'items', targetZoneId: player.id }}
         >
-        <div className="flex-1 min-w-[160px] md:min-w-[200px]">
-          <span className="text-sm text-fs-parchment/40 block mb-1">
+        <div className="flex-1 min-w-[320px] md:min-w-[400px]">
+          <span className="text-3xl text-fs-parchment/40 block mb-1">
             Items
-            {isMe && <span className="text-fs-parchment/20 ml-1">(click to act)</span>}
+            {isMe && <span className="text-2xl text-fs-parchment/20 ml-1">(click to act)</span>}
           </span>
-          <div className="flex gap-2 flex-wrap content-start" data-zone={`items-${player.id}`}>
+          <div className="flex gap-4 flex-wrap content-start" data-zone={`items-${player.id}`}>
             {player.items.map((item) =>
               isMe ? (
                 <Draggable
@@ -347,7 +347,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
               )
             )}
             {player.items.length === 0 && (
-              <span className="text-sm text-fs-parchment/20 italic">No items</span>
+              <span className="text-3xl text-fs-parchment/20 italic">No items</span>
             )}
           </div>
         </div>
@@ -355,7 +355,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
 
         {/* My hand - only visible to player */}
         {isMe && (
-    <div className="flex-1 min-w-[160px] md:min-w-[200px]">
+    <div className="flex-1 min-w-[320px] md:min-w-[400px]">
             <HandPanel player={player} />
           </div>
         )}
@@ -364,8 +364,8 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
       {/* Curses */}
       {player.curses.length > 0 && (
          <div className="mt-1">
-           <span className="text-sm text-red-400/70 block mb-0.5">Curses</span>
-           <div className="flex gap-1 flex-wrap content-start">
+           <span className="text-3xl text-red-400/70 block mb-0.5">Curses</span>
+           <div className="flex gap-4 flex-wrap content-start">
              {player.curses.map((curse) => (
                <Draggable
                  key={curse.instanceId}
@@ -382,8 +382,8 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
        {/* Kill trophies */}
        {player.kills.length > 0 && (
          <div className="mt-1">
-           <span className="text-sm text-orange-400/70 block mb-0.5">Kills ({player.kills.length})</span>
-           <div className="flex gap-1 flex-wrap content-start">
+           <span className="text-3xl text-orange-400/70 block mb-0.5">Kills ({player.kills.length})</span>
+           <div className="flex gap-4 flex-wrap content-start">
              {player.kills.map((kill) => (
                <Draggable
                  key={kill.instanceId}

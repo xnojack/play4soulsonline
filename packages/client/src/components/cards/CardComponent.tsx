@@ -16,7 +16,7 @@ export interface CardAction {
 interface CardComponentProps {
   card: ClientCard;
   instance?: CardInPlay;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: '2xs' | '3xs' | 'xs' | 'sm' | 'md' | 'lg';
   showCounters?: boolean;
   /** Reserved for future automation — not wired to UI */
   actions?: CardAction[];
@@ -36,10 +36,12 @@ interface CardComponentProps {
 }
 
 const CARD_SIZES = {
-  xs: { width: 52, height: 71 },
-  sm: { width: 78, height: 107 },
-  md: { width: 117, height: 160 },
-  lg: { width: 182, height: 249 },
+  '3xs': { width: 26, height: 35 },
+  '2xs': { width: 52, height: 71 },
+  xs: { width: 104, height: 142 },
+  sm: { width: 156, height: 214 },
+  md: { width: 234, height: 320 },
+  lg: { width: 364, height: 498 },
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -131,7 +133,7 @@ export function CardComponent({
   return (
     <>
       <div
-        style={primaryActions && primaryActions.length > 0 ? { paddingBottom: '32px' } : undefined}
+        style={primaryActions && primaryActions.length > 0 ? { paddingBottom: '64px' } : undefined}
       >
         <div
           ref={containerRef}
@@ -163,7 +165,7 @@ export function CardComponent({
             />
 
             {showCounters && instance && (
-              <div className="absolute bottom-0 left-0 right-0 flex flex-wrap gap-0.5 p-0.5">
+              <div className="absolute bottom-0 left-0 right-0 flex flex-wrap gap-2 p-1">
                 {instance.damageCounters > 0 && (
                   <CounterBadge label={`${instance.damageCounters}`} color="bg-red-700" title="Damage" />
                 )}
@@ -185,14 +187,14 @@ export function CardComponent({
             )}
 
             {card.soulValue > 0 && !faceDown && (
-              <div className="absolute top-0 right-0 w-4 h-4 bg-fs-soul rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-fs-soul rounded-full text-white text-lg flex items-center justify-center font-bold shadow-lg">
                 {card.soulValue}
               </div>
             )}
 
             {card.backImageUrl && !faceDown && (
               <div
-                className="absolute top-0 left-0 w-4 h-4 bg-fs-dark/80 border border-fs-gold/40 rounded-sm text-fs-gold text-xs flex items-center justify-center leading-none shadow"
+                className="absolute top-0 left-0 w-8 h-8 bg-fs-dark/80 border-2 border-fs-gold/40 rounded-sm text-fs-gold text-lg flex items-center justify-center leading-none shadow"
                 title="Dual-sided card"
               >
                 ↕
@@ -201,7 +203,7 @@ export function CardComponent({
 
             {!faceDown && card.isEternal && (
               <div
-                className="absolute bottom-0 left-0 px-1 py-0.5 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-xs leading-none pointer-events-none"
+                className="absolute bottom-0 left-0 px-2 py-1 bg-amber-900/80 border-t border-r border-amber-700/50 rounded-br-sm text-amber-400 text-lg leading-none pointer-events-none"
                 title="Eternal — cannot be destroyed"
               >
                 ETR
@@ -210,12 +212,12 @@ export function CardComponent({
           </motion.div>
 
           {primaryActions && primaryActions.length > 0 && (
-            <div className="absolute -bottom-8 left-0 right-0 flex justify-center gap-1">
+            <div className="absolute -bottom-16 left-0 right-0 flex justify-center gap-2">
               {primaryActions.map((action, i) => (
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); action.onClick(); }}
-                  className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                  className={`text-xl px-3 py-1 rounded border transition-colors ${
                     ACTION_COLORS[action.variant ?? 'default']
                   }`}
                 >
@@ -242,7 +244,7 @@ export function CardComponent({
 function CounterBadge({ label, color, title }: { label: string; color: string; title: string }) {
   return (
     <span
-      className={`${color} text-white text-sm px-1 rounded-sm leading-tight font-mono`}
+      className={`${color} text-white text-xl px-1 rounded-sm leading-tight font-mono`}
       title={title}
     >
       {label}

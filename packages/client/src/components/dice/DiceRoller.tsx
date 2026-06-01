@@ -13,8 +13,10 @@ const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 interface DiceRollerProps {
   context?: 'attack' | 'ability' | 'manual';
   disabled?: boolean;
-  /** Compact inline variant — small button that fits in the stat row */
+  /** Compact inline variant — fits in the stat row (48px tall) */
   compact?: boolean;
+  /** Tiny inline variant — fits in the bottom bar (28px tall) */
+  small?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface DiceRollerProps {
  * The result is shown to ALL players via DiceResultToast — no per-component
  * state machine waiting for a server echo.
  */
-export function DiceRoller({ context = 'manual', disabled = false, compact = false }: DiceRollerProps) {
+export function DiceRoller({ context = 'manual', disabled = false, compact = false, small = false }: DiceRollerProps) {
   const [cooldown, setCooldown] = useState(false);
 
   const handleRoll = useCallback(() => {
@@ -30,13 +32,12 @@ export function DiceRoller({ context = 'manual', disabled = false, compact = fal
     setCooldown(true);
     playSound('diceRoll');
     getSocket().emit('action:roll_dice', { context, rollId: genRollId() });
-    // Re-enable after 1 s so the toast has time to show
     setTimeout(() => setCooldown(false), 1000);
   }, [cooldown, disabled, context]);
 
   const isDisabled = disabled || cooldown;
 
-  if (compact) {
+  if (small) {
     return (
       <motion.button
         className={`h-7 px-2 rounded border text-sm font-bold flex items-center gap-1 transition-colors ${
@@ -51,6 +52,27 @@ export function DiceRoller({ context = 'manual', disabled = false, compact = fal
       >
         <span>🎲</span>
         <span className="text-xs text-fs-parchment/60">
+          {context === 'attack' ? 'Roll ATK' : 'Roll'}
+        </span>
+      </motion.button>
+    );
+  }
+
+  if (compact) {
+    return (
+      <motion.button
+        className={`h-12 px-3 rounded-lg border-2 text-2xl font-bold flex items-center gap-1.5 transition-colors ${
+          isDisabled
+            ? 'border-gray-700 text-gray-600 cursor-not-allowed'
+            : 'border-fs-gold/60 text-fs-parchment bg-fs-brown/40 hover:bg-fs-brown/60 cursor-pointer'
+        }`}
+        onClick={handleRoll}
+        disabled={isDisabled}
+        whileTap={!isDisabled ? { scale: 0.9 } : {}}
+        title={context === 'attack' ? 'Roll attack dice' : 'Roll dice'}
+      >
+        <span>🎲</span>
+        <span className="text-lg text-fs-parchment/60">
           {context === 'attack' ? 'Roll ATK' : 'Roll'}
         </span>
       </motion.button>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBoardScale } from '../../context/BoardScaleContext';
 import { UniversalDrag, UniversalDrop, useDragState } from './DnDProvider';
 
 export function Draggable({
@@ -22,13 +23,23 @@ export function Draggable({
     data: payload,
     disabled,
   });
+  const { totalScale } = useBoardScale();
+
+  // Compensate for the CSS scale transform on the board container.
+  // The transform from dnd-kit is in viewport pixels, but the element
+  // lives inside a scale(N) container, so we divide to get correct
+  // movement in local coordinate space. This is applied only to the
+  // Draggable (inside the scaled container), not the DragOverlay.
+  const compensatedTransform = transform
+    ? { x: transform.x / totalScale, y: transform.y / totalScale, scaleX: 1, scaleY: 1 }
+    : transform;
 
   return (
     <div
       ref={setNodeRef}
       style={{
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.35 : 1,
+        transform: CSS.Translate.toString(compensatedTransform),
+        opacity: isDragging ? 0 : 1,
         touchAction: 'none',
       }}
       className={className}

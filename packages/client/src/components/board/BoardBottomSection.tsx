@@ -16,7 +16,7 @@ interface BoardBottomSectionProps {
  */
 export function BoardBottomSection({ myPlayer }: BoardBottomSectionProps) {
   return (
-    <div className="h-full min-h-0 px-2 py-1 pb-1.5">
+    <div className="h-full min-h-0 px-4 py-2 pb-3">
       {myPlayer ? (
         <PlayerExpandedPanel
           player={myPlayer}
@@ -26,7 +26,7 @@ export function BoardBottomSection({ myPlayer }: BoardBottomSectionProps) {
           labelColor="gold"
         />
       ) : (
-        <div className="h-full flex items-center justify-center text-fs-parchment/40 text-sm italic">
+        <div className="h-full flex items-center justify-center text-fs-parchment/40 text-xl italic">
           Spectating
         </div>
       )}

@@ -95,7 +95,7 @@ import {
   placeInShop,
   moveToItems,
 } from '../game/actions/items';
-import { drawFromDeck, createCardInPlay } from '../game/decks';
+import { drawFromDeck, drawFromDiscard, createCardInPlay, shuffle } from '../game/decks';
 import { getCardById } from '../db/cards';
 import { createLogEntry } from '../game/GameRoom';
 
@@ -704,8 +704,69 @@ export function registerHandlers(io: Server, socket: Socket): void {
     broadcastState(io, ctx.roomId);
   }));
 
-  /** Draw the top card of any deck into the requesting player's hand */
+  /** Draw cards from any deck or discard pile into the requesting player's hand */
   socket.on('action:draw_from_deck', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    const payload = isObject(raw) ? raw as { deckType?: string; count?: number; fromDiscard?: boolean } : {};
+    if (!['loot', 'treasure', 'monster', 'room'].includes(payload.deckType ?? ''))
+      return sendError(socket, 'Invalid deck type');
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    const deckType = payload.deckType as 'loot' | 'treasure' | 'monster' | 'room';
+    const count = clampInt(payload.count, 1, 10, 1);
+    const fromDiscard = !!payload.fromDiscard;
+    const deckKey = `${deckType}Deck` as keyof typeof state;
+    const discardKey = `${deckType}Discard` as keyof typeof state;
+    const deck = state[deckKey] as string[];
+    const discard = state[discardKey] as string[];
+    const player = state.players.find((p) => p.id === ctx.playerId);
+
+    let drawn: string[];
+    let newDeck: string[];
+    let newDiscard: string[];
+
+    if (fromDiscard) {
+      const result = drawFromDiscard(discard, count);
+      drawn = result.drawn;
+      newDeck = deck;
+      newDiscard = result.newDiscard;
+    } else {
+      const result = drawFromDeck(deck, discard, count);
+      drawn = result.drawn;
+      newDeck = result.newDeck;
+      newDiscard = result.newDiscard;
+    }
+
+    if (drawn.length === 0) {
+      return sendError(socket, `${deckType} ${fromDiscard ? 'discard' : 'deck'} is empty`);
+    }
+
+    const log = createLogEntry(
+      'card_play',
+      `${player?.name ?? 'Someone'} draws ${drawn.length} card${drawn.length !== 1 ? 's' : ''} from the ${deckType} ${fromDiscard ? 'discard' : 'deck'}`,
+      ctx.playerId,
+    );
+
+    room.setState({
+      ...state,
+      [deckKey]: newDeck,
+      [discardKey]: newDiscard,
+      players: state.players.map((p) =>
+        p.id === ctx.playerId ? { ...p, handCardIds: [...p.handCardIds, ...drawn] } : p
+      ),
+      log: [...state.log, log],
+    });
+    broadcastState(io, ctx.roomId);
+  }));
+
+  /** Shuffle a deck in place */
+  socket.on('action:shuffle_deck', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
     const payload = isObject(raw) ? raw as { deckType?: string } : {};
     if (!['loot', 'treasure', 'monster', 'room'].includes(payload.deckType ?? ''))
@@ -720,29 +781,20 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const state = room.getState();
     const deckType = payload.deckType as 'loot' | 'treasure' | 'monster' | 'room';
     const deckKey = `${deckType}Deck` as keyof typeof state;
-    const discardKey = `${deckType}Discard` as keyof typeof state;
     const deck = state[deckKey] as string[];
-    const discard = state[discardKey] as string[];
 
-    const { drawn, newDeck, newDiscard } = drawFromDeck(deck, discard, 1);
-    if (drawn.length === 0) return sendError(socket, `${deckType} deck is empty`);
+    if (deck.length <= 1) return sendError(socket, `${deckType} deck has too few cards to shuffle`);
 
-    const cardId = drawn[0];
-    const card = getCardById(cardId);
     const player = state.players.find((p) => p.id === ctx.playerId);
     const log = createLogEntry(
       'card_play',
-      `${player?.name ?? 'Someone'} draws ${card?.name ?? cardId} from the ${deckType} deck`,
+      `${player?.name ?? 'Someone'} shuffles the ${deckType} deck`,
       ctx.playerId,
     );
 
     room.setState({
       ...state,
-      [deckKey]: newDeck,
-      [discardKey]: newDiscard,
-      players: state.players.map((p) =>
-        p.id === ctx.playerId ? { ...p, handCardIds: [...p.handCardIds, cardId] } : p
-      ),
+      [deckKey]: shuffle([...deck]),
       log: [...state.log, log],
     });
     broadcastState(io, ctx.roomId);

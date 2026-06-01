@@ -60,7 +60,7 @@ export function ResolvedCard({
   landscape,
 }: {
   instance: CardInPlay;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: '2xs' | '3xs' | 'xs' | 'sm' | 'md' | 'lg';
   showCounters?: boolean;
   actions?: CardAction[];
   primaryActions?: CardAction[];
@@ -73,7 +73,7 @@ export function ResolvedCard({
 }) {
   const card = useCard(instance.cardId);
   if (!card) {
-    const SIZES = { xs: [52, 71], sm: [78, 107], md: [117, 160], lg: [182, 249] };
+    const SIZES = { '3xs': [26, 35], '2xs': [52, 71], xs: [104, 142], sm: [156, 214], md: [234, 320], lg: [364, 498] };
     const [w, h] = SIZES[size];
     const pw = landscape ? h : w;
     const ph = landscape ? w : h;
@@ -83,14 +83,14 @@ export function ResolvedCard({
         <img
           src="/card-back.png"
           alt="Soul"
-          className={`rounded border border-purple-700/30 ${className ?? ''}`}
+          className={`rounded border-2 border-purple-700/30 ${className ?? ''}`}
           style={{ width: pw, height: ph, objectFit: 'cover' }}
         />
       );
     }
     return (
       <div
-        className={`bg-fs-darker border border-fs-gold/20 rounded flex items-center justify-center text-xs text-fs-parchment/30 ${className ?? ''}`}
+        className={`bg-fs-darker border-2 border-fs-gold/20 rounded flex items-center justify-center text-lg text-fs-parchment/30 ${className ?? ''}`}
         style={{ width: pw, height: ph }}
       >
         {instance.cardId === 'unknown' || instance.cardId === 'placeholder-starting-item' ? '?' : 'Loading…'}

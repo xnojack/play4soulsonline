@@ -63,3 +63,19 @@ export function createCardInPlay(cardId: string, charged = true): CardInPlay {
 export function peekDeck(deck: string[], count: number): string[] {
   return deck.slice(-count).reverse();
 }
+
+/** Draw N card IDs from the top of a discard pile (last element = top/most recent).
+ *  Unlike drawFromDeck, does not auto-refill from anywhere. */
+export function drawFromDiscard(
+  discard: string[],
+  count: number,
+): { drawn: string[]; newDiscard: string[] } {
+  const currentDiscard = [...discard];
+  const drawn: string[] = [];
+
+  for (let i = 0; i < count && currentDiscard.length > 0; i++) {
+    drawn.push(currentDiscard.pop()!);
+  }
+
+  return { drawn, newDiscard: currentDiscard };
+}

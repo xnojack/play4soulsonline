@@ -5,6 +5,7 @@ import { getSocket } from '../../socket/client';
 import { ResolvedCard, useCard } from './CardResolver';
 import { Draggable, Droppable } from './DnDPrimitives';
 import { DECK_TOP_SENTINEL } from './DropActionResolver';
+import { DeckHoverTooltip } from './DeckHoverTooltip';
 
 type DeckType = 'treasure' | 'loot' | 'monster' | 'room' | 'eternal';
 
@@ -25,9 +26,6 @@ export function DiscardDeckPair({
   deckCount,
   discardCardId,
   discardCount,
-  onBrowseDeck,
-  onBrowseDiscard,
-  onDraw,
   size = 'sm',
   deckIsDraggable = false,
   landscape = false,
@@ -36,9 +34,6 @@ export function DiscardDeckPair({
   deckCount: number;
   discardCardId?: string;
   discardCount: number;
-  onBrowseDeck?: () => void;
-  onBrowseDiscard?: () => void;
-  onDraw?: () => void;
   size?: 'xs' | 'sm';
   /** If true, the deck face is draggable (draw-to-hand sentinel drag) */
   deckIsDraggable?: boolean;
@@ -46,8 +41,8 @@ export function DiscardDeckPair({
   landscape?: boolean;
 }) {
   const topDiscard = useCard(discardCardId);
-  const baseW = size === 'sm' ? 78 : 52;
-  const baseH = size === 'sm' ? 107 : 71;
+  const baseW = size === 'sm' ? 156 : 104;
+  const baseH = size === 'sm' ? 214 : 142;
   const cardW = landscape ? baseH : baseW;
   const cardH = landscape ? baseW : baseH;
 
@@ -62,7 +57,7 @@ export function DiscardDeckPair({
         draggable={false}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="bg-fs-darker/80 text-fs-gold font-display font-bold text-xs rounded px-1.5 py-0.5 shadow">
+        <span className="bg-fs-darker/80 text-fs-gold font-display font-bold text-xl rounded px-3 py-1 shadow">
           {deckCount}
         </span>
       </div>
@@ -90,83 +85,81 @@ export function DiscardDeckPair({
     </div>
   ) : (
     <div
-      className="rounded border border-dashed border-fs-gold/15 flex items-center justify-center text-fs-parchment/20 text-[10px]"
+      className="rounded border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-fs-parchment/20 text-xl"
       style={{ width: cardW, height: cardH }}
     >
       empty
     </div>
   );
 
+  const isTooltipDeckType = deckType !== 'eternal';
+
+  const deckTypeSafe = isTooltipDeckType ? deckType : 'loot';
+
   return (
-    <div className="flex gap-1 items-center">
+    <div className="flex gap-2 items-center">
       {/* Discard */}
-      <div className="flex flex-col items-center gap-0.5">
+      <div className="flex flex-col items-center gap-2">
         <Droppable
           id={`drop-discard-${deckType}`}
           payload={{ targetZone: 'discard', targetZoneId: deckType }}
         >
-          {discardCardId && topDiscard ? (
-            <Draggable
-              id={`drag-discard-${deckType}-top`}
-              payload={{ cardId: discardCardId, sourceZone: 'discard', sourceZoneId: deckType }}
-            >
-              {discardEl}
-            </Draggable>
+          {isTooltipDeckType ? (
+            <DeckHoverTooltip deckType={deckTypeSafe} pile="discard">
+              {discardCardId && topDiscard ? (
+                <Draggable
+                  id={`drag-discard-${deckType}-top`}
+                  payload={{ cardId: discardCardId, sourceZone: 'discard', sourceZoneId: deckType }}
+                >
+                  {discardEl}
+                </Draggable>
+              ) : (
+                discardEl
+              )}
+            </DeckHoverTooltip>
           ) : (
-            discardEl
+            discardCardId && topDiscard ? (
+              <Draggable
+                id={`drag-discard-${deckType}-top`}
+                payload={{ cardId: discardCardId!, sourceZone: 'discard', sourceZoneId: deckType }}
+              >
+                {discardEl}
+              </Draggable>
+            ) : (
+              discardEl
+            )
           )}
         </Droppable>
-        {onBrowseDiscard && discardCount > 0 && (
-          <button
-            onClick={onBrowseDiscard}
-            className="text-[10px] px-1.5 py-0.5 rounded border border-fs-gold/30 text-fs-gold/70 hover:text-fs-gold hover:border-fs-gold/60 transition-colors leading-none"
-            title={`Browse ${deckType} discard`}
-          >
-            browse
-          </button>
-        )}
       </div>
 
       {/* Deck */}
-      <div className="flex flex-col items-center gap-0.5">
+      <div className="flex flex-col items-center gap-2">
         <Droppable
           id={`drop-deck-${deckType}`}
           payload={{ targetZone: 'deck', targetZoneId: deckType }}
         >
-          {deckIsDraggable && deckCount > 0 ? (
-            <Draggable
-              id={`drag-deck-${deckType}`}
-              payload={{ cardId: DECK_TOP_SENTINEL, sourceZone: 'deck', sourceZoneId: deckType }}
-            >
-              {deckFace}
-            </Draggable>
-          ) : deckFace}
+          {isTooltipDeckType ? (
+            <DeckHoverTooltip deckType={deckTypeSafe} pile="deck">
+              {deckIsDraggable && deckCount > 0 ? (
+                <Draggable
+                  id={`drag-deck-${deckType}`}
+                  payload={{ cardId: DECK_TOP_SENTINEL, sourceZone: 'deck', sourceZoneId: deckType }}
+                >
+                  {deckFace}
+                </Draggable>
+              ) : deckFace}
+            </DeckHoverTooltip>
+          ) : (
+            deckIsDraggable && deckCount > 0 ? (
+              <Draggable
+                id={`drag-deck-${deckType}`}
+                payload={{ cardId: DECK_TOP_SENTINEL, sourceZone: 'deck', sourceZoneId: deckType }}
+              >
+                {deckFace}
+              </Draggable>
+            ) : deckFace
+          )}
         </Droppable>
-        <div className="flex gap-0.5">
-          {onBrowseDeck && deckCount > 0 && (
-            <button
-              onClick={onBrowseDeck}
-              className="text-[10px] px-1.5 py-0.5 rounded border border-fs-gold/30 text-fs-gold/70 hover:text-fs-gold hover:border-fs-gold/60 transition-colors leading-none"
-              title={`Browse ${deckType} deck`}
-            >
-              browse
-            </button>
-          )}
-          {onDraw && (
-            <button
-              onClick={onDraw}
-              disabled={deckCount === 0}
-              className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors leading-none ${
-                deckCount > 0
-                  ? 'border-green-700/50 text-green-400/80 hover:text-green-300 hover:border-green-600'
-                  : 'border-gray-700 text-gray-600 cursor-not-allowed'
-              }`}
-              title={`Draw 1 ${deckType}`}
-            >
-              draw
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
@@ -177,8 +170,6 @@ interface DeckRowProps {
   deckCount: number;
   discardCardId?: string;
   discardCount: number;
-  onBrowseDeck?: () => void;
-  onBrowseDiscard?: () => void;
   /** The slot cards rendered between deck and action button */
   children?: React.ReactNode;
   /** Optional special action slot (Buy Top, Flip&Attack, etc) */
@@ -199,8 +190,6 @@ export function DeckRow({
   deckCount,
   discardCardId,
   discardCount,
-  onBrowseDeck,
-  onBrowseDiscard,
   children,
   actionSlot,
   showAddSlot,
@@ -208,6 +197,7 @@ export function DeckRow({
 }: DeckRowProps) {
   const game = useGameStore((s) => s.game);
   const isMyTurn = useIsMyTurn();
+
   const isActiveTurn = game?.turn.activePlayerId === game?.myPlayerId;
 
   // Map deckType -> add-slot semantics
@@ -228,8 +218,6 @@ export function DeckRow({
           deckCount={deckCount}
           discardCardId={discardCardId}
           discardCount={discardCount}
-          onBrowseDeck={onBrowseDeck}
-          onBrowseDiscard={onBrowseDiscard}
           size="sm"
           deckIsDraggable={deckIsDraggable}
         />
@@ -237,7 +225,7 @@ export function DeckRow({
 
       {/* Stacked action block — +Slot on top, action (Buy Top / Flip&Attack) on bottom */}
       {!!showAddSlot && (
-        <div className="flex-shrink-0 flex flex-col" style={{ width: 78, height: 107 }}>
+        <div className="flex-shrink-0 flex flex-col" style={{ width: 156, height: 214 }}>
           {/* Top half — +Slot droppable */}
           <Droppable
             id={`drop-add-slot-${addSlotType}`}
@@ -247,14 +235,14 @@ export function DeckRow({
             {canAddSlot ? (
               <button
                 onClick={() => getSocket().emit('action:add_slot', { slotType: addSlotType })}
-                className="w-full h-full rounded-t border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-[10px] font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
+                className="w-full h-full rounded-t border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-xl font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
                 title={`Add a ${addSlotType} slot`}
               >
                 {addLabel}
               </button>
             ) : (
               <div
-                className="w-full h-full rounded-t border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-[10px] font-display text-fs-parchment/20 select-none"
+                className="w-full h-full rounded-t border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-xl font-display text-fs-parchment/20 select-none"
                 title={`Drop a card here to add a ${addSlotType} slot`}
               >
                 {addLabel}
@@ -270,7 +258,7 @@ export function DeckRow({
 
       {/* Active slots — fills remaining space, scrolls when cards overflow */}
       <div style={{ flex: '1 1 0', minWidth: 0, overflowX: 'auto' }}>
-        <div className="flex gap-1 items-center flex-nowrap">
+        <div className="flex gap-2 items-center flex-nowrap">
           {children}
         </div>
       </div>

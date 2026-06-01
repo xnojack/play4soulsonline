@@ -13,9 +13,9 @@ const TYPE_COLORS: Record<string, string> = {
   Room: 'text-orange-400',
   BonusSoul: 'text-purple-400',
 };
+const PREVIEW_W = 350;
 
-const PREVIEW_W = 175;
-const PREVIEW_H = 240;
+const PREVIEW_H = 480;
 const MARGIN = 12;
 
 interface CardHoverPreviewProps {

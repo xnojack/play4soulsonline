@@ -1,26 +1,26 @@
 import React, { useCallback, useEffect, useRef, WheelEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { useBoardScale } from '../../context/BoardScaleContext';
+import { useBoardScale, updateCanvasRect, zoomLevelRef } from '../../context/BoardScaleContext';
 import { useDragState } from './DnDProvider';
-import { updateCanvasRect } from '../../context/BoardScaleContext';
 
 const ZOOM_SENSITIVITY = 0.001;
 const MIDDLE_BUTTON = 1;
 const RIGHT_BUTTON = 2;
-const KEYBOARD_PAN_SPEED = 16; // px per tick at 60fps ≈ 960px/s
+const KEYBOARD_PAN_SPEED = 16;
 
 interface BoardCanvasProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
-  withBackground?: boolean;
 }
 
 /**
  * Wraps the 3-band board layout in a CSS transform (scale + translate).
+ * The board is a fixed 4000x2000 surface. A fit scale makes it fill the viewport.
+ * Zoom (1x-3x) is applied on top. Pan keeps the board within the viewport.
  *
  * Interactions:
- *  - Wheel: zoom in/out around cursor
- *  - Right-click drag: pan (like FoundryVTT)
+ *  - Wheel: zoom in/out around cursor (1x-3x)
+ *  - Right-click drag: pan
  *  - Middle-click drag: pan
  *  - Space + left-click drag: pan
  *  - Two-finger touch drag: pan
@@ -34,21 +34,29 @@ export function BoardCanvas({
   children,
   className = '',
   style,
-  withBackground = false,
 }: BoardCanvasProps) {
-  const { scale, panX, panY, setScaleAndClamp, startPan, movePan, endPan, panBy, resetView, isPanning, setIsPanning } =
+  const { totalScale, zoomLevel, panX, panY, setZoom, startPan, movePan, endPan, panBy, resetView, isPanning, setIsPanning, recalcFit } =
     useBoardScale();
   const { activeDrag } = useDragState();
 
-// Track canvas viewport rect so clampPan uses actual board area (log panel shrinks it)
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const spaceDown = useRef(false);
+  const mousePanActive = useRef(false);
+  const suppressMouseUp = useRef(false);
+  const touchPanActive = useRef(false);
+  const keyboardKeys = useRef(new Set<string>());
+  const keyboardRaf = useRef<number | null>(null);
+
+  // Track canvas viewport rect + recalc fit on resize
   useEffect(() => {
     if (!canvasRef.current) return;
     let rafId: number | null = null;
     const update = () => {
-      if (rafId) return; // throttle: only one update per frame
+      if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
         updateCanvasRect(canvasRef.current!.getBoundingClientRect());
+        recalcFit();
       });
     };
     update();
@@ -58,15 +66,7 @@ export function BoardCanvas({
       observer.disconnect();
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
-
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const spaceDown = useRef(false);
-  const mousePanActive = useRef(false);
-  const suppressMouseUp = useRef(false);
-  const touchPanActive = useRef(false);
-  const keyboardKeys = useRef(new Set<string>());
-  const keyboardRaf = useRef<number | null>(null);
+  }, [recalcFit]);
 
   // ── Keyboard pan loop (WASD/arrows, independent) ──────────────────────────
   const tickKeyboard = useCallback(() => {
@@ -105,10 +105,12 @@ export function BoardCanvas({
     (e: WheelEvent<HTMLDivElement>) => {
       if (activeDrag) return;
       e.preventDefault();
-      const delta = -e.deltaY * ZOOM_SENSITIVITY;
-      setScaleAndClamp(scale + delta * scale, e.clientX, e.clientY);
+      const currentZoom = zoomLevelRef.current;
+      const delta = -e.deltaY * ZOOM_SENSITIVITY * currentZoom;
+      const rect = canvasRef.current?.getBoundingClientRect();
+      setZoom(currentZoom + delta, e.clientX, e.clientY, rect);
     },
-    [activeDrag, scale, setScaleAndClamp],
+    [activeDrag, setZoom],
   );
 
   // ── Mouse pan: right-click drag, middle-click drag, space+left drag ───────
@@ -150,14 +152,14 @@ export function BoardCanvas({
     const onContextMenu = (e: MouseEvent) => {
       if (canvasRef.current?.contains(e.target as Node)) {
         e.preventDefault();
-        suppressMouseUp.current = true; // suppress next mouseup (synthetic from contextmenu)
+        suppressMouseUp.current = true;
       }
     };
 
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === RIGHT_BUTTON && suppressMouseUp.current) {
         suppressMouseUp.current = false;
-        return; // consume synthetic mouseup from contextmenu
+        return;
       }
     };
 
@@ -282,29 +284,26 @@ export function BoardCanvas({
     >
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          transformOrigin: 'center center',
-          transform: `scale(${scale}) translate(${panX / scale}px, ${panY / scale}px)`,
+          width: `${4000}px`,
+          height: `${2000}px`,
+          transformOrigin: '0 0',
+          transform: `scale(${totalScale}) translate(${panX / totalScale}px, ${panY / totalScale}px)`,
           willChange: 'transform',
           position: 'relative',
         }}
       >
-        {withBackground && (
-          <>
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: 'url(/bg/table.jpg)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                backgroundColor: '#0a0a0c',
-              }}
-            />
-            <div className="absolute inset-0 bg-black/30 pointer-events-none" />
-          </>
-        )}
+        {/* Table background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(/bg/table.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: '#0a0a0c',
+          }}
+        />
+        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
         <div className="relative w-full h-full">{children}</div>
       </div>
     </div>

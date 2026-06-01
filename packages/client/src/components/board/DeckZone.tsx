@@ -51,7 +51,7 @@ export function DeckZone({
   const backSrc = DECK_BACKS[deckType] ?? '/card-back.png';
 
   const deckFace = (
-    <div className="relative w-[78px] h-[107px]">
+    <div className="relative w-[156px] h-[214px]">
       <img
         src={backSrc}
         alt={`${label} deck`}
@@ -175,7 +175,7 @@ function DiscardCol({
   isDraggable?: boolean;
 }) {
   const cardEl = topDiscard && topDiscardCardId ? (
-    <div className="w-[78px] h-[107px] rounded overflow-hidden">
+    <div className="w-[156px] h-[214px] rounded overflow-hidden">
       <ResolvedCard
         instance={{
           instanceId: 'discard',
@@ -193,7 +193,7 @@ function DiscardCol({
       />
     </div>
   ) : (
-    <div className="w-[78px] h-[107px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
+    <div className="w-[156px] h-[214px] rounded border border-dashed border-fs-gold/10 flex items-center justify-center text-fs-parchment/20 text-sm">
       Empty
     </div>
   );

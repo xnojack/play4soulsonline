@@ -97,7 +97,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {myCardsButton}
-          <DiceRoller compact context="manual" />
+          <DiceRoller small context="manual" />
           <button
             onClick={handlePassPriority}
             className={`px-4 py-1.5 rounded-lg border-2 font-display font-semibold text-sm transition-colors ${
@@ -193,7 +193,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
 
         <div className="flex items-center gap-2 flex-shrink-0">
           {myCardsButton}
-          <DiceRoller compact context={showAttackDice ? 'attack' : 'manual'} />
+          <DiceRoller small context={showAttackDice ? 'attack' : 'manual'} />
           <button
             onClick={handleGrantLootPlay}
             className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"

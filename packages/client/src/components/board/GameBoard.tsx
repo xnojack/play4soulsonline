@@ -17,11 +17,16 @@ import { BoardMiddleSection } from './BoardMiddleSection';
 import { BoardBottomSection, BottomBar } from './BoardBottomSection';
 import { BoardScaleProvider } from '../../context/BoardScaleContext';
 import { BoardCanvas } from './BoardCanvas';
+import { useDeckKeyboardShortcuts } from '../../hooks/useDeckKeyboardShortcuts';
+import { DropContextMenu } from './DropContextMenu';
 
 export function GameBoard() {
   const game = useGameStore((s) => s.game);
   const showLog = useGameStore((s) => s.showLog);
+  const contextMenu = useGameStore((s) => s.contextMenu);
+  const setContextMenu = useGameStore((s) => s.setContextMenu);
   useCardFlightDetector();
+  useDeckKeyboardShortcuts();
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth < window.innerHeight);
 
   React.useEffect(() => {
@@ -55,10 +60,10 @@ export function GameBoard() {
           </div>
         )}
 
-        {/* Board area — background + overlay rendered inside BoardCanvas so they scale */}
+        {/* Board area — fixed-size virtual table (4000x2000), auto-fitted to viewport */}
         <div className="flex-1 flex min-h-0 relative overflow-hidden bg-black">
           {/* Three-band column — wrapped in BoardCanvas for zoom/pan */}
-          <BoardCanvas className="relative flex-1 min-w-0" withBackground>
+          <BoardCanvas className="relative flex-1 min-w-0">
             <div className="relative flex flex-col w-full h-full">
             {!boardReady ? (
               /* eden_pick / sad_vote — modals overlay on top; just show the table */
@@ -71,7 +76,7 @@ export function GameBoard() {
                 </div>
 
                 {/* Middle — takes remaining space */}
-                <div className="flex-1 min-h-0 relative border-t border-b border-fs-gold/10">
+                <div className="flex-1 min-h-0 relative border-t-2 border-b-2 border-fs-gold/10">
                   <BoardMiddleSection />
                 </div>
 
@@ -116,6 +121,16 @@ export function GameBoard() {
         <CardFlightLayer />
         <LogToast />
         <SoundManager />
+        {contextMenu && (
+          <DropContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            actions={contextMenu.actions}
+            stackSource={!!contextMenu.stackSourceId}
+            stackItemId={contextMenu.stackSourceId}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
 
         {/* Bottom utility bar — outside the 3-band board area, flush at screen bottom */}
         <BottomBar />

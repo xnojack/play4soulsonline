@@ -1,16 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
   DragStartEvent,
   DragEndEvent,
-  Modifier,
 } from '@dnd-kit/core';
-import { useBoardScale } from '../../context/BoardScaleContext';
+import { createPortal } from 'react-dom';
 import { useGameStore } from '../../store/gameStore';
 import { getSocket } from '../../socket/client';
 import { useCard } from '../board/CardResolver';
@@ -24,7 +22,6 @@ import {
 } from './DropActionResolver';
 
 export type { UniversalDrag, UniversalDrop };
-import { DropContextMenu } from './DropContextMenu';
 import { useDragEdgeScroll } from '../../hooks/useDragEdgeScroll';
 
 const DECK_BACKS: Record<string, string> = {
@@ -47,12 +44,19 @@ export function useDragState() {
 
 export function DnDProvider({ children }: { children: React.ReactNode }) {
   const [activeDrag, setActiveDrag] = useState<UniversalDrag | null>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    actions: { label: string; action: string; payload: Record<string, unknown>; onClick?: () => void }[];
-    stackSourceId?: string;
-  } | null>(null);
+  const contextMenu = useGameStore((s) => s.contextMenu);
+  const setContextMenu = useGameStore((s) => s.setContextMenu);
+
+  // Portal-based drag ghost position — tracks pointer at document level
+  const pointerRef = useRef({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!activeDrag) return;
+    const onMove = (e: PointerEvent) => {
+      pointerRef.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener('pointermove', onMove);
+    return () => document.removeEventListener('pointermove', onMove);
+  }, [activeDrag]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -110,20 +114,7 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
     setActiveDrag(null);
   }, []);
 
-  const { scale, isPanning } = useBoardScale();
-
-  // Compensate for CSS scale transform so drag translate inside the scaled
-  // container moves at the correct speed relative to the pointer.
-  const scaleModifier: Modifier = useCallback(
-    ({ transform }) => ({
-      ...transform,
-      x: transform.x / scale,
-      y: transform.y / scale,
-    }),
-    [scale],
-  );
-
-  useDragEdgeScroll(!!activeDrag, isPanning);
+  useDragEdgeScroll(!!activeDrag, false);
 
   const ctxValue = useMemo(() => ({ activeDrag }), [activeDrag]);
 
@@ -131,25 +122,27 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
     <DnDStateContext.Provider value={ctxValue}>
       <DndContext
         sensors={sensors}
-        modifiers={[scaleModifier]}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
         {children}
-        <DragOverlay dropAnimation={null}>
-          {activeDrag ? <DragPreview payload={activeDrag} /> : null}
-        </DragOverlay>
       </DndContext>
-      {contextMenu && (
-        <DropContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          actions={contextMenu.actions}
-          stackSource={!!contextMenu.stackSourceId}
-          stackItemId={contextMenu.stackSourceId}
-          onClose={() => setContextMenu(null)}
-        />
+      {/* Portal-based drag ghost — renders at document level, bypassing all transforms */}
+      {activeDrag && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: pointerRef.current.x,
+            top: pointerRef.current.y,
+            transform: 'translate(-50%, -50%) rotate(3deg)',
+            pointerEvents: 'none',
+            zIndex: 10000,
+          }}
+        >
+          <DragPreview payload={activeDrag} />
+        </div>,
+        document.body,
       )}
     </DnDStateContext.Provider>
   );
@@ -160,31 +153,27 @@ function DragPreview({ payload }: { payload: UniversalDrag }) {
   if (payload.cardId === DECK_TOP_SENTINEL && payload.sourceZoneId) {
     const backSrc = DECK_BACKS[payload.sourceZoneId] ?? '/card-back.png';
     return (
-      <div className="rotate-3 pointer-events-none">
-        <img
-          src={backSrc}
-          alt="deck"
-          className="w-[100px] h-[137px] object-cover rounded shadow-2xl ring-2 ring-fs-gold/80 opacity-95"
-          draggable={false}
-        />
-      </div>
+      <img
+        src={backSrc}
+        alt="deck"
+        className="w-[120px] h-[165px] object-cover rounded shadow-2xl ring-2 ring-fs-gold/80 opacity-95"
+        draggable={false}
+      />
     );
   }
 
   const card = useCard(payload.cardId);
   if (!card) {
     return (
-      <div className="w-[78px] h-[107px] rounded bg-fs-darker border-2 border-fs-gold/60 shadow-2xl rotate-3 opacity-90" />
+      <div className="w-[120px] h-[165px] rounded bg-fs-darker border-2 border-fs-gold/60 shadow-2xl opacity-90" />
     );
   }
   return (
-    <div className="rotate-3 pointer-events-none">
-      <img
-        src={`${SERVER_URL}${card.imageUrl}`}
-        alt={card.name}
-        className="w-[100px] h-[137px] object-cover rounded shadow-2xl ring-2 ring-fs-gold/80 opacity-95"
-        draggable={false}
-      />
-    </div>
+    <img
+      src={`${SERVER_URL}${card.imageUrl}`}
+      alt={card.name}
+      className="w-[120px] h-[165px] object-cover rounded shadow-2xl ring-2 ring-fs-gold/80 opacity-95"
+      draggable={false}
+    />
   );
 }

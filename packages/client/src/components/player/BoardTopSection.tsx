@@ -22,6 +22,7 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
   const game = useGameStore((s) => s.game);
   const stripRef = useRef<HTMLDivElement>(null);
   const [hoverState, setHoverState] = useState<{ player: ClientPlayer; rect: DOMRect } | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const allPlayers = (game?.players ?? []).filter((p) => !p.isSpectator);
   const activePlayerId = game?.turn.activePlayerId ?? null;
@@ -51,22 +52,27 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
   return (
     <div className="h-full flex flex-col gap-1 px-2 pt-1 pb-1 min-h-0 overflow-hidden">
       {/* Player strip */}
-      <div
+       <div
         ref={stripRef}
-        className="flex gap-1.5 overflow-x-auto overflow-y-hidden flex-shrink-0 pb-1"
+        className="flex gap-5 overflow-x-auto overflow-y-hidden flex-shrink-0 pb-1"
         style={{ scrollbarWidth: 'thin' }}
       >
-        {allPlayers.map((p) => (
-          <StripEntry
-            key={p.id}
-            player={p}
-            isActive={p.id === activePlayerId}
-            isPriority={p.id === priorityPlayerId && p.id !== activePlayerId}
-            isMe={p.id === myPlayerId}
-            onHover={(rect) => setHoverState({ player: p, rect })}
-            onLeave={() => setHoverState(null)}
-          />
-        ))}
+       {allPlayers.map((p) => (
+           <StripEntry
+             key={p.id}
+             player={p}
+             isActive={p.id === activePlayerId}
+             isPriority={p.id === priorityPlayerId && p.id !== activePlayerId}
+             isMe={p.id === myPlayerId}
+             onHover={(rect) => {
+               if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+               setHoverState({ player: p, rect });
+             }}
+             onLeave={() => {
+               hideTimer.current = setTimeout(() => setHoverState(null), 200);
+             }}
+           />
+         ))}
       </div>
 
       {/* Active + Priority panes (exclude local player; their info is below) */}
@@ -126,7 +132,16 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
 
       {/* Hover popover (portal) */}
       {hoverState && createPortal(
-        <HoverPopover player={hoverState.player} anchor={hoverState.rect} />,
+        <HoverPopover
+          player={hoverState.player}
+          anchor={hoverState.rect}
+          onEnter={() => {
+            if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+          }}
+          onLeave={() => {
+            hideTimer.current = setTimeout(() => setHoverState(null), 200);
+          }}
+        />,
         document.body
       )}
     </div>
@@ -135,7 +150,7 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
 
 function EmptyPane({ label }: { label: string }) {
   return (
-    <div className="h-full rounded-lg border border-dashed border-fs-gold/15 bg-fs-darker/30 flex items-center justify-center text-[11px] text-fs-parchment/30 italic">
+    <div className="h-full rounded-lg border-2 border-dashed border-fs-gold/15 bg-fs-darker/30 flex items-center justify-center text-2xl text-fs-parchment/30 italic">
       {label}
     </div>
   );
@@ -185,7 +200,7 @@ function StripEntry({
           if (ref.current) onHover(ref.current.getBoundingClientRect());
         }}
         onMouseLeave={onLeave}
-        className={`flex items-center gap-2 px-2 py-1 rounded border min-w-[170px] flex-shrink-0 transition-colors ${
+        className={`flex items-center gap-5 px-8 py-4 rounded border-2 min-w-[400px] flex-shrink-0 transition-colors ${
           isActive
             ? 'border-fs-gold/70 bg-fs-gold/15'
             : isPriority
@@ -195,33 +210,33 @@ function StripEntry({
       >
         {charInstance && (
           <div className="flex-shrink-0">
-            <ResolvedCard instance={charInstance} size="xs" showCounters={false} />
+            <ResolvedCard instance={charInstance} size="sm" showCounters={false} />
           </div>
         )}
         <div className="flex flex-col items-start gap-0.5 min-w-0">
           <div className="flex items-center gap-1">
-            <span className="text-xs font-display text-fs-parchment font-semibold truncate max-w-[110px]">
+            <span className="text-3xl font-display text-fs-parchment font-semibold truncate max-w-[280px]">
               {player.name}
-              {isMe && <span className="text-fs-gold ml-1">(you)</span>}
+              {isMe && <span className="text-3xl text-fs-gold ml-1">(you)</span>}
             </span>
-            {isActive && <span className="text-[9px] px-1 py-0 bg-fs-gold text-fs-darker rounded font-bold">A</span>}
-            {isPriority && <span className="text-[9px] px-1 py-0 bg-fs-soul text-white rounded font-bold">P</span>}
-            {!player.connected && <span className="text-[10px] text-yellow-600">⚡</span>}
+            {isActive && <span className="text-2xl px-2 py-0.5 bg-fs-gold text-fs-darker rounded font-bold">A</span>}
+            {isPriority && <span className="text-2xl px-2 py-0.5 bg-fs-soul text-white rounded font-bold">P</span>}
+            {!player.connected && <span className="text-2xl text-yellow-600">⚡</span>}
           </div>
-          <div className="grid grid-cols-3 gap-x-1.5 gap-y-0.5 text-[10px] text-fs-parchment/60">
-            <span title="HP">❤{player.effectiveHp}</span>
-            <span title="ATK">🗡{player.effectiveAtk}</span>
-            <span title="Coins">¢{player.coins}</span>
-            <span title="Items" className="flex items-center gap-0.5">
-              <img src="/treasure-back.png" alt="" className="w-[10px] h-[14px] object-cover rounded-sm opacity-80" />
+          <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-2xl text-fs-parchment/60">
+            <span title="HP">❤ {player.effectiveHp}</span>
+            <span title="ATK">🗡 {player.effectiveAtk}</span>
+            <span title="Coins">¢ {player.coins}</span>
+            <span title="Items" className="flex items-center gap-1">
+              <img src="/treasure-back.png" alt="" className="w-[34px] h-[46px] object-cover rounded-sm opacity-80" />
               {player.items.length}
             </span>
-            <span title="Hand" className="flex items-center gap-0.5">
-              <img src="/loot-back.png" alt="" className="w-[10px] h-[14px] object-cover rounded-sm opacity-80" />
+            <span title="Hand" className="flex items-center gap-1">
+              <img src="/loot-back.png" alt="" className="w-[34px] h-[46px] object-cover rounded-sm opacity-80" />
               {player.handCount}
             </span>
-            <span title="Souls" className="text-purple-400 flex items-center gap-0.5">
-              👻{player.souls.length}
+            <span title="Souls" className="text-purple-400 flex items-center gap-1">
+              👻 {player.souls.length}
             </span>
           </div>
         </div>
@@ -231,9 +246,8 @@ function StripEntry({
 }
 
 /** Portal-rendered popover with the full PlayerExpandedPanel for the hovered player */
-function HoverPopover({ player, anchor }: { player: ClientPlayer; anchor: DOMRect }) {
-  // Position below the strip entry, clamped to viewport
-  const popoverW = 560;
+function HoverPopover({ player, anchor, onEnter, onLeave }: { player: ClientPlayer; anchor: DOMRect; onEnter: () => void; onLeave: () => void }) {
+  const popoverW = 400;
   const popoverH = 320;
   const vw = window.innerWidth;
   const left = Math.max(8, Math.min(vw - popoverW - 8, anchor.left + anchor.width / 2 - popoverW / 2));
@@ -247,16 +261,19 @@ function HoverPopover({ player, anchor }: { player: ClientPlayer; anchor: DOMRec
       transition={{ duration: 0.12 }}
       className="fixed z-[200] pointer-events-none"
       style={{ left, top, width: popoverW, maxHeight: popoverH }}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
     >
       <div className="pointer-events-auto shadow-2xl">
-        <PlayerExpandedPanel
-          player={player}
-          isMe={false}
-          showHand={false}
-          label="HOVER"
-          labelColor="parchment"
-          compact
-        />
+      <PlayerExpandedPanel
+           player={player}
+           isMe={false}
+           showHand={false}
+           label="HOVER"
+           labelColor="parchment"
+           compact
+           screenScale
+         />
       </div>
     </motion.div>
   );

@@ -76,21 +76,21 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
       payload={{ targetZone: 'shop', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 flex-shrink-0"
+      className="flex flex-col items-center gap-2 flex-shrink-0"
       data-zone={`shop-${slot.slotIndex}`}
     >
       {!slot.card ? (
         <div
-          className="rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-sm"
+          className="rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-2xl"
           style={{
-            width: size === 'sm' ? 78 : size === 'xs' ? 52 : 117,
-            height: size === 'sm' ? 107 : size === 'xs' ? 71 : 160,
+            width: size === 'sm' ? 156 : size === 'xs' ? 104 : 234,
+            height: size === 'sm' ? 214 : size === 'xs' ? 142 : 320,
           }}
         >
           Empty
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-2">
         <Draggable
           id={`shop-${slot.card.instanceId}`}
           payload={{ cardId: slot.card.cardId, instanceId: slot.card.instanceId, sourceZone: 'shop', sourceZoneId: String(slot.slotIndex) }}
@@ -107,21 +107,21 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
         {canPurchase && (
           <button
             onClick={handlePurchase}
-            className={`text-xs px-2 py-1 md:px-3 md:py-1 rounded border transition-colors font-display ${
-              cost <= 0
-                ? 'border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70'
-                : 'border-fs-gold/30 text-fs-parchment hover:bg-fs-brown/40 hover:border-fs-gold/50'
-            }`}
-          >
-            {cost <= 0
-              ? (cost < 0 ? `Take (+${Math.abs(cost)}¢)` : 'Take')
-              : `Buy for ${cost}¢`}
+        className={`text-2xl px-4 py-2 md:px-6 md:py-2 rounded border-2 transition-colors font-display ${
+               cost <= 0
+                 ? 'border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70'
+                 : 'border-fs-gold/30 text-fs-parchment hover:bg-fs-brown/40 hover:border-fs-gold/50'
+             }`}
+           >
+             {cost <= 0
+               ? (cost < 0 ? `Take (+${Math.abs(cost)}¢)` : 'Take')
+               : 'Buy'}
           </button>
         )}
 
         {/* Inline cost editor — shown when Set cost… action is triggered */}
         {editingCost && (
-          <span className="flex items-center gap-0.5">
+          <span className="flex items-center gap-2">
             <input
               autoFocus
               type="number"
@@ -129,10 +129,10 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
               onChange={(e) => setCostInput(e.target.value)}
               onBlur={handleSetCost}
               onKeyDown={(e) => e.key === 'Enter' && handleSetCost()}
-              className="w-12 text-xs bg-fs-darker border border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
+              className="w-24 text-2xl bg-fs-darker border-2 border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
               placeholder={String(cost)}
             />
-            <span className="text-fs-gold/50 text-xs">¢</span>
+            <span className="text-fs-gold/50 text-2xl">¢</span>
           </span>
         )}
         </div>

@@ -116,7 +116,7 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
       payload={{ targetZone: 'monster', targetZoneId: String(slot.slotIndex) }}
     >
     <div
-      className="flex flex-col items-center gap-1 flex-shrink-0"
+      className="flex flex-col items-center gap-2 flex-shrink-0"
       data-zone={`monster-${slot.slotIndex}`}
     >
       {/* Stack display */}
@@ -151,7 +151,7 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
               initial={{ y: 4, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 4, opacity: 0 }}
-              className="px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-display font-bold tracking-wider shadow-lg"
+              className="px-3 py-1 rounded-full bg-red-600 text-white text-2xl font-display font-bold tracking-wider shadow-lg"
             >
               ⚔ TARGETED
             </motion.span>
@@ -159,27 +159,27 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
         )}
         {isEmpty ? (
           <div
-            className="rounded border-2 flex flex-col items-center justify-center gap-1 transition-colors"
+            className="rounded border-2 border-fs-gold/10 flex flex-col items-center justify-center gap-2 transition-colors"
             style={{
-              width: size === 'sm' ? 78 : size === 'xs' ? 52 : 117,
-              height: size === 'sm' ? 107 : size === 'xs' ? 71 : 160,
+              width: size === 'sm' ? 156 : size === 'xs' ? 104 : 234,
+              height: size === 'sm' ? 214 : size === 'xs' ? 142 : 320,
             }}
           >
             {!isActiveTurn || game?.turn.currentAttack !== null ? (
               <>
-                <span className="text-fs-parchment/20 text-sm">Empty</span>
+                <span className="text-fs-parchment/20 text-3xl">Empty</span>
               </>
             ) : (
               <button
                 onClick={() => getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex })}
-                className="w-full h-full rounded border-2 border-red-700/40 hover:border-red-500 bg-red-900/20 hover:bg-red-900/40 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors"
+                className="w-full h-full rounded border-2 border-red-700/40 hover:border-red-500 bg-red-900/20 hover:bg-red-900/40 cursor-pointer flex flex-col items-center justify-center gap-2 transition-colors"
                 title="Flip top of monster deck into this slot and attack"
               >
-                <span className="text-2xl">⚔️</span>
-                <span className="text-sm font-display text-red-400">
+                <span className="text-4xl">⚔️</span>
+                <span className="text-3xl font-display text-red-400">
                   Flip &amp; Attack
                 </span>
-                <span className="text-xs text-fs-parchment/50">
+                <span className="text-xl text-fs-parchment/50">
                   (slot {slot.slotIndex + 1})
                 </span>
               </button>
@@ -189,7 +189,7 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
           <div className="relative z-10">
             {coveredCards.length > 0 && (
               <div
-                className="absolute -bottom-1 -right-1 bg-fs-darker border border-fs-gold/20 rounded text-xs text-fs-parchment/40 px-1 cursor-pointer z-10"
+                className="absolute -bottom-1 -right-1 bg-fs-darker border-2 border-fs-gold/20 rounded text-xl text-fs-parchment/40 px-2 cursor-pointer z-10"
                 onClick={() => setShowAll(!showAll)}
                 title={`${coveredCards.length} covered card${coveredCards.length !== 1 ? 's' : ''}`}
               >
@@ -217,7 +217,7 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
               {canAttack && (
                 <button
                   onClick={handleAttack}
-                  className="text-xs px-2 py-1 md:px-3 md:py-1 rounded border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
+                  className="text-2xl px-4 py-2 md:px-6 md:py-2 rounded border-2 border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
                 >
                   Attack
                 </button>
@@ -225,10 +225,10 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
 
       {/* Type tag — below card, above HP tracker (soul value shown on card counter, not here) */}
       {!isEmpty && (isPlayerCurse || isEvent || isCurseMonster) && (
-        <span className={`text-xs px-1.5 py-0.5 rounded ${
-          isPlayerCurse ? 'bg-red-900/80 text-red-300'
-          : isCurseMonster ? 'bg-orange-900/80 text-orange-300'
-          : 'bg-purple-900/80 text-purple-300'
+        <span className={`text-xl px-3 py-1 rounded border-2 ${
+          isPlayerCurse ? 'bg-red-900/80 text-red-300 border-red-700/50'
+          : isCurseMonster ? 'bg-orange-900/80 text-orange-300 border-orange-700/50'
+          : 'bg-purple-900/80 text-purple-300 border-purple-700/50'
         }`}>
           {isPlayerCurse ? 'Curse' : isCurseMonster ? 'Curse Monster' : 'Event'}
         </span>
@@ -236,10 +236,10 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
 
       {/* Resolve / Discard button — shown below card for Event cards */}
       {isEvent && topCard && (
-        <div className="flex flex-col items-center mt-1">
+        <div className="flex flex-col items-center mt-2">
           <button
             onClick={handleResolveEvent}
-            className="text-xs px-3 py-1 rounded border border-purple-500/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70 transition-colors font-display"
+            className="text-xl px-6 py-2 rounded border-2 border-purple-500/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70 transition-colors font-display"
           >
             Resolve / Discard
           </button>
@@ -248,22 +248,22 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
 
       {/* Give Curse controls — shown below card for player curses */}
       {isPlayerCurse && topCard && (
-        <div className="flex flex-col items-center gap-1 mt-1">
+        <div className="flex flex-col items-center gap-2 mt-2">
           {!givingCurse ? (
             <button
               onClick={() => setGivingCurse(true)}
-              className="text-xs px-2 py-0.5 rounded border border-red-700/50 text-red-400 hover:bg-red-900/30 transition-colors"
+              className="text-xl px-4 py-1 rounded border-2 border-red-700/50 text-red-400 hover:bg-red-900/30 transition-colors"
             >
               Give Curse…
             </button>
           ) : (
-            <div className="flex flex-col gap-0.5 items-center">
-              <span className="text-xs text-fs-parchment/40">Give to:</span>
+            <div className="flex flex-col gap-2 items-center">
+              <span className="text-xl text-fs-parchment/40">Give to:</span>
               {/* Self */}
               {myPlayer && (
                 <button
                   onClick={() => handleGiveCurse(myPlayer.id)}
-                  className="text-xs px-1.5 py-0.5 rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-colors w-full text-left"
+                  className="text-xl px-3 py-1 rounded border-2 border-red-700/40 text-red-400 hover:bg-red-900/20 transition-colors w-full text-left"
                 >
                   {myPlayer.name} (you)
                 </button>
@@ -272,14 +272,14 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
                 <button
                   key={p.id}
                   onClick={() => handleGiveCurse(p.id)}
-                  className="text-xs px-1.5 py-0.5 rounded border border-red-700/40 text-red-400 hover:bg-red-900/20 transition-colors w-full text-left"
+                  className="text-xl px-3 py-1 rounded border-2 border-red-700/40 text-red-400 hover:bg-red-900/20 transition-colors w-full text-left"
                 >
                   {p.name}
                 </button>
               ))}
               <button
                 onClick={() => setGivingCurse(false)}
-                className="text-xs text-fs-parchment/30 hover:text-fs-parchment/60 mt-0.5"
+                className="text-xl text-fs-parchment/30 hover:text-fs-parchment/60 mt-0.5"
               >
                 Cancel
               </button>
@@ -290,28 +290,28 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
 
       {/* HP Tracker — only for non-event, non-player-curse monsters with HP */}
       {topCard && maxHp > 0 && !isEvent && !isPlayerCurse && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
         <button
              onClick={() => handleApplyDamage(1)}
-             className="w-5 h-5 md:w-7 md:h-7 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-xs font-bold"
+             className="w-10 h-10 md:w-14 md:h-14 rounded bg-red-900/50 text-red-400 hover:bg-red-800 text-2xl font-bold"
              title="Deal 1 damage"
            >-❤</button>
-       <div className="flex gap-0.5">
+       <div className="flex gap-2">
              {Array.from({ length: Math.min(maxHp, 10) }).map((_, i) => (
                <span
                  key={i}
-                 className={`text-xs ${
+                 className={`text-3xl ${
                    i < currentHp ? 'text-red-500' : 'text-gray-700'
                  }`}
                >
                  {i < currentHp ? '❤' : '♡'}
                </span>
              ))}
-            {maxHp > 10 && <span className="text-sm text-fs-parchment/40">{currentHp}/{maxHp}</span>}
+            {maxHp > 10 && <span className="text-3xl text-fs-parchment/40">{currentHp}/{maxHp}</span>}
           </div>
        <button
              onClick={handleHeal}
-             className="w-5 h-5 md:w-7 md:h-7 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-xs font-bold"
+             className="w-10 h-10 md:w-14 md:h-14 rounded bg-green-900/50 text-green-400 hover:bg-green-800 text-2xl font-bold"
              title="Heal 1"
            >+❤</button>
         </div>
@@ -319,9 +319,9 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
 
       {/* Covered cards expanded */}
       {showAll && coveredCards.length > 0 && (
-        <div className="bg-fs-darker border border-fs-gold/20 rounded p-2 mt-1">
-          <div className="text-sm text-fs-parchment/40 mb-1">Covered:</div>
-          <div className="flex gap-1 flex-wrap">
+      <div className="bg-fs-darker border-2 border-fs-gold/20 rounded p-4 mt-2">
+           <div className="text-3xl text-fs-parchment/40 mb-2">Covered:</div>
+          <div className="flex gap-2 flex-wrap">
             {coveredCards.map((c) => (
               <Draggable
                 key={c.instanceId}

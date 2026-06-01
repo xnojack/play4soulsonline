@@ -203,6 +203,8 @@ interface GameStore {
   // UI state
   selectedCardInstanceId: string | null;
   hoveredCard: ClientCard | null;
+  hoveredDeck: { deckType: string; pile: 'deck' | 'discard' } | null;
+  contextMenu: { x: number; y: number; actions: { label: string; action: string; payload: Record<string, unknown>; onClick?: () => void }[]; stackSourceId?: string } | null;
   modalCard: ClientCard | null;
   isCardSearchOpen: boolean;
   lastDiceResult: DiceResult | null;
@@ -224,6 +226,8 @@ interface GameStore {
   clearDiceResult: () => void;
   setSelectedCard: (instanceId: string | null) => void;
   setHoveredCard: (card: ClientCard | null) => void;
+  setHoveredDeck: (deck: { deckType: string; pile: 'deck' | 'discard' } | null) => void;
+  setContextMenu: (menu: { x: number; y: number; actions: { label: string; action: string; payload: Record<string, unknown>; onClick?: () => void }[]; stackSourceId?: string } | null) => void;
   setModalCard: (card: ClientCard | null) => void;
   setCardSearchOpen: (open: boolean) => void;
   showLog: boolean;
@@ -245,6 +249,8 @@ const initialState = {
   game: null,
   selectedCardInstanceId: null,
   hoveredCard: null,
+  hoveredDeck: null,
+  contextMenu: null,
   modalCard: null,
   isCardSearchOpen: false,
   showLog: false,
@@ -287,6 +293,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setSelectedCard: (instanceId) => set({ selectedCardInstanceId: instanceId }),
   setHoveredCard: (card) => set({ hoveredCard: card }),
+  setHoveredDeck: (deck) => set({ hoveredDeck: deck }),
+  setContextMenu: (menu) => set({ contextMenu: menu }),
   setModalCard: (card) => set({ modalCard: card }),
   setCardSearchOpen: (open) => set({ isCardSearchOpen: open }),
   setShowLog: (show) => set({ showLog: show }),
