@@ -457,6 +457,24 @@ export function resolveDropActions(
     }
   }
 
+  // ── Bonus soul drops ─────────────────────────────────────────────────────
+  if (drag.sourceZone === 'bonus_soul') {
+    if (drop.targetZone === 'stack') {
+      actions.push({
+        action: 'action:gain_bonus_soul',
+        payload: { cardId: drag.cardId, playerId: myId },
+        label: 'Gain Soul',
+      });
+    }
+    if (drop.targetZone === 'player' && targetPlayerId === myId) {
+      actions.push({
+        action: 'action:gain_bonus_soul',
+        payload: { cardId: drag.cardId, playerId: myId },
+        label: 'Gain Soul',
+      });
+    }
+  }
+
   // ── Shop slot card drops ─────────────────────────────────────────────────────
   if (drag.sourceZone === 'shop' && drag.instanceId) {
     if (drop.targetZone === 'discard') {
@@ -697,6 +715,14 @@ export function getAllAvailableActions(
     for (const slot of game.shopSlots) {
       addPrivileged('action:place_in_shop', { cardId: drag.cardId, instanceId: drag.instanceId, slotIndex: slot.slotIndex }, `Place in Shop Slot ${slot.slotIndex + 1}`);
     }
+  }
+
+  if (drag.sourceZone === 'bonus_soul') {
+    actions.push({
+      action: 'action:gain_bonus_soul',
+      payload: { cardId: drag.cardId, playerId: myId },
+      label: 'Gain Soul',
+    });
   }
 
   if ((drag.sourceZone === 'character' || drag.sourceZone === 'soul') && drag.instanceId) {

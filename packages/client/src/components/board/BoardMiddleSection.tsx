@@ -321,9 +321,7 @@ function BonusSoulsColumn() {
       <span className="text-xl uppercase tracking-wider text-fs-parchment/40">Bonus</span>
       <div className="flex flex-col gap-2">
         {game.bonusSouls.map((bs) => {
-          // TODO: wire to automation
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const _gainAction: CardAction[] = (!bs.isGained && !bs.isDestroyed)
+          const gainAction: CardAction[] = (!bs.isGained && !bs.isDestroyed)
             ? [{
                 label: 'Gain Soul',
                 onClick: () => getSocket().emit('action:gain_bonus_soul', {
@@ -334,13 +332,20 @@ function BonusSoulsColumn() {
               }]
             : [];
           return (
-            <ResolvedCard
+            <Draggable
               key={bs.cardId}
-              instance={bs.instance}
-              size="xs"
-              showCounters
-              className={bs.isGained || bs.isDestroyed ? 'opacity-40 grayscale' : ''}
-            />
+              id={`bonus-soul-${bs.cardId}`}
+              payload={{ cardId: bs.cardId, instanceId: bs.instance.instanceId, sourceZone: 'bonus_soul' }}
+              disabled={bs.isGained || bs.isDestroyed}
+            >
+              <ResolvedCard
+                instance={bs.instance}
+                size="xs"
+                showCounters
+                className={bs.isGained || bs.isDestroyed ? 'opacity-40 grayscale' : ''}
+                primaryActions={gainAction}
+              />
+            </Draggable>
           );
         })}
       </div>
