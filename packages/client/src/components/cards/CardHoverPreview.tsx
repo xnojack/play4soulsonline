@@ -23,9 +23,10 @@ interface CardHoverPreviewProps {
   instance?: CardInPlay;
   open: boolean;
   anchorRect: DOMRect | null;
+  landscape?: boolean;
 }
 
-export function CardHoverPreview({ card, instance, open, anchorRect }: CardHoverPreviewProps) {
+export function CardHoverPreview({ card, instance, open, anchorRect, landscape = false }: CardHoverPreviewProps) {
   const { activeDrag } = useDragState();
   const panelRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -35,6 +36,8 @@ export function CardHoverPreview({ card, instance, open, anchorRect }: CardHover
   const displayImageUrl = isFlipped && card.backImageUrl ? card.backImageUrl : card.imageUrl;
   const displayName = isFlipped && card.flipSideName ? card.flipSideName : card.name;
   const typeColor = TYPE_COLORS[card.cardType] ?? 'text-fs-parchment';
+  const previewW = landscape ? PREVIEW_H : PREVIEW_W;
+  const previewH = landscape ? PREVIEW_W : PREVIEW_H;
 
   useEffect(() => {
     if (!open || !anchorRect || !panelRef.current) return;
@@ -77,14 +80,14 @@ export function CardHoverPreview({ card, instance, open, anchorRect }: CardHover
         >
           {/* Card image */}
           <div className="flex-shrink-0">
-            <img
-              src={`${serverUrl}${displayImageUrl}`}
-              alt={displayName}
-              className="rounded card-shadow"
-              style={{ width: PREVIEW_W, height: PREVIEW_H, objectFit: 'cover', display: 'block' }}
-              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-card.png'; }}
-              draggable={false}
-            />
+          <img
+               src={`${serverUrl}${displayImageUrl}`}
+               alt={displayName}
+               className="rounded card-shadow"
+               style={{ width: previewW, height: previewH, objectFit: 'cover', display: 'block' }}
+               onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-card.png'; }}
+               draggable={false}
+             />
           </div>
 
           {/* Text panel — only if there's something to show */}

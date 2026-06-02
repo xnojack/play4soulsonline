@@ -27,27 +27,38 @@ export function DiscardDeckPair({
   discardCardId,
   discardCount,
   size = 'sm',
+  discardSize,
   deckIsDraggable = false,
   landscape = false,
+  belowDeck,
 }: {
   deckType: DeckType;
   deckCount: number;
   discardCardId?: string;
   discardCount: number;
-  size?: 'xs' | 'sm';
+  size?: 'xs' | 'sm' | 'md';
+  /** Override size for the discard pile specifically */
+  discardSize?: 'xs' | 'sm' | 'md';
   /** If true, the deck face is draggable (draw-to-hand sentinel drag) */
   deckIsDraggable?: boolean;
   /** If true, swaps width and height for landscape-oriented decks (e.g. room) */
   landscape?: boolean;
+  /** Content rendered directly below the deck face (e.g. +Room button) */
+  belowDeck?: React.ReactNode;
 }) {
   const topDiscard = useCard(discardCardId);
-  const baseW = size === 'sm' ? 156 : 104;
-  const baseH = size === 'sm' ? 214 : 142;
-  const cardW = landscape ? baseH : baseW;
-  const cardH = landscape ? baseW : baseH;
+  const effectiveDiscardSize = discardSize ?? size;
+  const deckW = size === 'md' ? 234 : size === 'sm' ? 156 : 104;
+  const deckH = size === 'md' ? 320 : size === 'sm' ? 214 : 142;
+  const deckCardW = landscape ? deckH : deckW;
+  const deckCardH = landscape ? deckW : deckH;
+  const discardW = effectiveDiscardSize === 'md' ? 234 : effectiveDiscardSize === 'sm' ? 156 : 104;
+  const discardH = effectiveDiscardSize === 'md' ? 320 : effectiveDiscardSize === 'sm' ? 214 : 142;
+  const discardCardW = landscape ? discardH : discardW;
+  const discardCardH = landscape ? discardW : discardH;
 
   const deckFace = (
-    <div className="relative" style={{ width: cardW, height: cardH }}>
+    <div className="relative" style={{ width: deckCardW, height: deckCardH }}>
       <img
         src={DECK_BACKS[deckType]}
         alt={`${deckType} deck`}
@@ -57,7 +68,7 @@ export function DiscardDeckPair({
         draggable={false}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="bg-fs-darker/80 text-fs-gold font-display font-bold text-xl rounded px-3 py-1 shadow">
+        <span className="bg-fs-darker/80 text-fs-gold font-display font-bold text-2xl rounded px-3 py-1 shadow">
           {deckCount}
         </span>
       </div>
@@ -65,7 +76,7 @@ export function DiscardDeckPair({
   );
 
   const discardEl = topDiscard && discardCardId ? (
-    <div className="overflow-hidden rounded" style={{ width: cardW, height: cardH }}>
+    <div className="overflow-hidden rounded" style={{ width: discardCardW, height: discardCardH }}>
       <ResolvedCard
         instance={{
           instanceId: 'discard',
@@ -78,15 +89,15 @@ export function DiscardDeckPair({
           namedCounters: {},
           flipped: false,
         }}
-        size={size}
+        size={effectiveDiscardSize}
         showCounters={false}
         landscape={landscape}
       />
     </div>
   ) : (
     <div
-      className="rounded border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-fs-parchment/20 text-xl"
-      style={{ width: cardW, height: cardH }}
+      className="rounded border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-fs-parchment/20 text-2xl"
+      style={{ width: discardCardW, height: discardCardH }}
     >
       empty
     </div>
@@ -97,7 +108,7 @@ export function DiscardDeckPair({
   const deckTypeSafe = isTooltipDeckType ? deckType : 'loot';
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-start">
       {/* Discard */}
       <div className="flex flex-col items-center gap-2">
         <Droppable
@@ -160,6 +171,7 @@ export function DiscardDeckPair({
             ) : deckFace
           )}
         </Droppable>
+        {belowDeck}
       </div>
     </div>
   );
@@ -210,7 +222,7 @@ export function DeckRow({
   const canAddSlot = !!showAddSlot && isActiveTurn && (addSlotType !== 'room' || (game?.roomDeckCount ?? 0) > 0);
 
   return (
-    <div className="flex gap-2 items-center flex-nowrap min-w-0">
+    <div className="flex gap-2 items-start flex-nowrap min-w-0">
       {/* Deck pair — fixed, never shrinks */}
       <div className="flex-shrink-0">
         <DiscardDeckPair
@@ -218,14 +230,15 @@ export function DeckRow({
           deckCount={deckCount}
           discardCardId={discardCardId}
           discardCount={discardCount}
-          size="sm"
+          size="md"
+          discardSize="sm"
           deckIsDraggable={deckIsDraggable}
         />
       </div>
 
       {/* Stacked action block — +Slot on top, action (Buy Top / Flip&Attack) on bottom */}
       {!!showAddSlot && (
-        <div className="flex-shrink-0 flex flex-col" style={{ width: 156, height: 214 }}>
+        <div className="flex-shrink-0 flex flex-col" style={{ width: 234, height: 320 }}>
           {/* Top half — +Slot droppable */}
           <Droppable
             id={`drop-add-slot-${addSlotType}`}
@@ -235,14 +248,14 @@ export function DeckRow({
             {canAddSlot ? (
               <button
                 onClick={() => getSocket().emit('action:add_slot', { slotType: addSlotType })}
-                className="w-full h-full rounded-t border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-xl font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
+                className="w-full h-full rounded-t border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-3xl font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
                 title={`Add a ${addSlotType} slot`}
               >
                 {addLabel}
               </button>
             ) : (
               <div
-                className="w-full h-full rounded-t border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-xl font-display text-fs-parchment/20 select-none"
+                className="w-full h-full rounded-t border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-3xl font-display text-fs-parchment/20 select-none"
                 title={`Drop a card here to add a ${addSlotType} slot`}
               >
                 {addLabel}
@@ -258,7 +271,7 @@ export function DeckRow({
 
       {/* Active slots — fills remaining space, scrolls when cards overflow */}
       <div style={{ flex: '1 1 0', minWidth: 0, overflowX: 'auto' }}>
-        <div className="flex gap-2 items-center flex-nowrap">
+        <div className="flex gap-2 items-start flex-nowrap">
           {children}
         </div>
       </div>

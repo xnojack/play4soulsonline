@@ -36,7 +36,7 @@ interface CardComponentProps {
 }
 
 const CARD_SIZES = {
-  '3xs': { width: 26, height: 35 },
+   '3xs': { width: 26, height: 35 },
   '2xs': { width: 52, height: 71 },
   xs: { width: 104, height: 142 },
   sm: { width: 156, height: 214 },
@@ -217,7 +217,7 @@ export function CardComponent({
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); action.onClick(); }}
-                  className={`text-xl px-3 py-1 rounded border transition-colors ${
+                  className={`text-2xl px-3 py-1 rounded border transition-colors ${
                     ACTION_COLORS[action.variant ?? 'default']
                   }`}
                 >
@@ -235,6 +235,7 @@ export function CardComponent({
           instance={instance}
           open={previewOpen}
           anchorRect={anchorRect}
+          landscape={landscape}
         />
       )}
     </>

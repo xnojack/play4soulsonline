@@ -115,9 +115,13 @@ export function BoardScaleProvider({ children }: { children: React.ReactNode }) 
     const newFit = calcFitScale();
     if (Math.abs(newFit - fitRef.current) < 0.0001) return;
     const ratio = newFit / fitRef.current;
+    const newPanX = panXRef.current * ratio;
+    const newPanY = panYRef.current * ratio;
+    const newTotal = newFit * zoomLevelRef.current;
+    const [cx, cy] = clampPan(newPanX, newPanY, newTotal);
     setFitScale(newFit);
-    setPanX((px) => px * ratio);
-    setPanY((py) => py * ratio);
+    setPanX(cx);
+    setPanY(cy);
   }, []);
 
   /** Set zoom level (1–3), optionally around a cursor origin */

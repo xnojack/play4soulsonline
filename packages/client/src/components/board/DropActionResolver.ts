@@ -280,9 +280,19 @@ export function resolveDropActions(
       const target = game.players.find((p) => p.id === targetPlayerId);
       addPrivileged('action:move_to_hand', { cardId: drag.cardId, instanceId: drag.instanceId, targetPlayerId }, `Move to ${target?.name ?? '?'}'s Hand`);
     }
-    if (drop.targetZone === 'items') {
+   if (drop.targetZone === 'items') {
       const tp = game.players.find((p) => p.id === targetPlayerId);
+      if (isOwnPlayer) {
+        actions.push({ action: 'action:purchase', payload: { slotIndex: parseInt(drag.sourceZoneId ?? '', 10) }, label: 'Purchase' });
+      }
       addPrivileged('action:move_to_items', { cardId: drag.cardId, instanceId: drag.instanceId, targetPlayerId }, `Move to ${tp?.name ?? '?'}'s Items`);
+    }
+    if (drop.targetZone === 'hand') {
+      const target = game.players.find((p) => p.id === targetPlayerId);
+      if (isOwnPlayer) {
+        actions.push({ action: 'action:purchase', payload: { slotIndex: parseInt(drag.sourceZoneId ?? '', 10) }, label: 'Purchase' });
+      }
+      addPrivileged('action:move_to_hand', { cardId: drag.cardId, instanceId: drag.instanceId, targetPlayerId }, `Move to ${target?.name ?? '?'}'s Hand`);
     }
     if (drop.targetZone === 'shop') {
       const slotIndex = parseInt(drop.targetZoneId ?? '', 10);
@@ -648,6 +658,10 @@ export function resolveDropActions(
     // Treasure deck dragged to items zone → gain_treasure (goes to items, normal flow)
     if (drop.targetZone === 'items' && drag.sourceZoneId === 'treasure') {
       actions.push({ action: 'action:gain_treasure', payload: { count: 1 }, label: 'Gain Treasure' });
+    }
+    // Loot deck dragged to items zone → draw_loot (same as hand drop)
+    if (drop.targetZone === 'items' && drag.sourceZoneId === 'loot') {
+      actions.push(...deckDragToHandActions('loot', myId));
     }
   }
 

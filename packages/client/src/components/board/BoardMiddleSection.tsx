@@ -8,6 +8,7 @@ import { ShopSlotComponent } from './ShopSlot';
 import { ResolvedCard, useCard } from './CardResolver';
 import { CardAction } from '../cards/CardComponent';
 import { Draggable, Droppable } from './DnDPrimitives';
+import { useDragState } from './DnDProvider';
 import { DeckRow, DiscardDeckPair } from './DeckRow';
 import { DiceFace } from '../stack/TheStack';
 import { SERVER_URL } from '../../config';
@@ -47,7 +48,7 @@ function StackCardThumb({ cardId, small = false }: { cardId: string; small?: boo
     return (
       <div
         className="bg-fs-darker border border-fs-gold/20 rounded flex-shrink-0"
-        style={{ width: small ? 56 : 76, height: small ? 80 : 108 }}
+      style={{ width: small ? 76 : 104, height: small ? 104 : 142 }}
       />
     );
   }
@@ -58,8 +59,8 @@ function StackCardThumb({ cardId, small = false }: { cardId: string; small?: boo
       alt={card.name}
       onClick={() => setModalCard(card)}
       className="object-cover rounded border border-fs-gold/30 hover:border-fs-gold/70 transition-colors cursor-pointer flex-shrink-0"
-      style={{ width: small ? 56 : 76, height: small ? 80 : 108 }}
-      draggable={false}
+     style={{ width: small ? 76 : 104, height: small ? 104 : 142 }}
+       draggable={false}
       title={card.name}
     />
   );
@@ -72,6 +73,8 @@ function StackLivePanel() {
   const stack = game?.stack ?? [];
   const isMyTurn = useIsMyTurn();
   const hasPriority = useHasPriority();
+  const { activeDrag } = useDragState();
+  const draggingHand = activeDrag?.sourceZone === 'hand';
 
   const liveItems = [...stack].reverse().filter((i) => !i.isCanceled);
 
@@ -91,28 +94,32 @@ function StackLivePanel() {
         data-zone="the-stack"
       >
         <div className="flex items-center justify-between gap-2 flex-shrink-0">
-          <span className="font-display text-fs-gold text-3xl uppercase tracking-wider">
+          <span className="font-display text-fs-gold text-4xl uppercase tracking-wider">
             Stack {stack.length > 0 ? `(${stack.length})` : ''}
           </span>
           <div className="flex gap-2">
             {isMyTurn && stack.length > 0 && (
               <button
-                onClick={handleResolveTop}
-                className="text-xl px-3 py-2 rounded border-2 border-fs-gold/50 text-fs-gold hover:bg-fs-gold/10 transition-colors"
-                title="Resolve top of stack"
-              >
-                Resolve
-              </button>
+                 onClick={handleResolveTop}
+                 className="text-2xl px-3 py-2 rounded border-2 border-fs-gold/50 text-fs-gold hover:bg-fs-gold/10 transition-colors"
+                 title="Resolve top of stack"
+               >
+                 Resolve
+               </button>
             )}
           </div>
         </div>
 
+        {draggingHand && (
+          <div className="text-3xl text-fs-gold text-center font-display font-bold animate-pulse bg-fs-gold/10 border-2 border-fs-gold/40 rounded-lg py-3">Drop here to play</div>
+        )}
+
         <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
           <AnimatePresence>
             {liveItems.length === 0 && (
-        <div className="text-2xl text-fs-parchment/30 text-center py-2 italic">
-                 stack empty
-               </div>
+       <div className="text-3xl text-fs-parchment/30 text-center py-2 italic">
+                  stack empty
+                </div>
             )}
             {liveItems.map((item, i) => {
               const isTop = i === 0;
@@ -135,7 +142,7 @@ function StackLivePanel() {
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
-                    className={`relative flex items-start gap-3 rounded border-2 p-2 text-xl ${
+                    className={`relative flex items-start gap-3 rounded border-2 p-2 text-2xl ${
                       isTop
                         ? 'border-fs-gold/70 bg-fs-gold/10 shadow-[0_0_8px_rgba(201,162,39,0.25)]'
                         : 'border-fs-gold/20 bg-fs-darker/60'
@@ -150,9 +157,9 @@ function StackLivePanel() {
                       <span className="text-fs-parchment/50 mr-1">{STACK_TYPE_ICONS[item.type] ?? '📋'}</span>
                       <span className="text-fs-parchment/90 break-words">{item.description}</span>
                       {isTop && (
-                        <span className="ml-1 px-4 py-2 bg-fs-gold/20 text-fs-gold text-lg rounded font-display whitespace-nowrap">
-                          next
-                        </span>
+                       <span className="ml-1 px-4 py-2 bg-fs-gold/20 text-fs-gold text-xl rounded font-display whitespace-nowrap">
+                           next
+                         </span>
                       )}
                     </div>
                     <button
@@ -160,7 +167,7 @@ function StackLivePanel() {
                         e.stopPropagation();
                         handleCancel(item.id);
                       }}
-                      className="text-red-500/60 hover:text-red-500 text-lg leading-none flex-shrink-0"
+                      className="text-red-500/60 hover:text-red-500 text-xl leading-none flex-shrink-0"
                       title="Cancel"
                     >
                       ✕
@@ -189,25 +196,25 @@ function StackHistoryPanel() {
   return (
     <div         className="flex flex-col h-full min-h-0 rounded-lg border-2 border-fs-gold/20 bg-fs-darker/40 backdrop-blur-sm p-4 gap-3">
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
-        <span className="font-display text-fs-parchment/50 text-2xl uppercase tracking-wider">History</span>
+        <span className="font-display text-fs-parchment/50 text-3xl uppercase tracking-wider">History</span>
         <button
           disabled
           title="Undo last resolution (coming soon)"
-          className="text-2xl px-3 py-2 rounded border-2 border-fs-gold/15 text-fs-parchment/20 cursor-not-allowed"
+          className="text-3xl px-3 py-2 rounded border-2 border-fs-gold/15 text-fs-parchment/20 cursor-not-allowed"
         >
           ↩
         </button>
       </div>
       <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
         {historyItems.length === 0 ? (
-        <div className="text-2xl text-fs-parchment/25 text-center py-2 italic">
-             no history
-           </div>
+      <div className="text-3xl text-fs-parchment/25 text-center py-2 italic">
+              no history
+            </div>
         ) : (
           historyItems.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-start gap-2 rounded border-2 border-fs-gold/10 bg-fs-darker/50 p-2 text-xl"
+              className="flex items-start gap-2 rounded border-2 border-fs-gold/10 bg-fs-darker/50 p-2 text-2xl"
             >
               <span className="text-fs-parchment/30 flex-shrink-0">{STACK_TYPE_ICONS['loot'] ? '📋' : '📋'}</span>
               <span className="text-fs-parchment/45 break-words flex-1">{entry.message}</span>
@@ -236,8 +243,8 @@ function BuyDeckTopSlot() {
       }`}
       title="Buy the top card of the treasure deck (blind)"
     >
-      <span className="text-2xl">🃏</span>
-      <span className={`text-xl font-display leading-tight ${canBuy ? 'text-fs-gold' : 'text-fs-parchment/20'}`}>
+      <span className="text-3xl">🃏</span>
+      <span className={`text-3xl font-display leading-tight ${canBuy ? 'text-fs-gold' : 'text-fs-parchment/20'}`}>
         Buy Top
       </span>
     </button>
@@ -278,14 +285,14 @@ function FlipAttackSlot() {
         }`}
         title="Flip top of monster deck into a slot and attack"
       >
-        <span className="text-2xl">⚔️</span>
-        <span className={`text-xl font-display leading-tight ${canFlip ? 'text-red-400' : 'text-fs-parchment/20'}`}>
+     <span className="text-3xl">⚔️</span>
+       <span className={`text-3xl font-display leading-tight ${canFlip ? 'text-red-400' : 'text-fs-parchment/20'}`}>
           Flip &amp; Attack
         </span>
       </button>
       {dropdownOpen && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-fs-darker/95 border-2 border-red-700/50 rounded-lg p-3 flex flex-col gap-2 shadow-xl backdrop-blur-sm min-w-[200px]">
-          <span className="text-xl text-red-400/70 text-center">Flip into:</span>
+          <span className="text-2xl text-red-400/70 text-center">Flip into:</span>
           {game?.monsterSlots?.map((slot) => (
             <button
               key={slot.slotIndex}
@@ -293,14 +300,14 @@ function FlipAttackSlot() {
                 getSocket().emit('action:attack_monster_deck', { slotIndex: slot.slotIndex });
                 setDropdownOpen(false);
               }}
-              className="text-xl px-4 py-2 rounded border border-red-700/50 text-red-400/80 hover:text-red-300 hover:bg-red-900/20 transition-colors"
+              className="text-2xl px-4 py-2 rounded border border-red-700/50 text-red-400/80 hover:text-red-300 hover:bg-red-900/20 transition-colors"
             >
               Slot {slot.slotIndex + 1}
             </button>
           ))}
           <button
             onClick={() => setDropdownOpen(false)}
-            className="text-xl px-4 py-2 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment transition-colors"
+            className="text-2xl px-4 py-2 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment transition-colors"
           >
             cancel
           </button>
@@ -318,7 +325,7 @@ function BonusSoulsColumn() {
 
   return (
     <div className="flex flex-col gap-2 items-center">
-      <span className="text-xl uppercase tracking-wider text-fs-parchment/40">Bonus</span>
+      <span className="text-2xl uppercase tracking-wider text-fs-parchment/40">Bonus</span>
       <div className="flex flex-col gap-2">
         {game.bonusSouls.map((bs) => {
           const gainAction: CardAction[] = (!bs.isGained && !bs.isDestroyed)
@@ -338,9 +345,9 @@ function BonusSoulsColumn() {
               payload={{ cardId: bs.cardId, instanceId: bs.instance.instanceId, sourceZone: 'bonus_soul' }}
               disabled={bs.isGained || bs.isDestroyed}
             >
-              <ResolvedCard
-                instance={bs.instance}
-                size="xs"
+            <ResolvedCard
+                 instance={bs.instance}
+                 size="sm"
                 showCounters
                 className={bs.isGained || bs.isDestroyed ? 'opacity-40 grayscale' : ''}
                 primaryActions={gainAction}
@@ -401,10 +408,10 @@ function RoomSlotCard({
           id={`room-${slot.instanceId}`}
           payload={{ cardId: slot.cardId, instanceId: slot.instanceId, sourceZone: 'room' }}
         >
-          <ResolvedCard
-            instance={slot}
-            size="sm"
-            landscape={landscape}
+         <ResolvedCard
+             instance={slot}
+             size="md"
+             landscape={landscape}
           />
         </Draggable>
       </Droppable>
@@ -420,7 +427,7 @@ function RoomSlotCard({
                 });
                 setReturningCard(null);
               }}
-              className="text-xl px-4 py-2 rounded hover:bg-fs-gold/10 text-fs-parchment/70 hover:text-fs-parchment text-left transition-colors"
+              className="text-2xl px-4 py-2 rounded hover:bg-fs-gold/10 text-fs-parchment/70 hover:text-fs-parchment text-left transition-colors"
             >
               {p.name}
             </button>
@@ -479,56 +486,57 @@ export function BoardMiddleSection() {
         {/* Col 4 — loot (top row) + room (bottom row); grows at 1x priority, yields to col 5 */}
         <div className="flex flex-col gap-3 justify-center min-w-0" style={{ flex: '1 1 0' }}>
         {/* Row 1: loot deck pair */}
-        <DiscardDeckPair
-          deckType="loot"
-          deckCount={game.lootDeckCount ?? 0}
-          discardCardId={topLootDiscard}
-          discardCount={game.lootDiscard?.length ?? 0}
-          size="sm"
-          deckIsDraggable
-        />
+        <div className="flex gap-2 items-start flex-nowrap min-w-0" style={{ paddingLeft: 58 }}>
+          <DiscardDeckPair
+            deckType="loot"
+            deckCount={game.lootDeckCount ?? 0}
+            discardCardId={topLootDiscard}
+            discardCount={game.lootDiscard?.length ?? 0}
+            size="md"
+            discardSize="sm"
+            deckIsDraggable
+          />
+        </div>
 
         {/* Row 2: room deck + slots, or disabled notice */}
         {hasRoomRow ? (
-          <div className="flex gap-2 items-center flex-nowrap min-w-0 overflow-hidden">
-            {/* Deck pair — fixed */}
-            <div className="flex-shrink-0">
-              <DiscardDeckPair
-                deckType="room"
-                deckCount={game.roomDeckCount ?? 0}
-                discardCardId={topRoomDiscard}
-                discardCount={game.roomDiscard?.length ?? 0}
-                size="sm"
-                deckIsDraggable
-                landscape
-              />
-            </div>
-
-            {/* +Room — portrait card-sized (156×214), always visible, fixed */}
-            <div className="flex-shrink-0" style={{ width: 156, height: 214 }}>
-              <Droppable
-                id="drop-add-slot-room"
-                payload={{ targetZone: 'add_slot', targetZoneId: 'room' }}
-                className="w-full h-full"
-              >
-                {isActiveTurn && (game.roomDeckCount ?? 0) > 0 ? (
-                  <button
-                    onClick={() => getSocket().emit('action:add_slot', { slotType: 'room' })}
-                    className="w-full h-full rounded border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-2xl font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
-                    title="Add a room slot"
+          <div className="flex gap-2 items-start flex-nowrap min-w-0 overflow-hidden">
+            <DiscardDeckPair
+              deckType="room"
+              deckCount={game.roomDeckCount ?? 0}
+              discardCardId={topRoomDiscard}
+              discardCount={game.roomDiscard?.length ?? 0}
+              size="md"
+              discardSize="sm"
+              deckIsDraggable
+              landscape
+              belowDeck={
+                <div style={{ width: 320, height: 100 }}>
+                  <Droppable
+                    id="drop-add-slot-room"
+                    payload={{ targetZone: 'add_slot', targetZoneId: 'room' }}
+                    className="w-full h-full"
                   >
-                    + Room
-                  </button>
-                ) : (
-                  <div
-                    className="w-full h-full rounded border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-2xl font-display text-fs-parchment/20 select-none"
-                    title="Drop a card here to add a room slot"
-                  >
-                    + Room
-                  </div>
-                )}
-              </Droppable>
-            </div>
+                    {isActiveTurn && (game.roomDeckCount ?? 0) > 0 ? (
+                      <button
+                        onClick={() => getSocket().emit('action:add_slot', { slotType: 'room' })}
+                        className="w-full h-full rounded border-2 border-fs-gold/40 hover:border-fs-gold bg-fs-darker/60 hover:bg-fs-darker/80 flex items-center justify-center text-3xl font-display text-fs-parchment/60 hover:text-fs-parchment transition-colors cursor-pointer"
+                        title="Add a room slot"
+                      >
+                        + Room
+                      </button>
+                    ) : (
+                      <div
+                        className="w-full h-full rounded border-2 border-dashed border-fs-gold/15 flex items-center justify-center text-3xl font-display text-fs-parchment/20 select-none"
+                        title="Drop a card here to add a room slot"
+                      >
+                        + Room
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              }
+            />
 
             {/* Slots — scrollable, fills remaining col 4 space, min 1 or 2 slots */}
             {roomSlots.length > 0 && (
@@ -537,7 +545,7 @@ export function BoardMiddleSection() {
                   minWidth: roomSlots.length === 1 ? 78 : 160,
                   overflowX: 'auto',
                 }}>
-                  <div className="flex gap-2 items-center flex-nowrap">
+                  <div className="flex gap-2 items-start flex-nowrap">
                     {roomSlots.map((slot) => (
                       <RoomSlotCard
                         key={slot.instanceId}
@@ -555,8 +563,8 @@ export function BoardMiddleSection() {
           </div>
         ) : (
           <div
-            className="flex items-center justify-center text-2xl text-fs-parchment/25 italic"
-            style={{ height: 107 }}
+            className="flex items-center justify-center text-3xl text-fs-parchment/25 italic"
+            style={{ height: 156 }}
           >
             Room deck not in use
           </div>
@@ -575,7 +583,7 @@ export function BoardMiddleSection() {
           deckIsDraggable
         >
           {shopSlots.map((slot) => (
-            <ShopSlotComponent key={slot.slotIndex} slot={slot} size="sm" />
+            <ShopSlotComponent key={slot.slotIndex} slot={slot} size="md" />
           ))}
         </DeckRow>
 
@@ -589,7 +597,7 @@ export function BoardMiddleSection() {
           deckIsDraggable
         >
           {monsterSlots.map((slot) => (
-            <MonsterSlotComponent key={slot.slotIndex} slot={slot} size="sm" />
+            <MonsterSlotComponent key={slot.slotIndex} slot={slot} size="md" />
           ))}
         </DeckRow>
       </div>

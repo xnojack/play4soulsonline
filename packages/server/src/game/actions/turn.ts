@@ -61,10 +61,26 @@ export function endTurn(state: GameState): GameState {
   // Drain any remaining stack items before advancing
   const drained = drainStack(state);
 
+  // Reset all player damage and monster damage counters
+  const resetState = {
+    ...drained,
+    players: drained.players.map((p) => ({
+      ...p,
+      currentDamage: 0,
+    })),
+    monsterSlots: drained.monsterSlots.map((slot) => ({
+      ...slot,
+      stack: slot.stack.map((card) => ({
+        ...card,
+        damageCounters: 0,
+      })),
+    })),
+  };
+
   // Revive any player whose HP has been restored above 0 (e.g. healed by a card effect)
   const revivedState = {
-    ...drained,
-    players: drained.players.map((p) => {
+    ...resetState,
+    players: resetState.players.map((p) => {
       if (!p.isAlive && p.baseHp + p.hpCounters - p.currentDamage > 0) {
         return { ...p, isAlive: true };
       }

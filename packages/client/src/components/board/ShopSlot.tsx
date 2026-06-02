@@ -81,10 +81,10 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
     >
       {!slot.card ? (
         <div
-          className="rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-2xl"
+          className="rounded border-2 border-dashed border-fs-gold/20 flex items-center justify-center text-fs-parchment/20 text-3xl"
           style={{
-            width: size === 'sm' ? 156 : size === 'xs' ? 104 : 234,
-            height: size === 'sm' ? 214 : size === 'xs' ? 142 : 320,
+            width: size === 'md' ? 234 : size === 'sm' ? 156 : size === 'xs' ? 104 : 364,
+            height: size === 'md' ? 320 : size === 'sm' ? 214 : size === 'xs' ? 142 : 498,
           }}
         >
           Empty
@@ -107,7 +107,7 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
         {canPurchase && (
           <button
             onClick={handlePurchase}
-        className={`text-2xl px-4 py-2 md:px-6 md:py-2 rounded border-2 transition-colors font-display ${
+        className={`text-3xl px-4 py-2 md:px-6 md:py-2 rounded border-2 transition-colors font-display ${
                cost <= 0
                  ? 'border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-400/70'
                  : 'border-fs-gold/30 text-fs-parchment hover:bg-fs-brown/40 hover:border-fs-gold/50'
@@ -129,10 +129,10 @@ export function ShopSlotComponent({ slot, size = 'md' }: ShopSlotProps) {
               onChange={(e) => setCostInput(e.target.value)}
               onBlur={handleSetCost}
               onKeyDown={(e) => e.key === 'Enter' && handleSetCost()}
-              className="w-24 text-2xl bg-fs-darker border-2 border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
+              className="w-24 text-3xl bg-fs-darker border-2 border-fs-gold/40 rounded px-1 text-fs-parchment text-center"
               placeholder={String(cost)}
             />
-            <span className="text-fs-gold/50 text-2xl">¢</span>
+            <span className="text-fs-gold/50 text-3xl">¢</span>
           </span>
         )}
         </div>
