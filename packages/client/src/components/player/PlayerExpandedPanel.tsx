@@ -367,7 +367,7 @@ export function PlayerExpandedPanel({
                   payload={{ targetZone: 'items', targetZoneId: player.id }}
                   className="min-w-0"
                 >
-                  <div className="overflow-x-auto" data-zone={`items-${player.id}`}>
+                  <div className="overflow-x-auto" data-zone={isMe ? "my-items" : `items-${player.id}`}>
                     <div className={`flex flex-wrap ${screenScale ? 'gap-1' : 'gap-2'} content-start overflow-y-auto`} style={{ maxHeight: screenScale ? (compact ? 71 : 160) : (compact ? 142 : 320) }}>
                       {player.items.length === 0 && (
                         <span className={`${screenScale ? 'text-[11px]' : 'text-3xl'} text-fs-parchment/20 italic self-center`}>no items</span>

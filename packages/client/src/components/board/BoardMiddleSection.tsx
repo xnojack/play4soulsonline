@@ -473,8 +473,8 @@ export function BoardMiddleSection() {
         <StackHistoryPanel />
       </div>
 
-      {/* Card panel — blurred dark background for cols 3-5 */}
-      <div className="flex-1 min-w-0 flex items-stretch gap-4 rounded-lg bg-fs-darker/40 backdrop-blur-sm px-4 py-2 overflow-hidden">
+     {/* Card panel — blurred dark background for cols 3-5 */}
+        <div className="flex-1 min-w-0 flex items-stretch gap-4 rounded-lg bg-fs-darker/40 backdrop-blur-sm px-4 py-2 overflow-hidden" data-zone="decks">
 
         {/* Col 3 — bonus souls (collapses when empty) */}
         {game.bonusSouls.length > 0 && (

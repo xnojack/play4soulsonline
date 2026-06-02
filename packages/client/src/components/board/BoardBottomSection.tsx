@@ -127,7 +127,7 @@ export function BottomBar() {
         >
           📜 Log
         </button>
-        <div ref={shortcutsRef} className="relative">
+        <div ref={shortcutsRef} className="relative" data-tutorial="shortcuts">
           <button
             onClick={() => setShowShortcuts(!showShortcuts)}
             className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"

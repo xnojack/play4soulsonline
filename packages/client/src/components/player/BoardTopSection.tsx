@@ -50,7 +50,7 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
   if (!game) return null;
 
   return (
-    <div className="h-full flex flex-col gap-1 px-2 pt-1 pb-1 min-h-0 overflow-hidden">
+    <div className="h-full flex flex-col gap-1 px-2 pt-1 pb-1 min-h-0 overflow-hidden" data-zone="other-players">
       {/* Player strip */}
        <div
         ref={stripRef}
