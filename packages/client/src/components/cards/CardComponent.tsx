@@ -68,7 +68,7 @@ export function CardComponent({
   alwaysPopover: _alwaysPopover,
   landscape = false,
 }: CardComponentProps) {
-  const { setModalCard, setHoveredCard } = useGameStore();
+  const { setModalCard, setHoveredCard, setHoveredCardInstance } = useGameStore();
   const { activeDrag } = useDragState();
   const dim = CARD_SIZES[size];
   const containerWidth = landscape ? dim.height : dim.width;
@@ -148,8 +148,13 @@ export function CardComponent({
             animate={{ rotate: isSpent ? 90 : 0 }}
             transition={{ duration: 0.25, type: 'spring', stiffness: 200, damping: 25 }}
             onClick={handleClick}
-            onMouseEnter={() => { if (!isTouch && !faceDown) setHoveredCard(card); }}
-            onMouseLeave={() => { if (!isTouch) setHoveredCard(null); }}
+            onMouseEnter={() => {
+              if (!isTouch && !faceDown) {
+                setHoveredCard(card);
+                if (instance) setHoveredCardInstance({ cardId: card.id, instanceId: instance.instanceId });
+              }
+            }}
+            onMouseLeave={() => { if (!isTouch) { setHoveredCard(null); setHoveredCardInstance(null); } }}
             whileHover={isTouch ? {} : { scale: 1.05, zIndex: 10 }}
           >
             <img

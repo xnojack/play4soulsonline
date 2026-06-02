@@ -47,6 +47,33 @@ export function pushStack(
 
 /** Cancel a specific stack item by ID */
 export function cancelStackItem(state: GameState, stackItemId: string): GameState {
+  const targetItem = state.stack.find((item) => item.id === stackItemId);
+  let newState: GameState;
+
+  if (targetItem && targetItem.type === 'loot') {
+    const cardId = targetItem.data.cardId as string | undefined;
+    if (cardId) {
+      const sourcePlayerId = targetItem.sourcePlayerId;
+      newState = {
+        ...state,
+        stack: state.stack.map((item) =>
+          item.id === stackItemId ? { ...item, isCanceled: true } : item
+        ),
+        players: state.players.map((p) =>
+          p.id === sourcePlayerId
+            ? { ...p, handCardIds: [...p.handCardIds, cardId] }
+            : p
+        ),
+      };
+      const log = createLogEntry(
+        'card_play',
+        `${state.players.find((p) => p.id === sourcePlayerId)?.name ?? 'Player'}'s loot card returns to their hand`,
+        sourcePlayerId
+      );
+      return { ...newState, log: [...newState.log, log] };
+    }
+  }
+
   const updated = state.stack.map((item) =>
     item.id === stackItemId ? { ...item, isCanceled: true } : item
   );

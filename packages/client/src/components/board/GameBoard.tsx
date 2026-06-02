@@ -18,6 +18,7 @@ import { BoardBottomSection, BottomBar } from './BoardBottomSection';
 import { BoardScaleProvider } from '../../context/BoardScaleContext';
 import { BoardCanvas } from './BoardCanvas';
 import { useDeckKeyboardShortcuts } from '../../hooks/useDeckKeyboardShortcuts';
+import { useRightClickContextMenu } from '../../hooks/useRightClickContextMenu';
 import { DropContextMenu } from './DropContextMenu';
 
 export function GameBoard() {
@@ -27,6 +28,7 @@ export function GameBoard() {
   const setContextMenu = useGameStore((s) => s.setContextMenu);
   useCardFlightDetector();
   useDeckKeyboardShortcuts();
+  useRightClickContextMenu();
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth < window.innerHeight);
 
   React.useEffect(() => {

@@ -19,6 +19,7 @@ export function useDeckKeyboardShortcuts() {
   const game = useGameStore((s) => s.game);
   const hoveredDeck = useGameStore((s) => s.hoveredDeck);
   const hoveredCard = useGameStore((s) => s.hoveredCard);
+  const hoveredCardInstance = useGameStore((s) => s.hoveredCardInstance);
   const setHoveredCard = useGameStore((s) => s.setHoveredCard);
   const setContextMenu = useGameStore((s) => s.setContextMenu);
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -45,6 +46,63 @@ export function useDeckKeyboardShortcuts() {
       if (KEYBOARD_EXCLUDE_TAGS.has((e.target as HTMLElement).tagName)) return;
 
       const key = e.key.toUpperCase();
+
+      // E — Interact (tap/play/gain/buy/attack)
+      if (key === 'E') {
+        if (hoveredCardInstance) {
+          e.preventDefault();
+          playSound('cardSlide');
+          const instanceId = hoveredCardInstance.instanceId;
+          if (instanceId && instanceId.startsWith('hand-')) {
+            // Hand card → play to stack
+            getSocket().emit('action:play_loot', { cardId: hoveredCardInstance.cardId, targets: [] });
+            return;
+          }
+          if (instanceId) {
+            // Bonus soul → gain soul
+            const bonusSoul = game.bonusSouls.find((bs) => bs.instance.instanceId === instanceId);
+            if (bonusSoul && !bonusSoul.isGained && !bonusSoul.isDestroyed) {
+              getSocket().emit('action:gain_bonus_soul', { cardId: bonusSoul.cardId, playerId: game.myPlayerId });
+              return;
+            }
+
+            // Shop card → buy
+            const shopSlot = game.shopSlots.find((s) => s.card?.instanceId === instanceId);
+            if (shopSlot && shopSlot.card) {
+              getSocket().emit('action:purchase', { slotIndex: shopSlot.slotIndex });
+              return;
+            }
+
+            // Monster → declare attack
+            const monsterSlot = game.monsterSlots.find((s) => s.stack[s.stack.length - 1]?.instanceId === instanceId);
+            if (monsterSlot && monsterSlot.stack.length > 0) {
+              getSocket().emit('action:declare_attack', { targetType: 'monster_slot', targetSlotIndex: monsterSlot.slotIndex });
+              return;
+            }
+
+            // Item/character → toggle charge state
+            const myPlayer = game.players.find((p) => p.id === game.myPlayerId);
+            const item = myPlayer?.items.find((i) => i.instanceId === instanceId);
+            const charCard = game.characterCards[instanceId];
+            const startItem = game.startingItemCards[instanceId];
+            const charged = item?.charged ?? charCard?.charged ?? startItem?.charged ?? true;
+            getSocket().emit(charged ? 'action:deactivate_item' : 'action:charge_item', { instanceId });
+          }
+        }
+        return;
+      }
+
+      // C — Add counter, Shift+C — Remove counter
+      if (key === 'C' && hoveredCardInstance) {
+        const instanceId = hoveredCardInstance.instanceId;
+        if (instanceId && !instanceId.startsWith('hand-')) {
+          e.preventDefault();
+          playSound('cardSlide');
+          const action = e.shiftKey ? 'action:remove_counter' : 'action:add_counter';
+          getSocket().emit(action, { instanceId, counterType: 'generic', amount: 1 });
+        }
+        return;
+      }
 
       if (key >= '1' && key <= '9') {
         if (!hoveredDeck) return;
@@ -99,5 +157,5 @@ export function useDeckKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [game, hoveredDeck, hoveredCard, myHand, setHoveredCard, setContextMenu]);
+  }, [game, hoveredDeck, hoveredCard, hoveredCardInstance, myHand, setHoveredCard, setContextMenu]);
 }
