@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -47,12 +47,15 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
   const contextMenu = useGameStore((s) => s.contextMenu);
   const setContextMenu = useGameStore((s) => s.setContextMenu);
 
-  // Portal-based drag ghost position — tracks pointer at document level
-  const [pointerPos, setPointerPos] = useState({ x: 0, y: 0 });
+  // Portal-based drag ghost — direct DOM manipulation to avoid React re-render lag
+  const ghostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!activeDrag) return;
     const onMove = (e: PointerEvent) => {
-      setPointerPos({ x: e.clientX, y: e.clientY });
+      if (ghostRef.current) {
+        ghostRef.current.style.left = `${e.clientX}px`;
+        ghostRef.current.style.top = `${e.clientY}px`;
+      }
     };
     document.addEventListener('pointermove', onMove);
     return () => document.removeEventListener('pointermove', onMove);
@@ -128,13 +131,14 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
       >
         {children}
       </DndContext>
-      {/* Portal-based drag ghost — renders at document level, bypassing all transforms */}
+      {/* Portal-based drag ghost — direct DOM position update, bypassing React for smooth 60fps */}
       {activeDrag && createPortal(
         <div
+          ref={ghostRef}
           style={{
             position: 'fixed',
-            left: pointerPos.x,
-            top: pointerPos.y,
+            left: 0,
+            top: 0,
             transform: 'translate(-50%, -50%) rotate(3deg)',
             pointerEvents: 'none',
             zIndex: 10000,

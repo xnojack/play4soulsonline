@@ -170,6 +170,8 @@ export function BoardCanvas({
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName);
+
       if (e.code === 'Space' && e.target === document.body) {
         e.preventDefault();
         spaceDown.current = true;
@@ -182,6 +184,7 @@ export function BoardCanvas({
         return;
       }
 
+      if (inInput) return;
       if (e.code === 'KeyW' || e.code === 'KeyS' || e.code === 'KeyA' || e.code === 'KeyD' ||
           e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
         e.preventDefault();
