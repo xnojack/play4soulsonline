@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "node --watch --require tsx/cjs src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "audit:shuffle": "tsx scripts/audit-shuffle.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",

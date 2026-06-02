@@ -360,27 +360,12 @@ export class GameRoom {
       (c) => !c.isEternal || ETERNAL_IN_LOOT_DECK.has(c.id)
     );
 
-    // Eternal deck = all eternal treasure + eternal loot cards (shuffled together)
-   const shuffledEternal = Array.from({ length: 8 }, () => null).reduce(
-      (acc) => shuffle(acc),
-      shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)))
-    );
-    const shuffledTreasure = Array.from({ length: 8 }, () => null).reduce(
-      (acc) => shuffle(acc),
-      shuffle(nonEternalTreasure.flatMap((c) => Array(c.quantity).fill(c.id)))
-    );
-    const shuffledLoot = Array.from({ length: 8 }, () => null).reduce(
-      (acc) => shuffle(acc),
-      shuffle(nonEternalLoot.flatMap((c) => Array(c.quantity).fill(c.id)))
-    );
-    const shuffledMonster = Array.from({ length: 8 }, () => null).reduce(
-      (acc) => shuffle(acc),
-      shuffle(filterCards(monsterCards).flatMap((c) => Array(c.quantity).fill(c.id)))
-    );
-    const shuffledRoom = Array.from({ length: 8 }, () => null).reduce(
-      (acc) => shuffle(acc),
-      shuffle(filterCards(roomCards).flatMap((c) => Array(c.quantity).fill(c.id)))
-    );
+   // Assemble all cards from active sets, then shuffle once
+    const eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
+    const treasureDeck = shuffle(nonEternalTreasure.flatMap((c) => Array(c.quantity).fill(c.id)));
+    const lootDeck = shuffle(nonEternalLoot.flatMap((c) => Array(c.quantity).fill(c.id)));
+    const monsterDeck = shuffle(filterCards(monsterCards).flatMap((c) => Array(c.quantity).fill(c.id)));
+    const roomDeck = shuffle(filterCards(roomCards).flatMap((c) => Array(c.quantity).fill(c.id)));
 
     // Assign characters randomly — each player gets a unique character
     // If there are more players than characters, cycle with offset so no two share
@@ -393,9 +378,9 @@ export class GameRoom {
     const charMap: Record<string, CardInPlay> = {};
     const startingItemMap: Record<string, CardInPlay> = {};
 
-    let currentLootDeck = shuffledLoot;
+    let currentLootDeck = lootDeck;
     let currentLootDiscard: string[] = [];
-    let currentTreasureDeck = shuffledTreasure;
+    let currentTreasureDeck = treasureDeck;
 
     // Collect all starting item IDs that will be assigned to players so we can
     // remove them from the treasure deck (they shouldn't be buyable in the shop)
@@ -425,7 +410,7 @@ export class GameRoom {
     // Remove pre-known starting item IDs from treasure deck upfront
     currentTreasureDeck = currentTreasureDeck.filter((id) => !assignedStartingItemIds.has(id));
     // Also remove from eternal deck (starting items might be eternal)
-    const currentEternalDeck = shuffledEternal.filter((id) => !assignedStartingItemIds.has(id));
+    const currentEternalDeck = eternalDeck.filter((id) => !assignedStartingItemIds.has(id));
 
     // Track which players are Eden (need to pick their starting item)
     const edenPlayerIds: string[] = [];
@@ -494,45 +479,25 @@ export class GameRoom {
       });
     }
 
-    // Fill monster slots (skip events during setup)
-    let currentMonsterDeck = shuffledMonster;
-    let currentMonsterDiscard: string[] = [];
+    // Fill monster slots
+    let currentMonsterDeck = monsterDeck;
     const monsterSlots: MonsterSlot[] = [];
     for (let i = 0; i < DEFAULT_MONSTER_SLOTS; i++) {
-      // Find a non-event monster for the slot
-      let monsterCard: string | null = null;
-      let attempts = 0;
-      while (!monsterCard && attempts < 20) {
-        const { drawn, newDeck, newDiscard } = drawFromDeck(
-          currentMonsterDeck,
-          currentMonsterDiscard,
-          1
-        );
-        currentMonsterDeck = newDeck;
-        currentMonsterDiscard = newDiscard;
-        if (!drawn[0]) break;
-        const card = getCardById(drawn[0]);
-        if (card && card.subType !== 'Event' && card.subType !== 'Curse') {
-          monsterCard = drawn[0];
-        } else if (drawn[0]) {
-          // Put events on bottom
-          currentMonsterDeck = [drawn[0], ...currentMonsterDeck];
-        }
-        attempts++;
-      }
+      const { drawn, newDeck } = drawFromDeck(currentMonsterDeck, [], 1);
+      currentMonsterDeck = newDeck;
       monsterSlots.push({
         slotIndex: i,
-        stack: monsterCard ? [createCardInPlay(monsterCard)] : [],
+        stack: drawn[0] ? [createCardInPlay(drawn[0])] : [],
       });
     }
 
     // Room slots — start with one card if rooms enabled
     const roomSlots: CardInPlay[] = [];
-    if (options.includeRooms && shuffledRoom.length > 0) {
-      const { drawn, newDeck: newRoomDeck } = drawFromDeck(shuffledRoom, [], 1);
+    if (options.includeRooms && roomDeck.length > 0) {
+      const { drawn, newDeck: newRoomDeck } = drawFromDeck(roomDeck, [], 1);
       if (drawn[0]) {
         roomSlots.push(createCardInPlay(drawn[0]));
-        shuffledRoom.splice(0, shuffledRoom.length, ...newRoomDeck);
+        roomDeck.splice(0, roomDeck.length, ...newRoomDeck);
       }
     }
 
@@ -578,8 +543,8 @@ export class GameRoom {
       lootDeck: currentLootDeck,
       lootDiscard: currentLootDiscard,
       monsterDeck: currentMonsterDeck,
-      monsterDiscard: currentMonsterDiscard,
-      roomDeck: shuffledRoom,
+      monsterDiscard: [],
+      roomDeck,
       roomDiscard: [],
       eternalDeck: currentEternalDeck,
       eternalDiscard: [],

@@ -213,28 +213,17 @@ export function MonsterSlotComponent({ slot, size = 'md' }: MonsterSlotProps) {
          )}
       </div>
 
-              {/* Attack button — inline, below card */}
-              {canAttack && (
-                <button
-                  onClick={handleAttack}
-                  className="text-3xl px-4 py-2 md:px-6 md:py-2 rounded border-2 border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
-                >
-                  Attack
-                </button>
-              )}
+    {/* Attack button — inline, below card (hidden for events/curse) */}
+               {canAttack && !isEvent && !isPlayerCurse && (
+                 <button
+                   onClick={handleAttack}
+                   className="text-3xl px-4 py-2 md:px-6 md:py-2 rounded border-2 border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/70 transition-colors font-display"
+                 >
+                   Attack
+                 </button>
+               )}
 
-      {/* Type tag — below card, above HP tracker (soul value shown on card counter, not here) */}
-      {!isEmpty && (isPlayerCurse || isEvent || isCurseMonster) && (
-        <span className={`text-2xl px-3 py-1 rounded border-2 ${
-          isPlayerCurse ? 'bg-red-900/80 text-red-300 border-red-700/50'
-          : isCurseMonster ? 'bg-orange-900/80 text-orange-300 border-orange-700/50'
-          : 'bg-purple-900/80 text-purple-300 border-purple-700/50'
-        }`}>
-          {isPlayerCurse ? 'Curse' : isCurseMonster ? 'Curse Monster' : 'Event'}
-        </span>
-      )}
-
-      {/* Resolve / Discard button — shown below card for Event cards */}
+    {/* Resolve / Discard button — shown below card for Event cards */}
       {isEvent && topCard && (
         <div className="flex flex-col items-center mt-2">
           <button
