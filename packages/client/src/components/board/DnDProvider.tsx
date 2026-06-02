@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -48,11 +48,11 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
   const setContextMenu = useGameStore((s) => s.setContextMenu);
 
   // Portal-based drag ghost position — tracks pointer at document level
-  const pointerRef = useRef({ x: 0, y: 0 });
+  const [pointerPos, setPointerPos] = useState({ x: 0, y: 0 });
   useEffect(() => {
     if (!activeDrag) return;
     const onMove = (e: PointerEvent) => {
-      pointerRef.current = { x: e.clientX, y: e.clientY };
+      setPointerPos({ x: e.clientX, y: e.clientY });
     };
     document.addEventListener('pointermove', onMove);
     return () => document.removeEventListener('pointermove', onMove);
@@ -133,8 +133,8 @@ export function DnDProvider({ children }: { children: React.ReactNode }) {
         <div
           style={{
             position: 'fixed',
-            left: pointerRef.current.x,
-            top: pointerRef.current.y,
+            left: pointerPos.x,
+            top: pointerPos.y,
             transform: 'translate(-50%, -50%) rotate(3deg)',
             pointerEvents: 'none',
             zIndex: 10000,

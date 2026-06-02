@@ -513,8 +513,11 @@ export function resolveDropActions(
       addPrivileged('action:move_to_hand', { cardId: drag.cardId, instanceId: drag.instanceId, targetPlayerId }, `Move to ${target?.name ?? '?'}'s Hand`);
     }
     if (drop.targetZone === 'shop') {
-      const slotIndex = parseInt(drop.targetZoneId ?? '', 10);
-      addPrivileged('action:place_in_shop', { cardId: drag.cardId, instanceId: drag.instanceId, slotIndex }, `Place in Shop Slot ${slotIndex + 1}`);
+      const targetSlotIndex = parseInt(drop.targetZoneId ?? '', 10);
+      const sourceSlotIndex = parseInt(drag.sourceZoneId ?? '', 10);
+      if (!isNaN(targetSlotIndex) && targetSlotIndex !== sourceSlotIndex) {
+        addPrivileged('action:place_in_shop', { cardId: drag.cardId, instanceId: drag.instanceId, slotIndex: targetSlotIndex }, `Place in Shop Slot ${targetSlotIndex + 1}`);
+      }
     }
     if (drop.targetZone === 'room') {
       addRoomDrop(drag.instanceId);
@@ -630,9 +633,12 @@ export function resolveDropActions(
       const target = game.players.find((p) => p.id === targetPlayerId);
       actions.push({ action: 'action:move_to_hand', payload: { cardId: drag.cardId, instanceId: drag.instanceId, targetPlayerId, deckType }, label: `Move to ${target?.name ?? '?'}'s Hand` });
     }
-    if (drop.targetZone === 'shop') {
-      const slotIndex = parseInt(drop.targetZoneId ?? '', 10);
-      actions.push({ action: 'action:place_in_shop', payload: { cardId: drag.cardId, instanceId: drag.instanceId, slotIndex, deckType }, label: `Place in Shop Slot ${slotIndex + 1}` });
+   if (drop.targetZone === 'shop') {
+      const targetSlotIndex = parseInt(drop.targetZoneId ?? '', 10);
+      const sourceSlotIndex = parseInt(drag.sourceZoneId ?? '', 10);
+      if (!isNaN(targetSlotIndex) && targetSlotIndex !== sourceSlotIndex) {
+        addPrivileged('action:place_in_shop', { cardId: drag.cardId, instanceId: drag.instanceId, slotIndex: targetSlotIndex }, `Place in Shop Slot ${targetSlotIndex + 1}`);
+      }
     }
     if (drop.targetZone === 'room') {
       const replaceInstanceId = drop.targetZoneId;

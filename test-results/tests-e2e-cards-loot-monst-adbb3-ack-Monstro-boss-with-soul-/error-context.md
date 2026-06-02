@@ -12,7 +12,11 @@
 # Error details
 
 ```
-TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.
+Error: Channel closed
+```
+
+```
+Error: page.waitForSelector: Target page, context or browser has been closed
 Call log:
   - waiting for locator('[data-testid="start-game-button"]') to be visible
 
@@ -122,7 +126,7 @@ Call log:
   172 |     const host = players[0];
   173 |     
 > 174 |     await host.page.waitForSelector('[data-testid="start-game-button"]', { timeout: 10000 });
-      |                     ^ TimeoutError: page.waitForSelector: Timeout 10000ms exceeded.
+      |                     ^ Error: page.waitForSelector: Target page, context or browser has been closed
   175 |     await host.page.click('[data-testid="start-game-button"]');
   176 |     await host.page.waitForSelector('[data-testid="active-phase"]', { timeout: 10000 });
   177 |     

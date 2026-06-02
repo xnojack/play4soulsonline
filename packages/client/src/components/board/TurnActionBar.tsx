@@ -67,8 +67,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
   const handleEndTurn = () => getSocket().emit('action:end_turn');
   const handlePassPriority = () => getSocket().emit('action:pass_priority');
   const handleResolveTop = () => getSocket().emit('action:resolve_top');
-  const handleDrawLoot = () => getSocket().emit('action:draw_loot', { playerId: myPlayer!.id, count: 1 });
-  const handleGrantLootPlay = () => getSocket().emit('action:grant_loot_play');
+ const handleDrawLoot = () => getSocket().emit('action:draw_loot', { playerId: myPlayer!.id, count: 1 });
 
   // ── Priority (not your turn) ─────────────────────────────────────────────
   if (!isMyTurn && hasPriority) {
@@ -142,7 +141,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
           </span>
         </div>
 
-        <div className="flex-1 flex items-center justify-center gap-0.5 md:gap-1 flex-wrap">
+        <div className="flex-1 flex items-center justify-center gap-0.5 min-w-0 overflow-hidden">
           <PhaseButton
             label="Draw Loot"
             icon="🃏"
@@ -194,14 +193,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
         <div className="flex items-center gap-2 flex-shrink-0">
           {myCardsButton}
           <DiceRoller small context={showAttackDice ? 'attack' : 'manual'} />
-          <button
-            onClick={handleGrantLootPlay}
-            className="text-xs px-1.5 py-0.5 rounded border border-fs-gold/20 text-fs-parchment/40 hover:text-fs-parchment hover:border-fs-gold/50 transition-colors"
-            title="Grant yourself an extra loot play this turn"
-          >
-            +1 Play
-          </button>
-          {hasPriority && stackLength > 0 && (
+           {hasPriority && stackLength > 0 && (
             <>
               <button
                 onClick={handlePassPriority}

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const EDGE_ZONE = 50;
-const SCROLL_AMOUNT = 8;
+const SCROLL_AMOUNT = 2;
 const TICK_MS = 16;
 
 /**
@@ -60,7 +60,12 @@ export function useDragEdgeScroll(isDragging: boolean, isPanning = false) {
       else if (y > vh - EDGE_ZONE) scrollY = SCROLL_AMOUNT;
 
       if (scrollX !== 0 || scrollY !== 0) {
-        container.scrollBy(scrollX, scrollY);
+        // Clamp: don't scroll past board boundaries (keep at least 50% of content visible)
+        const maxX = Math.max(0, container.scrollWidth - vw * 0.5);
+        const maxY = Math.max(0, container.scrollHeight - vh * 0.5);
+        const newLeft = Math.max(0, Math.min(container.scrollLeft + scrollX, maxX));
+        const newTop = Math.max(0, Math.min(container.scrollTop + scrollY, maxY));
+        container.scrollTo(newLeft, newTop);
       }
     }, TICK_MS);
 

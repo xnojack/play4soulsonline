@@ -65,8 +65,8 @@ export function BottomBar() {
   return (
     <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1 bg-fs-dark/80 backdrop-blur-sm border-t border-fs-gold/20 text-xs min-w-0">
 
-      {/* Left zone — game info */}
-      <div className="flex items-center gap-2 flex-shrink-0 text-fs-parchment/40 whitespace-nowrap">
+      {/* Left zone — game info (hidden below large screens) */}
+      <div className="hidden lg:flex items-center gap-2 flex-shrink-0 text-fs-parchment/40 whitespace-nowrap">
         <span className="font-display text-fs-gold/80 font-bold text-sm">Four Souls</span>
         {game && (
           <>
@@ -109,32 +109,22 @@ export function BottomBar() {
         <TurnActionBar bare />
       </div>
 
-      {/* Right zone — controls */}
-      <div className="flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
-        <Button size="sm" variant="ghost" onClick={() => setCardSearchOpen(true)}>
-          <span className="hidden sm:inline">Card Search</span>
-          <span className="sm:hidden">🔍</span>
-        </Button>
-        {isHost && (
-          <Button size="sm" variant="ghost" onClick={handleRestart} title="Restart game (host only)">
-            Restart
+      {/* Right zone — controls (progressive hide: Card Search → Shortcuts → Log) */}
+      <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
+        <div className="hidden lg:flex items-center gap-1.5">
+          <Button size="sm" variant="ghost" onClick={() => setCardSearchOpen(true)}>
+            🔍 Card Search
           </Button>
-        )}
-        <button
-          onClick={() => setShowLog(!showLog)}
-          className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
-          title={showLog ? 'Hide log' : 'Show game log'}
-        >
-          📜 Log
-        </button>
-        <div ref={shortcutsRef} className="relative" data-tutorial="shortcuts">
-          <button
-            onClick={() => setShowShortcuts(!showShortcuts)}
-            className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
-            title="Keyboard shortcuts"
-          >
-            ⌨ Shortcuts
-          </button>
+        </div>
+        <div className="hidden md:flex items-center gap-1.5">
+          <div ref={shortcutsRef} className="relative" data-tutorial="shortcuts">
+            <button
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
+              title="Keyboard shortcuts"
+            >
+              ⌨ Shortcuts
+            </button>
           {showShortcuts && (
             <div className="absolute bottom-full right-0 mb-1 bg-fs-darker/95 border border-fs-gold/40 rounded-lg shadow-xl p-3 min-w-[260px] z-[9999]">
               <div className="text-xs text-fs-gold font-display font-bold mb-2">Keyboard Shortcuts</div>
@@ -173,6 +163,16 @@ export function BottomBar() {
               </div>
             </div>
           )}
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-1.5">
+          <button
+            onClick={() => setShowLog(!showLog)}
+            className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
+            title={showLog ? 'Hide log' : 'Show game log'}
+          >
+            📜 Log
+          </button>
         </div>
       </div>
     </div>

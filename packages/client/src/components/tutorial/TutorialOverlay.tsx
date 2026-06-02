@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useBoardScale } from '../../context/BoardScaleContext';
 
 const STORAGE_KEY = 'fs_tutorial_seen';
 
@@ -75,6 +76,7 @@ export function TutorialOverlay() {
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const animFrameRef = useRef<number>(0);
+  const { resetView } = useBoardScale();
 
   useEffect(() => {
     const hasSeen = localStorage.getItem(STORAGE_KEY);
@@ -131,6 +133,7 @@ const updateSpotlight = useCallback(() => {
   const completeTutorial = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
     setVisible(false);
+    resetView();
   };
 
   if (!visible) return null;

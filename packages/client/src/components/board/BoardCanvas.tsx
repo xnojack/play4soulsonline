@@ -44,6 +44,12 @@ export function BoardCanvas({
   const mousePanActive = useRef(false);
   const suppressMouseUp = useRef(false);
   const touchPanActive = useRef(false);
+  const pinchState = useRef<{
+    initialDist: number;
+    initialZoom: number;
+    startPanX: number;
+    startPanY: number;
+  } | null>(null);
   const keyboardKeys = useRef(new Set<string>());
   const keyboardRaf = useRef<number | null>(null);
 
@@ -215,7 +221,7 @@ export function BoardCanvas({
     };
   }, [endPan, startKeyboardLoop, stopKeyboardLoop, setIsPanning]);
 
-  // ── Two-finger touch pan ──────────────────────────────────────────────────
+  // ── Two-finger touch: pinch-to-zoom + pan simultaneously ──────────────────
   useEffect(() => {
     const el = document.querySelector('[data-board-canvas]') as HTMLElement | null;
     if (!el) return;
@@ -224,6 +230,13 @@ export function BoardCanvas({
       if (activeDrag || e.touches.length !== 2) return;
       e.preventDefault();
       touchPanActive.current = true;
+      const dist = touchDistance(e.touches[0], e.touches[1]);
+      pinchState.current = {
+        initialDist: dist,
+        initialZoom: zoomLevelRef.current,
+        startPanX: 0,
+        startPanY: 0,
+      };
       const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       startPan(cx, cy);
@@ -234,13 +247,25 @@ export function BoardCanvas({
       e.preventDefault();
       const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+      // Pan
       movePan(cx, cy);
+
+      // Pinch zoom
+      const state = pinchState.current;
+      if (!state) return;
+      const dist = touchDistance(e.touches[0], e.touches[1]);
+      const ratio = dist / state.initialDist;
+      const newZoom = state.initialZoom * ratio;
+      const rect = canvasRef.current?.getBoundingClientRect();
+      setZoom(newZoom, cx, cy, rect);
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       if (!touchPanActive.current) return;
       if (e.touches.length < 2) {
         touchPanActive.current = false;
+        pinchState.current = null;
         endPan();
       }
     };
@@ -256,7 +281,7 @@ export function BoardCanvas({
       el.removeEventListener('touchend', onTouchEnd);
       el.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [activeDrag, startPan, movePan, endPan]);
+  }, [activeDrag, startPan, movePan, endPan, setZoom]);
 
   // ── Double-click to reset ─────────────────────────────────────────────────
   const onDoubleClick = useCallback(
@@ -266,6 +291,13 @@ export function BoardCanvas({
     },
     [resetView],
   );
+
+  // Helper: calculate distance between two touch points
+  const touchDistance = (t1: Touch, t2: Touch) => {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
 
   const cursorClass = isPanning ? 'cursor-grabbing' : 'cursor-grab';
 
