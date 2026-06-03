@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { gameStore } from '../game/GameStore';
 import { generateRoomCode } from '../game/RoomCode';
-import { getAllSets, searchCards } from '../db/cards';
+import { getAllSets, getCardsByType, getCardsByTypeAndSets, searchCards } from '../db/cards';
+import { categoryForCard } from '../game/deckbuilder';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
@@ -91,6 +92,37 @@ router.get('/cards/:id', (req: Request, res: Response) => {
   const card = getCardById(req.params.id);
   if (!card) return res.status(404).json({ error: 'Card not found' });
   return res.json(card);
+});
+
+/** Get deck category counts for custom ratio building */
+router.get('/deck-categories', (_req: Request, res: Response) => {
+  const setsParam = (_req.query as Record<string, string>).sets;
+  const excludeNeverPrinted = (_req.query as Record<string, string>).excludeNeverPrinted === 'true';
+  const sets = setsParam ? setsParam.split(',').map(s => s.trim()).filter(Boolean) : null;
+
+  const getCards = (type: string) => sets ? getCardsByTypeAndSets(type, sets) : getCardsByType(type);
+
+  const buildCategoryCounts = (cardType: string) => {
+    const cards = getCards(cardType).filter(c => {
+      if (excludeNeverPrinted && c.printStatus === 'never_printed') return false;
+      return true;
+    });
+    const counts: Record<string, { count: number; unique: number }> = {};
+    for (const card of cards) {
+      const cat = categoryForCard(card);
+      if (!cat) continue;
+      if (!counts[cat]) counts[cat] = { count: 0, unique: 0 };
+      counts[cat].count += card.quantity;
+      counts[cat].unique += 1;
+    }
+    return counts;
+  };
+
+  return res.json({
+    loot: buildCategoryCounts('Loot'),
+    monster: buildCategoryCounts('Monster'),
+    treasure: buildCategoryCounts('Treasure'),
+  });
 });
 
 export default router;

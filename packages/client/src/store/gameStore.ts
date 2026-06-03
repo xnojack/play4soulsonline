@@ -95,6 +95,7 @@ export interface ClientPlayer {
   deathCount: number;
   effectiveHp: number;
   effectiveAtk: number;
+  solitairePartnerId: string | null;
 }
 
 export interface TurnState {
@@ -117,6 +118,7 @@ export interface TurnState {
     teamUpRolls: Record<string, number>;
   } | null;
   passedPriorityIds: string[];
+  deathPenaltyPending?: string | null;
 }
 
 export interface LogEntry {
@@ -127,6 +129,8 @@ export interface LogEntry {
   playerId: string | null;
 }
 
+export type GameMode = 'competitive' | 'solitaire' | 'coop';
+
 export interface GameState {
   roomId: string;
   hostPlayerId: string;
@@ -134,6 +138,8 @@ export interface GameState {
   activeSets: string[];
   winnerId: string | null;
   myPlayerId: string;
+  gameMode: GameMode;
+  d8Timer: number | null;
 
   turn: TurnState;
   priorityQueue: string[];
@@ -210,7 +216,7 @@ interface GameStore {
   isCardSearchOpen: boolean;
   lastDiceResult: DiceResult | null;
   newLogEntries: LogEntry[];
-  gameOverInfo: { winnerId: string; winnerName: string } | null;
+  gameOverInfo: { winnerId: string | null; winnerName: string } | null;
   availableSets: string[];
   deckContents: Record<string, string[]>; // deckType → ordered cardIds (top first)
 

@@ -45,12 +45,14 @@ import {
   MoveToHandPayload,
   PlaceInShopPayload,
   MoveToItemsPayload,
+  DeckMode,
 } from '../game/types';
 import {
   passPriority,
   resolveTopOfStack,
   cancelStackItem,
   pushStack,
+  pushDeathToStack,
   resetPriority,
   clearPriorityTimeout,
 } from '../game/stack';
@@ -66,6 +68,7 @@ import {
   killMonster,
   refillMonsterSlot,
   resolveEventCard,
+  applyDeathPenalty,
 } from '../game/actions/monsters';
 import {
   purchaseItem,
@@ -234,6 +237,28 @@ function rejectIfSpectator(socket: Socket, ctx: { roomId: string; playerId: stri
   return false;
 }
 
+/** In solitaire mode, check if the socket's player can act on behalf of the target player.
+ *  Returns true if authorized, false if not (and sends error). */
+function canActFor(socketPlayerId: string, targetPlayerId: string, room: ReturnType<typeof gameStore.get>): boolean {
+  if (socketPlayerId === targetPlayerId) return true;
+  if (!room) return false;
+  const state = room.getState();
+  if (state.gameMode !== 'solitaire') return false;
+  const socketPlayer = state.players.find((p) => p.id === socketPlayerId);
+  return socketPlayer?.solitairePartnerId === targetPlayerId;
+}
+
+/** Reject if not the active player (or their solitaire partner). Returns true if rejected. */
+function rejectIfNotActive(socket: Socket, ctx: { roomId: string; playerId: string }, room: ReturnType<typeof gameStore.get>): boolean {
+  const state = room?.getState();
+  if (!state) return true;
+  if (!canActFor(ctx.playerId, state.turn.activePlayerId, room)) {
+    sendError(socket, 'Not your turn');
+    return true;
+  }
+  return false;
+}
+
 // ─── Handler registration ─────────────────────────────────────────────────────
 
 export function registerHandlers(io: Server, socket: Socket): void {
@@ -330,6 +355,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
 
     const payload: StartGamePayload = isObject(raw) ? raw as any : {} as any;
     const err = room.startGame({
+      deckMode: typeof payload.deckMode === 'string' && ['balanced', 'all', 'custom'].includes(payload.deckMode) ? payload.deckMode as DeckMode : 'balanced',
       activeSets: isStringArray(payload.activeSets) ? payload.activeSets : [],
       includeBonusSouls: isBoolean(payload.includeBonusSouls) ? payload.includeBonusSouls : true,
       bonusSoulCount: isNumber(payload.bonusSoulCount) ? payload.bonusSoulCount : undefined,
@@ -337,6 +363,13 @@ export function registerHandlers(io: Server, socket: Socket): void {
       excludeNeverPrinted: isBoolean(payload.excludeNeverPrinted) ? payload.excludeNeverPrinted : true,
       priorityTimeoutMs: isNumber(payload.priorityTimeoutMs) ? payload.priorityTimeoutMs : 30000,
       allowPrivilegedActions: isBoolean(payload.allowPrivilegedActions) ? payload.allowPrivilegedActions : true,
+      gameMode: typeof payload.gameMode === 'string' && ['competitive', 'solitaire', 'coop'].includes(payload.gameMode) ? payload.gameMode as any : undefined,
+      customRatios: payload.customRatios ? {
+        loot: isObject(payload.customRatios.loot) ? payload.customRatios.loot : {},
+        monster: isObject(payload.customRatios.monster) ? payload.customRatios.monster : {},
+        treasure: isObject(payload.customRatios.treasure) ? payload.customRatios.treasure : {},
+      } : undefined,
+      allowDuplicates: isBoolean(payload.allowDuplicates) ? payload.allowDuplicates : false,
     });
     if (err) return sendError(socket, err);
 
@@ -551,7 +584,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Only the active player can force-resolve the stack');
     if (state.stack.length === 0)
       return sendError(socket, 'Stack is empty');
@@ -564,6 +597,16 @@ export function registerHandlers(io: Server, socket: Socket): void {
       // Apply the already-rolled attack result now that the priority window has closed
       const { newState: attackResolved } = resolveAttack(finalState);
       finalState = attackResolved;
+      // Check for player death after attack damage
+      for (const player of finalState.players) {
+        const effHp = player.baseHp + player.hpCounters - player.currentDamage;
+        if (effHp <= 0) {
+          const deathResult = pushDeathToStack(finalState, player.id);
+          if (deathResult) {
+            finalState = deathResult.newState;
+          }
+        }
+      }
       room.setState(finalState);
       const winnerId = room.checkWin();
       if (winnerId) {
@@ -572,6 +615,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
           winnerId,
           winnerName: finalState.players.find((p) => p.id === winnerId)?.name,
         });
+        gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+      } else if (room.checkD8Loss()) {
+        io.to(ctx.roomId).emit('game:ended', { winnerId: null, winnerName: '' });
         gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
       }
     } else {
@@ -592,13 +638,59 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
+    const state = room.getState();
+    const stackItem = state.stack.find((i) => i.id === payload.stackItemId);
+    if (!stackItem) return sendError(socket, 'Stack item not found');
+    // Death can be canceled by any player; other items: source player or active player
+    if (stackItem.type !== 'death') {
+      if (stackItem.sourcePlayerId !== ctx.playerId && !canActFor(ctx.playerId, state.turn.activePlayerId, room)) {
+        return sendError(socket, 'Only the player who played this card or the active player can cancel');
+      }
+    }
+
     const newState = cancelStackItem(room.getState(), payload.stackItemId);
     room.setState(newState);
     broadcastState(io, ctx.roomId);
   }));
 
-  /** Remove a stack item with no side effects — used when a drag action has already
-   *  placed the card; we just need to clean the item off the stack. */
+  /** Player chooses which item to destroy as death penalty */
+  socket.on('action:choose_death_penalty_item', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!validatePayload(raw, ['itemId'])) return sendError(socket, 'Invalid payload');
+    const payload = raw as { itemId: string };
+
+    const ctx = getCtx(socket);
+    if (!ctx) return;
+    if (rejectIfSpectator(socket, ctx)) return;
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return;
+
+    const state = room.getState();
+    if (state.turn.deathPenaltyPending !== ctx.playerId)
+      return sendError(socket, 'Death penalty choice not pending for you');
+
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return sendError(socket, 'Player not found');
+
+    // Verify the item belongs to this player and is non-eternal
+    const item = player.items.find((i) => i.instanceId === payload.itemId);
+    if (!item) return sendError(socket, 'Item not found');
+    const card = getCardById(item.cardId);
+    if (card?.isEternal) return sendError(socket, 'Cannot destroy an eternal item');
+
+    // Apply death penalty with the chosen item
+    let newState = applyDeathPenalty(state, ctx.playerId, payload.itemId);
+    newState = {
+      ...newState,
+      turn: { ...newState.turn, deathPenaltyPending: null },
+    };
+
+    room.setState(newState);
+    broadcastState(io, ctx.roomId);
+  }));
+
+/** Remove a stack item with no side effects — used when a drag action has already
+    *  placed the card; we just need to clean the item off the stack. */
   socket.on('action:dismiss_stack_item', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
     if (!validatePayload(raw, ['stackItemId'])) return sendError(socket, 'Invalid payload');
@@ -611,6 +703,13 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
+    const stackItem = state.stack.find((i) => i.id === payload.stackItemId);
+    if (!stackItem) return sendError(socket, 'Stack item not found');
+    // Only the player who played it or the active player can dismiss
+    if (stackItem.sourcePlayerId !== ctx.playerId && !canActFor(ctx.playerId, state.turn.activePlayerId, room)) {
+      return sendError(socket, 'Only the player who played this card or the active player can dismiss');
+    }
+
     const log = createLogEntry('stack', 'Stack item resolved via drag', ctx.playerId);
     room.setState({
       ...state,
@@ -631,7 +730,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Not your turn');
 
     room.setState(endTurn(state));
@@ -650,7 +749,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Only the active player can grant extra loot plays');
 
     room.setState({
@@ -779,6 +878,8 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
+      return sendError(socket, 'Only the active player can shuffle decks');
     const deckType = payload.deckType as 'loot' | 'treasure' | 'monster' | 'room';
     const deckKey = `${deckType}Deck` as keyof typeof state;
     const deck = state[deckKey] as string[];
@@ -1061,6 +1162,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
+    const state = room.getState();
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return;
+    // Verify ownership: instanceId must belong to this player
+    const ownsItem = player.items.some((i) => i.instanceId === payload.instanceId)
+      || player.characterInstanceId === payload.instanceId
+      || player.startingItemInstanceId === payload.instanceId
+      || payload.instanceId in state.characterCards
+      || payload.instanceId in state.startingItemCards;
+    if (!ownsItem) return sendError(socket, 'You do not own this card');
+
     room.setState(chargeItem(room.getState(), ctx.playerId, payload.instanceId));
     broadcastState(io, ctx.roomId);
   }));
@@ -1079,6 +1191,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const state = room.getState();
     // Find the item being tapped
     const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return;
+    // Verify ownership: instanceId must belong to this player
+    const ownsItem = player.items.some((i) => i.instanceId === payload.instanceId)
+      || player.characterInstanceId === payload.instanceId
+      || player.startingItemInstanceId === payload.instanceId
+      || payload.instanceId in state.characterCards
+      || payload.instanceId in state.startingItemCards;
+    if (!ownsItem) return sendError(socket, 'You do not own this card');
+
     const item = player?.items.find((i) => i.instanceId === payload.instanceId)
       ?? (state.characterCards[payload.instanceId] ? { ...state.characterCards[payload.instanceId], instanceId: payload.instanceId } : null);
 
@@ -1155,6 +1276,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
         winnerName: newState.players.find((p) => p.id === winnerId)?.name,
       });
       gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+    } else if (room.checkD8Loss()) {
+      io.to(ctx.roomId).emit('game:ended', { winnerId: null, winnerName: '' });
+      gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
     }
 
     broadcastState(io, ctx.roomId);
@@ -1223,6 +1347,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
         winnerName: newState.players.find((p) => p.id === winnerId)?.name,
       });
       gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+    } else if (room.checkD8Loss()) {
+      io.to(ctx.roomId).emit('game:ended', { winnerId: null, winnerName: '' });
+      gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
     }
 
     broadcastState(io, ctx.roomId);
@@ -1271,6 +1398,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
         winnerId,
         winnerName: newState.players.find((p) => p.id === winnerId)?.name,
       });
+      gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+    } else if (room.checkD8Loss()) {
+      io.to(ctx.roomId).emit('game:ended', { winnerId: null, winnerName: '' });
       gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
     }
     broadcastState(io, ctx.roomId);
@@ -1432,6 +1562,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const amount = clampInt(payload.amount, 1, 999, 1);
     if (isString(payload.targetPlayerId) && payload.targetPlayerId) {
       state = applyDamageToPlayer(state, payload.targetPlayerId, amount);
+      // Check if player reached 0 HP — push death to stack
+      const target = state.players.find((p) => p.id === payload.targetPlayerId);
+      if (target) {
+        const effHp = target.baseHp + target.hpCounters - target.currentDamage;
+        if (effHp <= 0) {
+          const deathResult = pushDeathToStack(state, payload.targetPlayerId);
+          if (deathResult) {
+            state = deathResult.newState;
+          }
+        }
+      }
     } else if (isString(payload.targetInstanceId) && payload.targetInstanceId) {
       // Find which slot has this instance
       const slotIdx = state.monsterSlots.findIndex((s) =>
@@ -1451,6 +1592,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
         winnerId,
         winnerName: state.players.find((p) => p.id === winnerId)?.name,
       });
+      gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
+    } else if (room.checkD8Loss()) {
+      io.to(ctx.roomId).emit('game:ended', { winnerId: null, winnerName: '' });
       gameStore.scheduleCleanup(ctx.roomId, ROOM_TIMEOUT_ENDED_MS);
     }
 
@@ -1620,7 +1764,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Only the active player can expand slots');
 
     if (payload.slotType === 'monster') {
@@ -1741,14 +1885,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
       afterRemove = { ...state, [discardKey]: newDiscard };
       instance = createCardInPlay(payload.cardId);
     } else if (payload.cardId) {
-      // Hand card — remove from hand and create a fresh instance
-      const handPlayer = state.players.find((p) => p.handCardIds.includes(payload.cardId!));
-      if (!handPlayer) return sendError(socket, 'Card not found in any hand');
+      // Hand card — remove only from the acting player's hand
+      if (!player.handCardIds.includes(payload.cardId!)) {
+        return sendError(socket, 'Card not in your hand');
+      }
       instance = createCardInPlay(payload.cardId);
       afterRemove = {
         ...state,
         players: state.players.map((p) =>
-          p.id === handPlayer.id
+          p.id === ctx.playerId
             ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== payload.cardId) }
             : p
         ),
@@ -1812,7 +1957,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Only the active player can return room cards');
 
     const slot = state.roomSlots.find((s) => s.instanceId === payload.instanceId);
@@ -1858,6 +2003,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
+      return sendError(socket, 'Only the active player can discard room slots');
+
     if (!state.roomSlots.find((s) => s.instanceId === payload.instanceId)) {
       return sendError(socket, 'Room slot not found');
     }
@@ -1878,7 +2026,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Not your turn');
     if (state.turn.currentAttack !== null)
       return sendError(socket, 'Attack already in progress');
@@ -1950,7 +2098,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    if (state.turn.activePlayerId !== ctx.playerId)
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
       return sendError(socket, 'Not your turn');
 
     const player = state.players.find((p: { id: string }) => p.id === ctx.playerId);
@@ -2004,6 +2152,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
+      return sendError(socket, 'Only the active player can modify shop costs');
+
     const updatedSlots = state.shopSlots.map((s) =>
       s.slotIndex === payload.slotIndex
         ? { ...s, cost: Math.max(0, payload.cost) }
@@ -2083,6 +2234,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
+    if (!canActFor(ctx.playerId, state.turn.activePlayerId, room))
+      return sendError(socket, 'Only the active player can reorder decks');
+
     const { deckType, cardId, position } = payload;
 
     type DeckKey = 'lootDeck' | 'treasureDeck' | 'monsterDeck';

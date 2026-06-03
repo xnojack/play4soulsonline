@@ -41,6 +41,7 @@ interface ToastEntry {
 
 export function LogToast() {
   const game = useGameStore((s) => s.game);
+  const showLog = useGameStore((s) => s.showLog);
   const myPlayerId = game?.myPlayerId;
   const log = game?.log ?? [];
   const logLength = log.length;
@@ -102,7 +103,7 @@ export function LogToast() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0 || showLog) return null;
 
   return createPortal(
     <div className="fixed bottom-20 right-2 md:right-4 z-50 flex flex-col gap-1.5 items-end pointer-events-none">

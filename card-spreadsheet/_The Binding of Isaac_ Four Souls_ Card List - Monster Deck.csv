@@ -1,0 +1,3373 @@
+Name,Image,Body Text,Category,3P+,Version,Artist,Notes
+,,"Deck Ratio Categories:
+
+Basic Enemies (30)
+Holy / Charmed Enemies (9)
+Cursed Enemies (9)
+Good Events (8)
+Bad Events (8)
+Curses (5)
+Bosses (30)
+Epic Boss (1)",,,,Card back art by @KrystalFlamingo,"The active player can attack monsters and obtain their rewards when they die.
+
+Bosses are a special kind of monster that are harder to kill, but yield bigger rewards and usually souls.
+
+Event cards are cards in the monster deck with no stat block. They have abilities that trigger when they enter play. The active player resolves any events. They can be helpful or hurtful!
+
+Curses are a special kind of event that curse someone of the active player's choosing. Curses are placed near your character card. When you die, any curses afflicting you go into discard."
+,,,Set Name,Cards,Unique,,
+,,,Base Game,107,107,,
+,,,Gold Box,20,20,,
+,,,Four Souls+,30,29,,
+,,,Star Promos,15,8,,
+,,,Gish,1,1,,
+,,,Tapeworm,1,1,,
+,,,Dick Knots,1,1,,
+,,,The Unboxing of Isaac,13,13,,
+,,,Requiem,53,52,,
+,,,Warp Zone,31,31,,
+,,,Alt Art,42,42,,
+,,,Challenges,2,1,,
+,,,The Summer of Isaac,27,27,,
+,,,Youtooz,1,0,,
+,,,Anniversary,5,5,,
+,,,Mewgenics,1,1,,
+,,,TOTAL,350,339,,
+,,,,,,,
+,Base Game,,,,,,
+Dip,,"HP: 1 | DC: 4+ | AT: 1
+
+""They will be so hungry
+and thirsty that they will
+eat their own dung and
+drink their own urine.""
+Isaiah 36:12
+------------------------------
+Rewards: 1¢",Basic Enemies (30),FALSE,Original,@rojen241,
+Squirt,,"HP: 2 | DC: 3+ | AT: 1
+
+""Do you know that everything
+entering into the mouth goes
+into the stomach, and is cast
+out into excrement?""
+Matthew 15:17
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@rojen241,
+Fly,,"HP: 1 | DC: 2+ | AT: 1
+
+""Woe to the land of
+buzzing insect wings beyond
+the rivers of Cush.""
+Isaiah 18:1
+------------------------------
+Rewards: 1¢",Basic Enemies (30),FALSE,Original,@TikaratheMew,
+Ring of Flies,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 3, they must steal
+a loot card from another
+player at random.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@TikaratheMew,
+Swarm of Flies,,"HP: 5 | DC: 2+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 5, they take
+1 damage.
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,@TikaratheMew,
+Pooter,,"HP: 2 | DC: 3+ | AT: 1
+
+""He spoke, and there
+came a swarm of
+flies and lice.""
+Psalm 105:31
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Spider,,"HP: 1 | DC: 4+ | AT: 1
+
+""A spider can be caught
+in your hands, yet it lives
+in kings' palaces.""
+Proverbs 30:28
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@TikaratheMew,
+Big Spider,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies,
+the active player
+may attack the
+monster deck an
+additional time.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@TikaratheMew,
+Trite,,"HP: 1 | DC: 5+ | AT: 1
+
+""The priest is to bring it to
+the altar to offer it up in
+smoke.  He is to decapitate it
+and drain its blood on the
+side of the altar.""
+Leviticus 1:15
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Clotty,,"HP: 2 | DC: 3+ | AT: 1
+
+""The end of all flesh
+is come before me; for
+the Earth is filled with
+violence through them.""
+Genesis 6:13
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Mulligan,,"HP: 1 | DC: 3+ | AT: 1
+
+When this dies,
+expand monster
+slots by 1.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@rojen241,
+Mulliboom,,"HP: 1 | DC: 2+ | AT: 4!
+
+When this dies,
+the active player
+deals 3 damage
+to a player.
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Hopper,,"HP: 2 | DC: 3+ | AT: 1
+
+This takes no combat
+damage on attack
+rolls of 6.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Horf,,"HP: 1 | DC: 4+ | AT: 1
+
+Combat damage this
+deals is increased by 1
+on attack rolls of 2.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Psy Horf,,"HP: 1 | DC: 5+ | AT: 1
+
+When this dies,
+the active player
+recharges each
+item they control.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Fatty,,"HP: 4 | DC: 2+ | AT: 1
+
+""For those who take
+delight in drink and feasting
+shall become poor.""
+Proverbs 23:21
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Conjoined Fatty,,"HP: 4 | DC: 3+ | AT: 2
+
+""When her days to be
+delivered were fulfilled,
+behold, there were
+twins in her womb.""
+Genesis 25:24
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Pale Fatty,,"HP: 4 | DC: 3+ | AT: 1
+
+""His face turned pale, and
+his thoughts so terrified him
+that his hip joints shook and
+his knees knocked together.""
+Daniel 5:6
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Red Host,,"HP: 2 | DC: 3+ | AT: 2
+
+""The Sun became as black
+as sackcloth made of
+hair, and the full moon
+became blood red.""
+Revelation 6:12
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,@rojen241,
+Fat Bat,,"HP: 3 | DC: 5+ | AT: 1
+
+""Who are these that fly
+like a cloud, and like
+doves to their windows?""
+Isaiah 60:8
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Original,@rojen241,
+Hanger,,"HP: 2 | DC: 4+ | AT: 2
+
+When this dies,
+expand the shop
+slots by 1.
+------------------------------
+Rewards: 7¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Keeper Head,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time this deals
+combat damage to a
+player, they lose 2¢.
+------------------------------
+Rewards: Roll- Gain x¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Boom Fly,,"HP: 1 | DC: 4+ | AT: 1
+
+When this dies,
+it deals 1 damage
+to each player.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Leaper,,"HP: 2 | DC: 4+ | AT: 1
+
+Combat damage this
+deals is doubled on
+attack rolls of 1.
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Portal,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies,
+the active player
+must make an
+additional attack.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@KrystalFlamingo,
+Greedling,,"HP: 2 | DC: 5+ | AT: 1
+
+When this dies,
+the active player
+chooses a player.
+They lose 7¢.
+------------------------------
+Rewards: 7¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Stoney,,"HP: 3 | DC: 0 | AT: 0
+
+Monsters have +1 DC.
+------------------------------
+This can't be attacked.
+------------------------------
+When another monster
+dies, this dies.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,"Unlocked via dealing 500,000 damage to Delirium during the original Kickstarter."
+Black Bony,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies, it
+deals 1 damage to
+the player who
+killed it.
+------------------------------
+Rewards: Roll- Loot x",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Dinga,,"HP: 3 | DC: 3+ | AT: 1
+
+When this dies on
+an attack roll of 6,
+double its rewards.
+------------------------------
+Rewards: Roll- Gain x¢",Basic Enemies (30),FALSE,Original,@rojen241,
+Wizoob,,"HP: 3 | DC: 5+ | AT: 1
+
+When this dies, the active
+player chooses a player.
+That player destroys a
+soul they control.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Dank Globin,,"HP: 2 | DC: 4+ | AT: 2
+
+When this dies,
+the active player
+forces a player to
+discard 2 loot cards.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Rage Creep,,"HP: 1 | DC: 5+ | AT: 1
+
+Damage this deals
+to the active player
+is also dealt to the
+player to their left.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),TRUE,Original,@Von_Grimsworth,
+Mom's Hand,,"HP: 2 | DC: 4+ | AT: 1
+
+When the attacking player
+rolls an attack roll of 6,
+cancel everything that
+hasn't resolved and
+end the turn.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Mom's Dead Hand,,"HP: 2 | DC: 5+ | AT: 1
+
+When this dies, the
+active player may steal
+a non-eternal item
+another player controls.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Mom's Eye,,"HP: 1 | DC: 4+ | AT: 2
+
+When this dies,
+the active player
+may look at a
+player's hand.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@rojen241,
+Leech,,"HP: 1 | DC: 4+ | AT: 2
+
+""He will take no rest till
+he has made a meal of
+those he has overcome,
+drinking the blood of those
+he has put to death.""
+Numbers 23:24
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Cod Worm,,"HP: 2 | DC: 5+ | AT: 0
+
+""Their worm will never
+die, their fire will never
+be quenched.""
+Mark 9:48
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Dople,,"HP: 2 | DC: 4+ | AT: 2
+
+Damage dealt to
+this is also dealt to
+the player to the
+active player's right.
+------------------------------
+Rewards: 7¢",Basic Enemies (30),TRUE,Original,@rojen241,
+Evil Twin,,"HP: 3 | DC: 5+ | AT: 2
+
+Damage dealt to
+this is also dealt to
+the player to the
+active player's left.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),TRUE,Original,@rojen241,
+Holy Dip,,"HP: 1 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 1, they
+gain 1¢.
+------------------------------
+Rewards: 1¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Squirt,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time a player
+rolls a 5, they
+loot 1.
+------------------------------
+Rewards: Loot 2",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Dinga,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time a player
+rolls a 6, they
+heal 1 HP.
+------------------------------
+Rewards: Roll- Gain x¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Mom's Eye,,"HP: 1 | DC: 4+ | AT: 2
+
+Each time a player
+rolls a 2, they
+may recharge
+an item.
+------------------------------
+Rewards: Loot 1",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Keeper Head,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 4, they
+gain 2¢.
+------------------------------
+Rewards: Roll- Gain x¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Cursed Keeper Head,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 1, they
+lose 2¢.
+------------------------------
+Rewards: Roll- Gain x¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Horf,,"HP: 1 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 2, they
+take 2 damage.
+------------------------------
+Rewards: 3¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,Unlocked via The Depths stretch goal in the original Kickstarter.
+Cursed Psy Horf,,"HP: 1 | DC: 5+ | AT: 1
+
+Each time a player
+activates an item,
+they take 1 damage.
+------------------------------
+Rewards: Loot 2",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Fatty,,"HP: 4 | DC: 2+ | AT: 1
+
+Each time a player
+rolls a 5, they
+discard a loot
+card.
+------------------------------
+Rewards: Loot 2",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Mom's Hand,,"HP: 2 | DC: 4+ | AT: 1
+
+When the active
+player rolls a 6,
+cancel everything
+that hasn't resolved
+and end the turn.
+------------------------------
+Rewards: 4¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Gaper,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 4, each
+monster gains +1 AT
+till end of turn.
+------------------------------
+Rewards: 3¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Secret Room!,,"Roll-
+1: Take 3 damage.
+------------------------------
+2-3: Discard 2 loot cards.
+------------------------------
+4-5: Gain 7¢.
+------------------------------
+6: Gain +1 treasure.",Good Events (8),FALSE,Original,@TikaratheMew,
+XL Floor!,,"Expand monster
+slots by 1.
+------------------------------
+The active player may
+attack an additional
+time this turn.",Good Events (8),FALSE,Original,@TikaratheMew,
+Shop Upgrade!,,"Expand shop
+slots by 2.
+------------------------------
+The active player may
+attack an additional
+time this turn.",Good Events (8),FALSE,Original,@TikaratheMew,
+We Need to Go Deeper!,,"Put any number of
+non-event monster
+cards in discard on top
+of the monster deck.
+------------------------------
+The active player may
+attack an additional
+time this turn.",Good Events (8),FALSE,Original,TAR_HEAD,
+I Can See Forever!,,"Look at the top 6
+cards of the loot
+deck. Put them back
+in any order, then
+loot 1.",Good Events (8),FALSE,Original,TAR_HEAD,
+Devil Deal,,"Choose one-
+•Put this into discard.
+------------------------------
+•Loot 2. Take 1 damage.
+------------------------------
+•Take 2 damage. Search
+the treasure deck for a
+Guppy item, gain it, then
+shuffle the treasure deck.",Good Events (8),FALSE,Original,@Von_Grimsworth,Unlocked via the Sheol stretch goal in the original Kickstarter.
+Chest,,"Roll-
+1-2: Gain 1¢.
+------------------------------
+3-4: Gain 3¢.
+------------------------------
+5-6: Gain 6¢.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Chest,,"Roll-
+1-2: Loot 1.
+------------------------------
+3-4: Loot 2.
+------------------------------
+5-6: Loot 3.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Gold Chest,,"Roll-
+1-2: Gain
++1 treasure.
+------------------------------
+3-4: Gain 5¢.
+------------------------------
+5-6: Gain 7¢.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Gold Chest,,"Roll-
+1-2: Gain
++1 treasure.
+------------------------------
+3-4: Loot 1.
+------------------------------
+5-6: Loot 2.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Dark Chest,,"Roll-
+1-2: Loot 1.
+------------------------------
+3-4: Gain 3¢.
+------------------------------
+5-6: Take 2 damage.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Dark Chest,,"Roll-
+1-2: Gain 1¢.
+------------------------------
+3-4: Loot 2.
+------------------------------
+5-6: Take 2 damage.",Good Events (8),FALSE,Alt Ability,TAR_HEAD,
+Troll Bombs,,"Take
+2 damage!",Bad Events (8),FALSE,Original,TAR_HEAD,
+Mega Troll Bomb!,,"Each player
+take 2 damage!",Bad Events (8),FALSE,Original,TAR_HEAD,
+Ambush!,,"The active player
+must attack the
+monster deck 2
+times this turn.",Bad Events (8),FALSE,Original,TAR_HEAD,
+Greed!,,"Choose a player
+with the most ¢ or
+tied for the most.
+That player loses
+all their ¢.",Bad Events (8),FALSE,Original,TAR_HEAD,
+Cursed Chest,,"Roll-
+1-3: Take 1 damage.
+------------------------------
+4-5: Take 2 damage.
+------------------------------
+6: Search the treasure
+deck for a Guppy item,
+gain it, then shuffle
+the treasure deck.",Bad Events (8),FALSE,Original,@KrystalFlamingo,Unlocked via The Dark Room stretch goal in the original Kickstarter.
+Curse of Amnesia,,"At the end of your
+turn, discard 2
+loot cards.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of Greed,,"At the end of your
+turn, lose 4¢.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of Loss,,"When you die, destroy
+a soul you control.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of Pain,,"At the start of your
+turn, take 1 damage.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of the Blind,,"Monsters have +1 DC
+on your turn.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Monstro,,"HP: 4 | DC: 4+ | AT: 1
+
+""For no one who has a
+defect shall approach: A
+blind man, or a lame man, or he
+who has a disfigured face.""
+Leviticus 21:18
+------------------------------
+Rewards: 6¢
+
+(+1 soul)",Bosses (30),FALSE,Original,@KrystalFlamingo,
+Little Horn,,"HP: 2 | DC: 6 | AT: 1
+
+""The little horn had eyes and
+mouth like a man. The eyes
+could see things the other
+horns could not and its
+mouth spoke boastfully.""
+Daniel 7:8
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@KrystalFlamingo,
+Larry Jr.,,"HP: 4 | DC: 3+ | AT: 1
+
+While this is at 2 HP
+or less, it has +1 DC.
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+The Duke of Flies,,"HP: 4 | DC: 3+ | AT: 1
+
+Each time this would take
+damage, the active player
+rolls-
+1: Prevent that damage.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Pin,,"HP: 2 | DC: 4+ | AT: 1
+
+This takes no combat
+damage on attack
+rolls of 6.
+------------------------------
+Rewards: 5¢
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Gemini,,"HP: 3 | DC: 4+ | AT: 1
+
+While this is at 1 HP,
+it has +1 AT.
+------------------------------
+Rewards: 5¢
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Rag Man,,"HP: 2 | DC: 3+ | AT: 2
+
+When this dies, after
+gaining rewards, the
+active player rolls-
+1 or 6: Put this on top of
+the monster deck.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+The Haunt,,"HP: 3 | DC: 4+ | AT: 1
+
+Every other time this
+takes damage each turn,
+it gains +1 DC till end
+of turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Gurdy Jr.,,"HP: 2 | DC: 5+ | AT: 1
+
+Each time the
+attacking player
+activates an item,
+they take 1 damage.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@KrystalFlamingo,
+Gurdy,,"HP: 5 | DC: 4+ | AT: 1
+
+""This water that causeth the
+curse shall go into thy bowels,
+to make thy belly to swell, and
+thy thigh to rot: And the woman
+shall say, Amen, amen.""
+Numbers 5:22
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Original,@KrystalFlamingo,
+Mega Fatty,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this deals
+combat damage,
+it heals 1 HP.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Chub,,"HP: 4 | DC: 3+ | AT: 1
+
+Each time the
+attacking player
+rolls an attack roll
+of 1, this heals 2 HP.
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Carrion Queen,,"HP: 3 | DC: 4+ | AT: 1
+
+This takes no combat
+damage on attack
+rolls of 4 or 5.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Peep,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies, search the
+monster deck for a card
+named The Bloat and put it
+in a monster slot not being
+attacked, then shuffle
+the monster deck.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+The Bloat,,"HP: 4 | DC: 4+ | AT: 2
+
+Each time this deals
+combat damage, it
+deals 1 damage to each
+non-active player.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Dark One,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time this takes
+damage, it gains +1 AT
+till end of turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Mask of Infamy,,"HP: 4 | DC: 4+ | AT: 1
+
+When this is at 1 HP,
+it has +2 DC.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Daddy Long Legs,,"HP: 4 | DC: 4+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 1, each monster
+gains +1 DC till end of turn.
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Scolex,,"HP: 3 | DC: 5+ | AT: 1
+
+Each time this deals
+combat damage to a
+player, they discard
+a loot card.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Famine,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies,
+the active player
+skips their next
+turn.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Pestilence,,"HP: 4 | DC: 4+ | AT: 1
+
+When this dies, the active
+player deals 2 damage
+divided as they choose
+to any number of
+monsters or players.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+War,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this takes
+damage, it gains +1 AT
+till end of turn.
+------------------------------
+Rewards: 8¢
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Death,,"HP: 3 | DC: 4+ | AT: 2
+
+When this dies,
+the active player
+kills a player.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Conquest,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies,
+the active player
+must make an
+additional attack.
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Envy,,"HP: 2 | DC: 5+ | AT: 1
+
+When this dies,
+the active player
+must make an
+additional attack.
+------------------------------
+Rewards: 1¢
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Greed,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time this deals
+combat damage,each
+player loses 4¢.
+------------------------------
+Rewards: 9¢
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Wrath,,"HP: 3 | DC: 3+ | AT: 1
+
+When this dies, the
+active player rolls-
+1-3: Each player takes 1 damage.
+------------------------------
+4-6: Each player takes
+2 damage.
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Sloth,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies, the
+player that killed
+it discards their
+hand.
+------------------------------
+Rewards: 1¢
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Pride,,"HP: 2 | DC: 4+ | AT: 1
+
+When an attack is declared
+on this, the active player
+chooses a player. That
+player discards 2
+loot cards.
+------------------------------
+Rewards: 5¢
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Gluttony,,"HP: 4 | DC: 3+ | AT: 1
+
+Each time this takes combat
+damage on an attack roll of 6,
+deal 1 damage to the player
+to the active player's left.
+------------------------------
+Rewards: Loot 1
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Lust,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time this takes
+combat damage, it
+deals 1 damage to the
+attacking player.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Mom!,,"HP: 5 | DC: 4+ | AT: 2
+
+Combat damage this
+deals is doubled on
+attack rolls of 1.
+------------------------------
+When this dies, expand
+monster slots by 1.
+------------------------------
+Rewards: +1 treasure
+(+2 souls)",Epic Boss (1),FALSE,Original,@KrystalFlamingo,
+Satan!,,"HP: 6 | DC: 4+ | AT: 2
+
+Each time the attacking
+player rolls an attack
+roll of 6, they choose
+a living player. That
+player dies.
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),TRUE,Original,@Von_Grimsworth,
+The Lamb,,"HP: 6 | DC: 3+ | AT: 6!
+
+When this dies, the active player
+may choose another player. They
+give you a soul they control.
+------------------------------
+""I'll swallow your soul!""
+Not the Bible
+------------------------------
+Rewards: 3¢
+(+1 soul)",Epic Boss (1),FALSE,Original,@MikeBurnsAlive,"Unlocked via dealing 150,000 damage to Delirium during the original Kickstarter."
+Delirium,,"HP: 5 | DC: 4+ | AT: 3
+
+Other monsters have +1 DC.
+------------------------------
+When this dies, put it
+in the monster deck 6
+cards from the top.
+------------------------------
+Rewards: +2 treasure",Epic Boss (1),FALSE,Original,@MikeBurnsAlive,Unlocked to celebrate the culmination of all the community's contributions during the original Kickstarter.
+,Gold Box,,,,,,
+Gaper,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies on an
+attack roll of 6, the
+active player must make
+an additional attack
+on the monster deck.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@rojen241,
+Round Worm,,"HP: 1 | DC: 5+ | AT: 1
+
+Each time this deals
+combat damage, the
+attacking player has
++1 to their next attack
+roll this turn.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Ragling,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies, after
+gaining rewards, the
+active player rolls-
+1 or 6: Put this on top of
+the monster deck.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Boil,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time this deals
+combat damage,
+it heals 1 HP.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Knight,,"HP: 2 | DC: 6 | AT: 1
+
+The attacking player
+also deals combat
+damage to this on
+attack rolls of 1.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Charger,,"HP: 1 | DC: 5+ | AT: 1
+
+""Together they lie
+down in the dust, and
+maggots cover them.""
+Job 21:26
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Death's Head,,"HP: 2 | DC: 0 | AT: 0
+
+Monsters have +1 AT.
+------------------------------
+This can't be attacked.
+------------------------------
+When another monster
+dies, this dies.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Imp,,"HP: 3 | DC: 5+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 3, this gains +1 DC
+till end of turn.
+------------------------------
+Rewards: Roll- Loot x",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Begotten,,"HP: 3 | DC: 4+ | AT: 1
+
+While this is at 1 HP,
+it has +1 AT.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Parabite,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time this takes
+combat damage, the
+attacking player has
+-1 to their next attack
+roll this turn.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Trap Door!,,"Roll-
+
+1-3: Look at the top 3
+cards of the monster
+deck and put them back
+in any order. You may
+attack an additional
+time this turn.
+------------------------------
+4-6: Take 1 damage.",Good Events (8),FALSE,Original,@TikaratheMew,
+I Am Error!,,"Roll-
+
+1-2: You must make
+an additional attack
+on the monster deck.
+------------------------------
+3-4: Loot 3.
+------------------------------
+5-6: Gain +1 treasure.",Good Events (8),FALSE,Original,@TikaratheMew,
+Curse of Tiny Hands,,"Your max hand size is 2.
+(Discard down to 2 cards
+at the end of your turn.)
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of Fatigue,,"You can't recharge
+more than 1 item during
+your recharge step.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Gurglings,,"HP: 4 | DC: 5+ | AT: 1
+
+When this is at 2 HP
+or less, it has -1 DC.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@KrystalFlamingo,
+Polycephalus,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this takes
+damage, the next
+attack roll this
+turn has -2.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Fistula,,"HP: 4 | DC: 2+ | AT: 1
+
+Each time this takes
+damage, it gains +1 DC
+till end of turn.
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+The Cage,,"HP: 6 | DC: 4+ | AT: 1
+
+""Behold now, Behemoth, his
+strength in his loins and
+his power in the muscles
+of his belly.""
+Job 40:16
+------------------------------
+Rewards: +2 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Steven,,"HP: 4 | DC: 2+ | AT: 1
+
+Each time the attacking player
+rolls an attack roll of 2,
+they take 2 damage.
+------------------------------
+Each time the attacking player
+rolls an attack roll of 6, cancel
+everything that hasn't resolved
+and end the turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Hush,,"HP: 8 | DC: 3+ | AT: 2
+
+""It stood still, but I could not
+discern its appearance; a form was
+before my eyes; at first there was
+a hush, and then I heard a voice.""
+Job 4:16
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),FALSE,Original,@KrystalFlamingo,
+,Four Souls+,,,,,,
+Roundy,,"HP: 3 | DC: 4+ | AT: 2
+
+Each time this deals
+combat damage, it
+deals 1 damage to
+each other monster.
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Flaming Hopper,,"HP: 1 | DC: 4+ | AT: 2
+
+This takes no combat
+damage on attack
+rolls of 6.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Sucker,,"HP: 1 | DC: 3+ | AT: 1
+
+When this dies,
+it deals 1 damage
+to each player.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Globin,,"HP: 4 | DC: 4+ | AT: 1
+
+When this reaches 1 HP,
+the active player rolls-
+
+1-4: This takes 1 damage.
+------------------------------
+5-6: This heals 2 HP.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Bony,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 1, this gains +2 AT
+till end of turn.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Tumor,,"HP: 2 | DC: 5+ | AT: 2
+
+Each time this takes
+damage, it deals 1
+damage to each
+non-active player.
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Swarmer,,"HP: 4 | DC: 3+ | AT: 2
+
+When this dies,
+expand monster
+slots by 2.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Brain,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time the
+attacking player rolls
+an attack roll of 6,
+they take 1 damage.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,TAR_HEAD,
+Nerve Ending,,"HP: 4 | DC: 2+ | AT: 1
+
+""Strain every nerve to
+force your way in through
+the narrow gate; for many, I
+tell you, will seek to enter
+and will not be able.""
+Luke 13:24
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Holy Bony,,"HP: 1 | DC: 3+ | AT: 1
+
+Each time a player
+rolls a 6, they may
+look at the top 3 cards
+of any deck and put them
+back in any order.
+------------------------------
+Rewards: Loot 2",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Mulligan,,"HP: 1 | DC: 3+ | AT: 1
+
+When this dies, expand
+monster slots by 2.
+The active player may
+attack an additional
+time this turn.
+------------------------------
+Rewards: 3¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Cursed Tumor,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 4, each
+player takes 1
+damage.
+------------------------------
+Rewards: Roll- Gain x¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Globin,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time a player
+rolls a 3, each
+monster heals 2 HP.
+------------------------------
+Rewards: Roll- Loot x",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Angel Room,,"Roll-
+1: Gain +2 treasure.
+------------------------------
+2-3: Gain +1 treasure.
+------------------------------
+4-6: Loot 2.",Good Events (8),FALSE,Original,@KrystalFlamingo,
+Holy Chest,,"Roll-
+1-2: Prevent the next 2
+damage you would take this
+turn. You may attack an
+additional time this turn.
+------------------------------
+3-5: Gain 7¢.
+------------------------------
+6: This becomes
+a soul. Gain it.
+(+1 soul)",Good Events (8),FALSE,Original,TAR_HEAD,
+Spiked Chest,,"Roll-
+1-2: Take 1 damage.
+------------------------------
+3-4: Take 1 damage.
+Loot 1.
+------------------------------
+5-6: Take 1 damage.
+Gain +1 treasure.",Good Events (8),FALSE,Original,TAR_HEAD,
+Troll Bombs,,"Take
+2 damage!",Bad Events (8),FALSE,Alt Art,TAR_HEAD,
+Head Trauma,,"Discard 2
+loot cards.",Bad Events (8),FALSE,Original,TAR_HEAD,
+Boss Rush!,,"Reveal cards from the top
+of the monster deck till you
+reveal 2 boss cards. Put them in
+one or more monster slots not
+being attacked and the rest into
+discard. The active player must
+make an additional attack on
+one of them this turn.",Bad Events (8),FALSE,Original,TAR_HEAD,
+Curse of Impulse,,"At the end of your
+turn, deactivate each
+item you control and
+your character.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of Blood Lust,,"You must attack on
+your turn if able.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Widow,,"HP: 3 | DC: 4+ | AT: 1
+
+""Their confidence hangs by
+a thread. They are leaning on
+a spider's web.""
+Job 8:14
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Dingle,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time the active player
+deals damage to this, they roll-
+1-2: They take 1 damage.
+------------------------------
+3-4: Each player takes 1 damage.
+------------------------------
+5-6: This takes 1 damage.
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Monstro II,,"HP: 5 | DC: 4+ | AT: 1
+
+Each time this deals combat
+damage, the active player rolls-
+1-3: Deal 1 damage to
+the player to your right.
+------------------------------
+4-6: Deal 1 damage to
+the player to your left.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),TRUE,Original,@Von_Grimsworth,
+The Fallen,,"HP: 4 | DC: 5+ | AT: 2
+
+When this dies, look
+at the top 5 cards of
+the monster deck and
+put them back in
+any order.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Headless Horseman,,"HP: 3 | DC: 3+ | AT: 2
+
+The first time this would
+die each turn, prevent
+death.  This heals 2 HP
+and gains +1 DC and -1 AT
+till end of turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Krampus,,"HP: 4 | DC: 4+ | AT: 2
+
+The active player must
+attack this once each
+turn if able.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@TikaratheMew,
+Blastocyst,,"HP: 5 | DC: 4+ | AT: 1
+
+When this dies, expand
+monster slots by 2. The
+active player may attack
+the monster deck an
+additional time.
+------------------------------
+Rewards: Loot 1
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Mom's Heart!,,"HP: 8 | DC: 4+ | AT: 2
+
+When a player gains this
+soul, choose a player who
+controls the most souls
+or tied for the most.
+That player wins.
+------------------------------
+Rewards: <3
+(+2 souls)",Epic Boss (1),FALSE,Original,@KrystalFlamingo,
+Isaac!,,"HP: 7 | DC: 3+ | AT: 1
+
+Each time this takes damage,
+the active player chooses a
+living player. This deals 1
+damage to that player.
+------------------------------
+Rewards: +1 treasure
+(+2 souls)",Epic Boss (1),TRUE,Original,@rojen241,
+,Star Promos,,,,,,
+The Bloat,,"HP: 4 | DC: 4+ | AT: 2
+
+Each time this takes
+damage, it also deals
+1 damage to a player
+of your choosing.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),N/A,Alt Ability,@TikaratheMew,"This foil card was included with all orders to the Studio71 Isaac store for a period of time between November 22nd, 2019, to December 3rd, 2019 and with purchases of Tapeworm through the Nicalis store for a period of time starting January 16, 2021."
+The Bloat,,"HP: 5 | DC: 3+ | AT: 2
+
+When this is put into an
+active slot or dies, it deals
+2 damage to another
+player at random.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),N/A,Alt Ability,@KrystalFlamingo,"This foil card was provided to all backers of the Tapeworm Kickstarter who subscribed to the game's newsletter prior to the Kickstarter's launch.
+
+This card features artwork that was originally found on a unplayable promotional card handed out at San Diego Comic-Con 2018, depicted here:
+https://i.redd.it/yhnp4vmjtgh21.png"
+It Lives!,,"HP: 8 | DC: 3+ | AT: 4
+
+When a player gains this
+soul, choose a player with
+the most souls or tied
+for the most.  That
+player wins.
+------------------------------
+Rewards: <3
+(+2 souls)",Epic Boss (1),N/A,Original,@HamBerry_art,"This card was included with all orders to the Studio71 Isaac store for a period of time after March 28, 2021."
+Corrupted Data,,"Each player gives their hand
+to the player to their left.
+------------------------------
+Each player gives a
+character and an eternal
+item they control to the
+player to their right.
+------------------------------
+Recharge each eternal item
+and each character.",Bad Events (8),N/A,Original,@HamBerry_art,"Along with Ultra Pride, this card is provided to all backers of the Requiem Kickstarter who subscribed to the expansion's newsletter prior to the Kickstarter's launch."
+Ultra Pride,,"HP: 4 | DC: 4+ | AT: 1
+
+Each time a player dies, put
+2 counters on this.
+------------------------------
+This has +1 AT for each counter on it.
+------------------------------
+While this has 6+ counters on
+it, the active player must attack
+this once each turn if able.
+------------------------------
+Rewards: Loot 1
+for each counter on this.
+(+1 soul)",Bosses (30),N/A,Original,@TikaratheMew,"Along with Corrupted Data, this card is provided to all backers of the Requiem Kickstarter who subscribed to the expansion's newsletter prior to the Kickstarter's launch."
+Henry,,"HP: 1 | DC: 6 | AT: 0
+
+When the attacking player
+misses an attack roll, cancel
+the attack and put this
+on the bottom of the
+monster deck.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Original,@TikaratheMew,This card is provided to all backers of the Requiem Kickstarter who backed tiers which included the Warp Zone cards.
+"The Duke of Flies
+but Really It's The Bloat",,"HP: 4 | DC: 4+ | AT: 2
+
+If this would die, if it has fewer
+than 2 counters on it, instead put
+a counter on it, it heals to full HP,
+the active player gains its rewards,
+cancels their attack, and deals 2
+damage to a player chosen at random.
+------------------------------
+This is named The Bloat
+while not in play.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,"This bonus Star card is included with The Unboxing of Isaac #12: Isaac in Wonderland, to celebrate April Fools Day in April, 2023."
+Henry,,"HP: 1 | DC: 6 | AT: 0
+
+When the attacking player
+misses an attack roll, cancel
+the attack and put this
+on the bottom of the
+monster deck.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Alt Art,@TikaratheMew,"This extremely rare card is given to members of the Four Souls community who have shown exceptional dedication to the community, as chosen by Edmund McMillen."
+Famine,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies,
+the active player
+skips their next
+turn.
+------------------------------
+Rewards:
+Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,"This card was included with all orders of at least $25 to the Maestro Media Isaac store for a period of time after September 1st, 2023."
+Mom's Charmed Heart,,"HP: 5 | DC: 3+ | AT: 2
+
+When this dies, the active player
+chooses another player and puts
+a HP counter on a non-eternal
+item they control. (HP counters
+give the ability ""You have +1 HP."")
+------------------------------
+This is also named Mom's Heart!
+------------------------------
+Rewards: +2 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@HamBerry_art,"To celebrate Valentine's Day, this card was included with all orders to the Maestro Media Isaac store for a period of time after January 12th, 2024."
+Pestilence,,"HP: 4 | DC: 4+ | AT: 1
+
+When this dies, the active
+player deals 2 damage
+divided as they choose
+to any number of
+monsters or players.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,"This card was included with any purchase on the Maestro Media store during The Binding of Isaac: Four Souls Anniversary Sale starting September 27th, 2024.
+
+This card behaves identically to the Pestilence card in the base game.  Due to an art mixup, the monster's stats are shown as 2/3+/1, but it is designed to be a true alt art.  Officially, this card's stats are 4/4+/1."
+War,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this takes damage,
+it gains +1 AT till the end of
+the turn.
+------------------------------
+Rewards: 8¢
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,"This card was included with any purchase on the Maestro Media store for a period starting February 26th, 2025."
+Death,,"HP: 3 | DC: 4+ | AT: +2
+
+When this dies,
+the active player
+kills a player.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,"This card was included with any purchase on the Maestro Media store for a period starting May 19th, 2025."
+Rag Man,,"HP: 2 | DC: 3+ | AT: 2
+
+When this dies, after
+gaining rewards, the
+active player rolls-
+1 or 6: Put this on top of
+the monster deck.
+foursouls.com
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,This card was given to guests of various conventions where Maestro Media was in attendance in 2025.
+Conquest,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies,
+the active player
+must make an
+additional attack
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Alt Art,@Sony_Shock,"This card was included with any purchase on the Maestro Media store for a period starting September 10th, 2025."
+,Gish,,,,,,
+Gish,,"HP: 6 | DC: 3+ | AT: 1
+
+Each player must
+attack this on their turn.
+------------------------------
+When this dies, choose a
+player.  That player skips
+their next turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),N/A,Original,@TikaratheMew,"This card, along with the Lil' Gish treasure card, is included in the Gish Big Box Edition, produced by Limited Run Games, available between February 14th, 2020 and February 29th, 2020."
+,Tapeworm,,,,,,
+Tapeworm,,"HP: 4 | DC: 2+ | AT: 4
+
+When this dies put an egg
+counter on the active player.
+------------------------------
+When a player with an egg counter
+dies and this is in discard, remove
+their egg counters and put this
+back into an active monster slot.
+------------------------------
+Rewards: Loot 4",Basic Enemies (30),N/A,Original,TAR_HEAD,"
+Unlocked via reaching $250,000 in the Tapeworm Kickstarter.
+
+As with the rest of the Tapeworm promos, this card is foil-only."
+,Dick Knots,,,,,,
+Dick Knot!,,"HP: 6 | DC: 1x+ | AT: 1x
+
+Each time a player makes an attack,
+add a counter to this.
+------------------------------
+This gains +1 DC and +1 AT for
+each counter it has.
+------------------------------
+At the start of the turn, if this has 6+
+counters, kill it and the active player.
+------------------------------
+Rewards: 1¢",Basic Enemies (30),N/A,Original,@KrystalFlamingo,"As with the Tapeworm promos, this card is foil-only."
+,The Unboxing of Isaac,,,,,,
+TV Static,,"Put each monster into
+discard, then expand
+monster slots by 1.
+------------------------------
+The active player may
+attack an additional
+time this turn.",Good Events (8),FALSE,Original,Private,"Included with The Unboxing of Isaac #1: Dogma for May, 2022."
+"""Christian Broadcasts""",,"HP: 6 | DC: 3+ | AT: 1
+
+When this dies, choose another
+monster and player. They die.
+------------------------------
+When this dies, expand
+monster slots by 2.
+------------------------------
+""Blasphemy against the Holy Spirit!""
+Definitely the Bible
+------------------------------
+Rewards: Loot 3",Bosses (30),FALSE,Original,Private,"Included with The Unboxing of Isaac #1: Dogma for May, 2022."
+Dogma,,"HP: 5 | DC: 3+ | AT: 3
+
+When the attacking player rolls an
+attack roll of 1, each player dies.
+------------------------------
+When this dies, each other
+monster dies.
+------------------------------
+""The anger of God is coming!""
+Definitely the Bible
+------------------------------
+Rewards: +2 treasure",Epic Boss (1),FALSE,Alt Ability,@orisghost,"Included with The Unboxing of Isaac #1: Dogma for May, 2022."
+Delirium,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time you would deal
+damage while you control
+this soul, roll-
+1: Prevent that damage.
+------------------------------
+Rewards: Loot 6
+(+1 soul)",Bosses (30),FALSE,Alt Ability,Private,"Included with The Unboxing of Isaac #8: Delirious for December, 2022."
+Delirium,,"HP: 3 | DC: 3+ | AT: 1
+
+While you control this
+soul, your death penalty
+item is chosen at random.
+------------------------------
+Rewards: 18¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,Private,"Included with The Unboxing of Isaac #8: Delirious for December, 2022."
+The Adversary,,"HP: 4 | DC: 4+ | AT: 1
+
+At the start of each turn,
+the active player rolls-
+1-2: Put all cards in another
+monster slot into discard.
+------------------------------
+3-4: Put the top card of the monster
+deck in another monster slot.
+------------------------------
+5-6: Monsters gain +1 DC till
+end of turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Included with The Unboxing of Isaac #9: Isaac is Doomed! for January, 2023."
+Big Horn,,"HP: 6 | DC: 3+ | AT: 1
+
+At the start of each turn
+or each time this deals
+combat damage, the active
+player deals 1 damage to a
+player chosen at random.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Included with The Unboxing of Isaac #9: Isaac is Doomed! for January, 2023."
+Loki,,"HP: 3 | DC: 5+ | AT: 1
+
+Each time the attacking
+player rolls an attack
+roll of 1, expand monster
+slots by 1.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@HamBerry_art,"Included with The Unboxing of Isaac #9: Isaac is Doomed! for January, 2023."
+Larry Jr.,,"HP: 4 | DC: 3+ | AT: 2
+
+While this is at 2 HP
+or less, it has -1 DC.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@KayLousberg,"This bonus card is included with The Unboxing of Isaac #9: Isaac is Doomed! for January, 2023.
+
+This card was included as a thank you to the fans for sticking with The Unboxing of Isaac project."
+Greedling Rush!,,"HP: 1 | DC: 3+ | AT: 6
+
+When this would die, prevent
+its death, put a counter on it,
+and the active player gains its
+rewards. Then, if this has 6+
+counters, put this into discard.
+------------------------------
+-Indomintable-
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,Private,"Included with The Unboxing of Isaac #10: Lil Greed for February, 2023."
+Eggy,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies, the active
+player rolls-
+1-2: Expand monster slots by 1.
+------------------------------
+3-4: Expand monster slots by 2.
+------------------------------
+5-6: Expand monster slots by 3.
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,@Pcap410,"Included with The Unboxing of Isaac #11: Hush for March, 2023."
+Evis,,"HP: 3 | DC: 5+ | AT: 6
+
+At the start of each turn, the
+active player rolls-
+1-2: Put a gut counter
+on the active player.
+------------------------------
+Players with gut counters on them
+have 3+ and can be attacked.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Pcap410,"Included with The Unboxing of Isaac #11: Hush for March, 2023."
+Teratoma,,"HP: 5 | DC: 3+ | AT: 2
+
+Each time this takes damage, put
+a spider counter on it.
+------------------------------
+When this dies, the active player
+deals x damage divided as they
+choose to any number of players,
+where x is the number of
+spider counters on this.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Pcap410,"Included with The Unboxing of Isaac #11: Hush for March, 2023."
+,Requiem,,,,,,
+Corny,,"HP: 1 | DC: 4+ | AT: 1
+
+When this dies,
+it deals 2 damage to
+a non-active player
+ chosen at random.
+------------------------------
+Rewards: 4¢",Basic Enemies (30),TRUE,Original,@HamBerry_art,
+Mushroom,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this deals
+combat damage to the
+attacking player, it
+deals 1 damage to each
+other player.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@HamBerry_art,
+Null,,"HP: 3 | DC: 4+ | AT: 1
+
+This takes no combat
+damage on every other
+attack roll made
+against it.
+------------------------------
+Rewards: 6¢",Basic Enemies (30),FALSE,Original,Private,
+Red Ghost,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time this takes damage,
+the active player chooses
+another player. That player
+takes 1 damage.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),TRUE,Original,@Von_Grimsworth,
+Peeping Fatty,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies, look
+at the top 5 cards of
+the loot deck and
+put them back in
+any order.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Whipper,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time a player
+declares an attack, the
+active player rolls-
+1-2: This deals 1
+damage to that player.
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,Private,
+Gutted Fatty,,"HP: 5 | DC: 3+ | AT: 1
+
+When this dies, expand
+monster slots by 1. The
+active player must make
+an additional attack.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,
+Holy Brain,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time a player
+rolls a 3, each
+monster gains -1 DC
+till end of turn.
+------------------------------
+Rewards: Loot 1",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Portal,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a monster
+dies, the active player
+may make an additional
+time this turn.
+------------------------------
+Rewards: 5¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Psy Horf,,"HP: 3 | DC: 3+ | AT: 1
+
+At the end of each
+turn, the active
+player loots 1.
+------------------------------
+Rewards: Loot 3",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Holy Greedling,,"HP: 2 | DC: 3+ | AT: 1
+
+Each time a monster
+dies, the active player
+may gain 3¢.
+------------------------------
+Rewards: Roll- Gain x¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Greedling,,"HP: 1 | DC: 6 | AT: 0
+
+When this dies, after
+gaining rewards, choose
+another player. They
+gain 10¢.
+------------------------------
+Rewards: 6¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Keeper,,"HP: 2 | DC: 3+ | AT: 2
+
+When this dies, after gaining rewards,
+choose another player.  They roll
+and gain ¢ equal to the result.
+------------------------------
+Each time this deals combat
+damage to a player, they lose 2¢.
+------------------------------
+Rewards: Roll- Gain x¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Bony,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies, after gaining rewards,
+choose another player. They gain 5¢.
+------------------------------
+Each time the attacking player
+rolls an attack roll of 6, they
+deal 1 damage to a player.
+------------------------------
+Rewards: 5¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Clotty,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies, after
+gaining rewards, choose
+another player.
+They loot 1.
+------------------------------
+Rewards: Loot 1",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Dip,,"HP: 1 | DC: 4+ | AT: 1
+
+When this dies, after
+gaining rewards, choose
+another player. They
+recharge an item
+they control.
+------------------------------
+Rewards: 2¢",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Fat Bat,,"HP: 4 | DC: 3+ | AT: 1
+
+When this dies, after
+gaining rewards, choose
+another player. They
+gain +1 treasure.
+------------------------------
+Rewards: +1 treasure",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Fatty,,"HP: 5 | DC: 2+ | AT: 1
+
+When this dies, after gaining rewards,
+choose another player. They loot 2.
+------------------------------
+Each time this deals combat
+damage to a player, they
+discard a loot card.
+------------------------------
+Rewards: Loot 2",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Charmed Globin,,"HP: 4 | DC: 3+ | AT: 1
+
+When this dies, after gaining rewards,
+choose another player. They loot 3.
+------------------------------
+Each time the attacking
+player misses an attack
+roll, this heals 1 HP.
+------------------------------
+Rewards: Loot 3",Holy / Charmed Enemies (9),FALSE,Original,@rojen241,
+Cursed Dople,,"HP: 3 | DC: 4+ | AT: 2
+
+Each time this takes
+damage, it deals 1
+damage to each
+non-active player.
+------------------------------
+Rewards: Roll- Gain x¢",Cursed Enemies (9),TRUE,Original,@Von_Grimsworth,
+Cursed Lil Haunt,,"HP: 3 | DC: 3+ | AT: 1
+
+If a player would roll
+a dice, they instead roll
+2 dice. The player to their
+left chooses one of the
+rolls as the result.
+------------------------------
+Rewards: Loot 1",Cursed Enemies (9),TRUE,Original,@Von_Grimsworth,
+Cursed Mulligan,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a monster
+dies, expand monster
+slots by 1.
+------------------------------
+Rewards: Loot 1",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Cursed Mulliboom,,"HP: 1 | DC: 4+ | AT: 3
+
+Each time a monster
+dies, this deals 3
+damage to a player
+chosen at random.
+------------------------------
+Rewards: 2¢",Cursed Enemies (9),FALSE,Original,@Von_Grimsworth,
+Double Treasure!,,"Choose another
+player. You and that
+player each gain
++1 treasure.
+------------------------------
+""He that hath pity upon the poor
+lendeth unto the Lord; and that which
+he hath given will He pay him again.""
+Proverbs 19:17",Good Events (8),FALSE,Original,@HamBerry_art,
+Dressing Table,,"Reroll any
+number of items
+you control.
+------------------------------
+""Therefore if any man be in
+Christ, he is a new creature: Old
+things are passed away; behold,
+all things have become new.""
+2 Corinthians 5:17",Good Events (8),FALSE,Original,@HamBerry_art,
+Golden Troll Bomb!,,"Choose a player.
+They take 2 damage.
+Put this in the monster
+deck 4 cards from
+the top.",Good Events (8),TRUE,Original,@TikaratheMew,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+TNT Barrel,,"Choose a player or
+monster, then roll-
+1-4: You and that player
+or monster each take
+2 damage.
+------------------------------
+5-6: That player or
+monster takes 4 damage.",Good Events (8),FALSE,Original,@HamBerry_art,
+Betrayal!,,"Choose another player. Roll-
+1-2: Steal 5¢ from them.
+------------------------------
+3-4: Steal a loot card from
+them at random.
+------------------------------
+5: Steal a non-eternal item
+they control.
+------------------------------
+6: Steal a soul they control.",Bad Events (8),FALSE,Original,@Von_Grimsworth,
+Lust for Blood!,,"Choose a player. You
+must make an additional
+attack against them. They
+have 4+ DC for the attack.
+------------------------------
+When that player dies this
+turn, they give the active
+player the item they would
+destroy for the death penalty.",Bad Events (8),FALSE,Original,@Von_Grimsworth,
+Mother's Shadow!,,"Each player who
+controls the most items
+or tied for the most
+dies. Put this in the
+monster deck 6 cards
+from the top.",Bad Events (8),FALSE,Original,Private,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Overflow!,,"Each player rolls-
+1-2: They skip
+their next turn.",Bad Events (8),FALSE,Original,@Von_Grimsworth,
+Pitfall!,,"End the turn.
+Cancel everything
+that hasn't resolved.
+------------------------------
+""Whoever digs a pit will fall
+into it; if someone rolls a stone,
+it will roll back on them.""
+Proverbs 26:27",Bad Events (8),FALSE,Original,@Von_Grimsworth,
+Troll Bombs,,"Take
+2 damage!",Bad Events (8),FALSE,Alt Art,@TikaratheMew,
+Curse of Empathy,,"Each time a monster
+dies, discard a loot
+card and lose 1¢.
+------------------------------
+-Curse-
+(When this enters player, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,
+Curse of the Hollow,,"At the end of your
+turn, discard x loot
+cards and lose x¢,
+where x is the number
+of souls you control.
+------------------------------
+-Curse-",Curses (5),FALSE,Original,Private,
+Curse of the Hunted,,"Monsters have +1 AT
+on your turn.
+------------------------------
+-Curse-
+(When this enters player, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,Private,
+Curse of the Soulless,,"You can't gain souls.
+------------------------------
+If this would be put into
+discard, instead give it
+to another player.
+------------------------------
+-Curse-",Curses (5),FALSE,Original,@TikaratheMew,
+Baby Plum,,"HP: 4 | DC: 2+ | AT: 1
+
+Each time this takes damage,
+the active player rolls-
+1-2: You take 1 damage.
+------------------------------
+3-4: The player to your
+left takes 1 damage.
+------------------------------
+5-6: The player to your
+right takes 1 damage.
+------------------------------
+Rewards: Roll- Gain x¢
+(+1 soul)",Bosses (30),TRUE,Original,@rojen241,
+Turdlings,,"HP: 2 | DC: 2+ | AT: 2
+
+This only takes combat
+damage on attack rolls of 2.
+------------------------------
+When the attacking player
+makes their 2nd attack roll
+this turn, after combat damage,
+cancel the attack.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,Private,
+Rag Mega,,"HP: 5 | DC: 5+ | AT: 1
+
+When an attack is declared
+on this, each non-active
+player discards a loot card.
+------------------------------
+When this dies, the active
+player kills up to 3
+other players.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+Brownie,,"HP: 6 | DC: 5+ | AT: 1
+
+Each time this takes
+damage, it gains -1 DC
+till end of turn.
+------------------------------
+""They shall revive as the corn""
+Hosea 14:7
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,
+Mama Gurdy,,"HP: 7 | DC: 3+ | AT: 2
+
+""For You formed my
+inward parts; You
+knitted me together
+in my mother's womb.""
+Psalm 139:13
+------------------------------
+Rewards: Roll- Loot x
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Sisters Vis,,"HP: 6 | DC: 4+ | AT: 2
+
+When an attack is declared on this,
+the active player chooses another
+player. That player must make an
+attack roll against this after each
+attack roll the active player makes
+this attack. If this dies this turn,
+that player gains +1 treasure.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,
+The Rainmaker,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time a player rolls
+a 1, they loot 1
+------------------------------
+When this dies, search the monster
+deck for a curse card and put it in
+a monster slot not being attacked,
+then shuffle the monster deck.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Clog,,"HP: 5 | DC: 4+ | AT: 1
+
+When this dies, each
+player gives their
+hand to the player to
+their left.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,Private,
+Hornfel,,"HP: 2 | DC: 5+ | AT: 1
+
+When this would deal combat
+damage to the active player,
+prevent it, then this deals
+1 damage to a player
+chosen at random.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,
+The Siren,,"HP: 4 | DC: 3+ | AT: 1
+
+The active player may
+attack other players.
+Attacked players
+have 4+ DC.
+------------------------------
+Rewards: Loot 1
+(+1 soul)",Bosses (30),FALSE,Original,@NY_Sagittarius,
+ The Scourge,,"HP: 3 | DC: 4+ | AT: 1
+
+When this would take damage,
+each living player votes
+either whip or whiff-
+If whip wins, prevent the
+damage this would take and each
+non-active player takes 1 damage.
+------------------------------
+If whiff wins or there is a tie,
+the active player loots 1.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),TRUE,Original,@NY_Sagittarius,
+Charmed Monstro,,"HP: 4 | DC: 3+ | AT: 1
+
+If the active player
+would gain this soul,
+they instead choose
+another player. That
+player gains this soul.
+------------------------------
+Rewards: +2 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,
+Mega Satan!,,"HP: 6 | DC: 6 | AT: 6
+
+Players can be attacked
+and have 4+ DC.
+------------------------------
+At the end of each turn, if
+the active player is the only
+living player, they win.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),TRUE,Original,@Von_Grimsworth,
+Ultra Greed!,,"HP: 8 | DC: 5+ | AT: 1
+
+After each attack roll the
+active player makes against
+this, each other player in
+turn order makes an
+attack roll against this.
+------------------------------
+The player who kills this
+gains its rewards.
+------------------------------
+Rewards: 40¢
+(+1 soul)",Epic Boss (1),FALSE,Original,Private,
+Mother!,,"HP: 8 | DC: 1+ | AT: 8
+
+Each time this takes damage,
+it gains +1 DC till end of turn.
+------------------------------
+When this dies, expand
+monster slots by 2.
+------------------------------
+Rewards: +1 treasure
+(+2 souls)",Epic Boss (1),FALSE,Original,@NY_Sagittarius,
+Dogma,,"HP: 4 | DC: 3+ | AT: 3
+
+When an attack is declared on this,
+put each other monster into discard.
+------------------------------
+When this dies, put a card named The
+Harbingers from outside the game in
+a monster slot not being attacked.
+------------------------------
+Rewards: +2 treasure",Epic Boss (1),FALSE,Original,Private,
+,Warp Zone,,,,,,
+A Dead Horse,,"HP: 1 | DC: 2+ | AT: 0
+
+Each time this would take
+damage, prevent it, then roll-
+1-2: Cancel an attack against this.
+------------------------------
+3-6: Gain 3¢.
+------------------------------
+Rewards: 25¢",Basic Enemies (30),FALSE,Original,@TikaratheMew,Unlocked via The Closet social goals to-do list during the Requiem Kickstarter.
+Javon!,,"HP: 4 | DC: 3+ | AT: 2
+
+At the start of each turn,
+the active player rerolls
+a shop item, then deals
+1 damage to a player
+chosen at random.
+------------------------------
+Rewards: Steal a shop item",Basic Enemies (30),FALSE,Original,@rojen241,Unlocked on the tenth roll against The Beast during the Requiem Kickstarter.
+The Impostor!,,"HP: 4 | DC: 4+ | AT: 1
+
+The first time a player dies
+each turn, each living player
+votes for a living player. Each
+player with the most votes
+or tied for the most dies.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),TRUE,Original,@HamBerry_art,"Crossover with the video game Among Us.
+
+Unlocked via the Static social goals to-do list during the Requiem Kickstarter."
+Leatherneck,,"HP: 6 | DC: 4+ | AT: 1
+
+Each time this takes
+damage, this deals 1
+damage to a player
+chosen at random.
+------------------------------
+Rewards: +1 treasure",Basic Enemies (30),FALSE,Original,Private,"Crossover with the video game Dusk.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+Hubert Cumberdale,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies, if it dealt
+combat damage to a player
+this turn, put it in a monster
+slot at the end of the turn.
+------------------------------
+When this dies, choose
+another player. They die.
+------------------------------
+Rewards: Loot 1",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,"Crossover with the web series Salad Fingers.
+
+Unlocked via the Corpse social goals to-do list during the Requiem Kickstarter."
+"The
+Purple-Shirted Eye Stabber",,"HP: 3 | DC: 3+ | AT: 3
+
+At the end of each turn,
+if the active player played
+a loot card this turn, this
+deals 1 damage to them.
+------------------------------
+""I'm not for eyes.
+I'm against them!""
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Original,@HamBerry_art,"Crossover with the webcomic Cyanide & Happiness.
+
+Unlocked via the Lake of Fire social goals to-do list during the Requiem Kickstarter."
+Shopkeeper!,,"HP: 4 | DC: 5+ | AT: 2
+
+At any time the active player could
+purchase an item, they may roll-
+1-4: They must make an
+additional attack against this.
+------------------------------
+5-6: The next shop item they
+purchase this turn costs 0¢.
+------------------------------
+Rewards: Steal a shop item",Basic Enemies (30),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Spelunky.
+
+Unlocked via The Mines social goals to-do list during the Requiem Kickstarter."
+Zombie Jesus,,"HP: 6 | DC: 2+ | AT: 1
+
+At the start of each turn, the
+active player rolls-
+3-4: Kill the player
+to your right.
+------------------------------
+5-6: Kill the player
+to your left.
+------------------------------
+Rewards: This kills you!",Basic Enemies (30),TRUE,Original,@HamBerry_art,"Crossover with the webcomic Cyanide & Happiness.
+
+Unlocked via the Lake of Fire social goals to-do list during the Requiem Kickstarter."
+Keke Is You,,"HP: 3 | DC: 4+ | AT: 1
+
+At the start of each turn, the
+active player chooses another
+player. If this would die this turn,
+instead cancel an attack against
+this, the chosen player dies, this
+heals to full HP, then the
+active player loots 3.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),TRUE,Original,@HamBerry_art,"Crossover with the video game Baba Is You.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+QWOP!,,"Each player rolls 3 times-
+Each player who rolls
+the highest sum or tied for
+it gains +1 treasure. Each
+player who rolls the
+lowest sum or tied for it
+dies. Each player gains 1¢.
+------------------------------
+Everyone is a winner",Good Events (8),FALSE,Original,Private,"Crossover with the video game QWOP.
+
+Unlocked via The Planetarium social goals to-do list during the Requiem Kickstarter."
+Don't Starve!,,"Each player may discard
+a loot card. If they don't,
+they take 1 damage. Repeat
+this process till there are
+1 or fewer living players.
+------------------------------
+""Say pal, you don't look so
+good. You better find something
+to eat before night comes!""",Good Events (8),FALSE,Original,Private,"Crossover with the video game Don't Starve.
+
+Unlocked via the Lake of Fire social goals to-do list during the Requiem Kickstarter."
+Nightmare Tick,,"Roll-
+1-4: You die. :(
+------------------------------
+5-6: This becomes an item
+with ""When you would roll a
+1, you may change the result
+to a 2 or 3"" and loses all
+other abilities. Gain it.",Good Events (8),FALSE,Original,@Von_Grimsworth,"Crossover with the board game Kingdom Death: Monster.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+Golden Idol,,"When this enters play, it becomes
+an item. The active player gains it.
+------------------------------
+At the end of your turn, gain 10¢.
+------------------------------
+Other players may attack you.
+You have 4+ DC for the attack.
+------------------------------
+When another player kills you,
+give this to them.
+------------------------------
+-Eternal-",Bad Events (8),FALSE,Original,@HamBerry_art,Crossover with the video game Spelunky.
+Brea in Distress,,"Roll-
+1-4: Skip your next turn.
+------------------------------
+5-6: This becomes an item
+with ""+1 HP"" and loses all
+other abilities. Gain it.",Bad Events (8),FALSE,Original,@HamBerry_art,"Crossover with the video game Gish.
+
+Unlocked via the Downpour social goals to-do list during the Requiem Kickstarter."
+Grubfather,,"When this enters play, it becomes
+an item. The active player gains it.
+------------------------------
+While you control 1 or more non-eternal
+items, monsters have +1 DC on your turn.
+------------------------------
+$: Destroy an item
+you control:
+Give this to another player.
+------------------------------
+-Eternal-",Bad Events (8),FALSE,Original,@HamBerry_art,"Crossover with the video game Hollow Knight.
+
+Unlocked via the Dross social goals to-do list during the Requiem Kickstarter."
+Trial by Trolley!,,"Each player votes for
+2 different players.
+Each player with the
+most votes or tied
+for the most dies.
+------------------------------
+""This sounds like a real moral
+life or death desicion, here!""",Bad Events (8),TRUE,Original,@TikaratheMew,"Crossover with the board game Trial by Trolley.
+
+Unlocked via the Lake of Fire social goals to-do list during the Requiem Kickstarter."
+Fuck Bloat,,"The players to the active player's
+left and right take 2 damage.
+------------------------------
+Search the monster deck for
+any number of cards named The
+Bloat and put them in one or more
+monster slots not being attacked.
+Shuffle the monster deck.",Bad Events (8),TRUE,Original,@alexpardee,Unlocked via The Closet social goals to-do list during the Requiem Kickstarter.
+Curse of the Suspicious,,"Other players may attack you.
+You have 3+ DC for the attack.
+------------------------------
+-Curse-",Curses (5),FALSE,Original,Private,"Crossover with the video game Among Us.
+
+Unlocked via the Static social goals to-do list during the Requiem Kickstarter."
+Melquíades,,"HP: 5 | DC: 4+ | AT: 1
+
+Each time this takes
+damage, put a counter on it.
+------------------------------
+While this has 5+ counters
+on it, it has -2 DC.
+------------------------------
+Rewards: +2 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Blasphemous.
+
+Unlocked via The Credits social goals to-do list during the Requiem Kickstarter."
+The Gorm,,"HP: 5 | DC: 5+ | AT: 1
+
+At the end of each turn, the
+active player discards a loot card.
+------------------------------
+Attack rolls of 1 against this
+count as a hit and the combat damage
+it takes on them is doubled.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 3 + gain 6¢
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,"Crossover with the board game Kingdom Death: Monster.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+The Butcher,,"HP: 5 | DC: 4+ | AT: 2
+
+Each time the attacking player rolls
+an attack roll of 1, they roll-
+They take damage equal to the result.
+------------------------------
+Each time this kills a player, put a
+counter on it. This gains +1 AT.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 3 + gain 6¢
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Crossover with the board game Kingdom Death: Monster.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+The Collector,,"HP: 4 | DC: 4+ | AT: 1
+
+Each time a player dies,
+put a counter on this.
+------------------------------
+This has +1 HP for each
+counter on it.
+------------------------------
+Rewards: Gain +1 treasure
+for each counter on this.
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Darkest Dungeon.
+
+Unlocked on the fourth roll against The Beast during the Requiem Kickstarter."
+Death Trapper,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time a monster
+takes damage,
+monsters gain +1 DC
+till end of turn.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@Von_Grimsworth,"Crossover with the film PG: Psycho Goreman.
+
+Unlocked via the Gehenna social goals to-do list during the Requiem Kickstarter."
+Lil Hunter,,"HP: 3 | DC: 3+ | AT: 2
+
+When this enters play, expand
+monster slots by 1. The active
+player must make an additional
+attack this turn.
+------------------------------
+At the end of the turn, put
+this card in the monster deck
+4 cards from the top.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Crossover with the video game Nuclear Throne.
+
+Unlocked via the Dross social goals to-do list during the Requiem Kickstarter."
+Peeper,,"HP: 1 | DC: 5+ | AT: 1
+
+When this dies, it becomes
+an item with ""+1 HP"" and loses
+all other abilites. The active
+player gains it.
+------------------------------
+When the attacking player misses
+an attack roll, cancel the attack.
+------------------------------
+Rewards: Loot 1",Bosses (30),FALSE,Original,@TikaratheMew,"Crossover with the video game Subnautica.
+
+Unlocked on the first roll against The Beast during the Requiem Kickstarter."
+Grandparent,,"HP: 5 | DC: 4+ | AT: 1
+
+When an attack is declared on
+this, put a counter on it.
+------------------------------
+This has +1 AT for each counter on it.
+------------------------------
+When the 3rd counter is put on this,
+this dies. Each player takes 3 damage.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Crossover with the video game Risk of Rain.
+
+Unlocked via The End social goals to-do list during the Requiem Kickstarter."
+Balrog,,"HP: 5 | DC: 4+ | AT: 1
+
+When this dies, this becomes and
+item with ""↷: Destroy this. If you
+do, kill a player or monster""
+and loses all other abilities.
+The active player gains it.
+------------------------------
+Rewards: ""Oh, yeah!""",Bosses (30),FALSE,Original,@HamBerry_art,"Crossover with the video game Cave Story.
+
+Unlocked via the Home social goals to-do list during the Requiem Kickstarter."
+Time Eater,,"HP: 6 | DC: 5+ | AT: 1
+
+At the end of each turn,
+put a counter on this.
+------------------------------
+When the 12th counter is put
+on this, choose a player who
+controls the most souls or tied
+for the most. That player wins.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Take an extra turn
+after this one
+(+1 soul)",Epic Boss (1),TRUE,Original,@Von_Grimsworth,"Crossover with the video game Slay the Spire.
+
+Unlocked via The Mausoleum social goals to-do list during the Requiem Kickstarter."
+Expósito,,"HP: 6 | DC: 6 | AT: 6
+
+Each time a monster dies, put
+a counter on this. Then, if this
+has 6+ counters, it dies.
+------------------------------
+The active player must attack
+the monster deck once each
+turn if able.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 6
+(+1 soul)",Epic Boss (1),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Blasphemous.
+
+Unlocked via The Credits social goals to-do list during the Requiem Kickstarter."
+The Radiance,,"HP: 7 | DC: 6 | AT: 5
+
+Each time a player dies,
+put a counter on this.
+------------------------------
+This has -1 DC for each counter on it.
+------------------------------
+The active player loots +1
+during their loot step.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 10
+(+1 soul)",Epic Boss (1),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Hollow Knight.
+
+Unlocked via the Dross social goals to-do list during the Requiem Kickstarter."
+Ballos!,,"HP: 4 | DC: 4+ | AT: 1
+
+When this dies, after gaining
+rewards, if it had no counters on
+it, put a counter on it, and put it in
+a monster slot not being attacked.
+------------------------------
+This has +2 AT while it
+has a counter on it.
+------------------------------
+Rewards: Loot 5
+(+2 souls)",Epic Boss (1),FALSE,Original,@Von_Grimsworth,"Crossover with the video game Cave Story.
+
+Unlocked via the Home social goals to-do list during the Requiem Kickstarter."
+,Alt Art,,,,,,
+Clotty,,"HP: 4 | DC: 2+ | AT: 1
+
+""But flesh with the
+life thereof, which is
+the blood thereof,
+shall ye not eat.""
+Genesis 9:4
+------------------------------
+Rewards: 4¢",Basic Enemies (30),FALSE,Alt Ability,"@rich_werner
+","Unlocked via 32,000 backers for the Requiem Kickstarter."
+Mulligan,,"HP: 2 | DC: 3+ | AT: 1
+
+When this dies,
+expand monster slots,
+shop slots, or room
+slots by 1.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Alt Ability,@peachmomoko60,"Unlocked via 1,000 backers for the Requiem Kickstarter."
+Mulliboom,,"HP: 1 | DC: 3+ | AT: 4!
+
+When this dies, the active
+player deals 1 damage
+each to a monster,
+player, and themselves.
+------------------------------
+Rewards: 7¢",Basic Enemies (30),FALSE,Alt Ability,@RobertoZurdoArt,"Unlocked via 16,000 backers for the Requiem Kickstarter."
+Mom's Hand,,"HP: 2 | DC: 3+ | AT: 1
+
+At the start of each turn
+the active player rolls-
+1-2: They must attack this this turn.
+------------------------------
+When this deals combat damage,
+cancel everything that hasn't
+resolved and end the turn.
+------------------------------
+Rewards: 9¢",Basic Enemies (30),FALSE,Alt Ability,Jimbo Phillips,"Unlocked via 43,000 backers for the Requiem Kickstarter."
+Gaper,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies on an
+attack roll of 4, the
+active player must make
+an additional attack
+on the monster slot
+this was in.
+------------------------------
+Rewards: 3¢",Basic Enemies (30),FALSE,Alt Ability,@slimyswampghost,"Unlocked via 29,000 backers for the Requiem Kickstarter."
+Begotten,,"HP: 5 | DC: 2+ | AT: 1
+
+While this is at 2 HP
+or less, it has +2 DC.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Alt Ability,@davecorreia,"Unlocked via 4,000 backers for the Requiem Kickstarter."
+Big Bony,,"HP: 6 | DC: 2+ | AT: 1
+
+Each time a player
+misses an attack roll,
+they roll-
+1-2: They take 1 damage.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Original,@DraculaFetus,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Twitchy,,"HP: 4 | DC: 5+ | AT: 1
+
+At the end of each
+turn, the active player
+moves this to another
+monster slot.
+------------------------------
+Rewards: 8¢",Basic Enemies (30),FALSE,Original,@Krooked_Glasses,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Secret Room!,,"Roll-
+1-2: Take 3 damage.
+------------------------------
+3-4: Loot 2.
+------------------------------
+5: Loot 4.
+------------------------------
+6: Reroll an item you
+control. Gain +1 treasure.",Good Events (8),FALSE,Alt Ability,@OvumArt,"Unlocked via 27,000 backers for the Requiem Kickstarter."
+Shop Upgrade!,,"Roll-
+1-2: Take 3 damage.
+------------------------------
+3-4: Loot 2.
+------------------------------
+5: Loot 4.
+------------------------------
+6: Reroll an item you
+control. Gain +1 treasure.",Good Events (8),FALSE,Alt Ability,"Stephen Murphy, a.k.a. thecatamites","Unlocked via 20,000 backers for the Requiem Kickstarter."
+Devil Deal,,"Choose one-
+•Put this into discard.
+------------------------------
+•Gain 6¢. Take 1 damage.
+------------------------------
+•Take 2 damage. Search
+the loot deck for a loot
+card, put it in your hand,
+then shuffle the loot deck.",Good Events (8),FALSE,Alt Ability,@MachShfive,"Unlocked via 47,000 backers for the Requiem Kickstarter."
+Ambush!,,"Expand monster slots
+by 2. The active player
+must make an additional
+attack on a monster in
+one of those slots
+this turn.",Bad Events (8),FALSE,Alt Ability,@carlesdalmauart,"Unlocked via 5,000 backers for the Requiem Kickstarter."
+Monstro,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies, the active
+player rolls-
+1-3: Destroy a non-eternal
+item you control chosen
+at random.
+------------------------------
+Rewards: 5¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,Peach McMillen,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Little Horn,,"HP: 3 | DC: 5+ | AT: 1
+
+At the end of each turn, if this
+wasn't attacked, put a counter on it.
+------------------------------
+At the start of each turn, this
+deals damage equal to the number
+of counters on it divided as the
+active player chooses to any
+number of players.
+------------------------------
+Rewards: Loot 4
+(+1 soul)",Bosses (30),TRUE,Alt Ability,@AgnesGarbowska,"Unlocked via 46,000 backers for the Requiem Kickstarter."
+Larry Jr.,,"HP: 4 | DC: 3+ | AT: 1
+
+While this is at 2 HP
+or less, it has +1 AT.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@16BitsofGlass,Unlocked on the second roll against The Beast during the Requiem Kickstarter.
+The Duke of Flies,,"HP: 3 | DC: 4+ | AT: 1
+
+When this dies,
+expand monster
+slots by 2.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@jShannonigan,"Unlocked via 8,000 backers for the Requiem Kickstarter."
+Pin,,"HP: 2 | DC: 4+ | AT: 1
+
+This takes no combat
+damage on attack
+rolls of 5 or 6.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@DAVID_FIRTH,"Unlocked via 42,000 backers for the Requiem Kickstarter."
+Rag Man,,"HP: 2 | DC: 4+ | AT: 1
+
+When this dies, after
+gaining rewards, the
+active player rolls-
+1 or 6: Put this in a monster
+slot 1 card from the top.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@DaveRapoza,"Unlocked via 36,000 backers for the Requiem Kickstarter."
+Gurdy,,"HP: 4 | DC: 4+ | AT: 1
+
+Monsters have +1 HP while
+this is covered.
+------------------------------
+At the start of each turn, the
+player to the active player's left
+puts the top card of the monster
+deck in a monster slot.
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@the_ptoing,"Unlocked via 28,000 backers for the Requiem Kickstarter."
+Mega Fatty,,"HP: 4 | DC: 3+ | AT: 1
+
+Each time a player
+rolls a 1, this
+gains +2 HP till end
+of turn.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@meatcanyon,Unlocked after the Requiem Kickstarter.
+The Bloat,,"HP: 5 | DC: 4+ | AT: 1
+
+Each time the attacking
+player misses an attack
+roll, they roll 2 dice-
+If the results are
+the same, they die!
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@screamerclauz,"Unlocked via 10,000 backers for the Requiem Kickstarter."
+Dark One,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time this takes
+damage, it gains +2 AT
+till end of turn.
+------------------------------
+Rewards: +1 tresure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@CptHardluck,Unlocked after the Requiem Kickstarter.
+Daddy Long Legs,,"HP: 5 | DC: 5+ | AT: 0
+
+Each time a player
+rolls a 1, each monster
+gains +1 AT till end of turn.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@rickyberwick,"Unlocked via 39,000 backers for the Requiem Kickstarter."
+Famine,,"HP: 3 | DC: 2+ | AT: 1
+
+When this dies,
+the active player
+discards their hand.
+------------------------------
+Rewards: 4¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@mossmouth,"Unlocked via 7,000 backers for the Requiem Kickstarter."
+Pestilence,,"HP: 4 | DC: 4+ | AT: 1
+
+When this dies, the
+active player chooses a
+player. That player takes
+1 damage, then deals 1
+damage to a player.
+------------------------------
+Rewards: Loot 2
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@MattKap1,"Unlocked via 24,000 backers for the Requiem Kickstarter."
+Polycephalus,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time this takes
+damage, flip the next
+attack roll this turn.
+(The roll becomes
+7 - the current result.)
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@ShawnCoss,"Unlocked via 14,000 backers for the Requiem Kickstarter."
+Fistula,,"HP: 3 | DC: 4+ | AT: 1
+
+Each time this takes damage,
+put a counter on this.
+------------------------------
+Other monsters have +1 DC
+for each counter on this.
+------------------------------
+Rewards: 8¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,Tom Bunk,"Unlocked via 26,000 backers for the Requiem Kickstarter."
+Dingle,,"HP: 2 | DC: 3+ | AT: 2
+
+Each time this takes damage,
+the active player puts a poo
+counter on a non-eternal item.
+That item loses all abilities
+for as long as it has a poo
+counter on it.
+------------------------------
+Rewards: 2¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@artsyfartsy,"Unlocked via 30,000 backers for the Requiem Kickstarter."
+Monstro II,,"HP: 6 | DC: 3+ | AT: 1
+
+Each time this deals combat damage,
+each player votes right or left-
+If right wins, the player to the
+active player's right takes 1
+damage. Otherwise, the player
+to the active player's left
+takes 1 damage.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),TRUE,Alt Ability,@EnriqueCarmena,"Unlocked via 13,000 backers for the Requiem Kickstarter."
+Rag Mega,,"HP: 6 | DC: 4+ | AT: 1
+
+When an attack is declared
+on this, non-active players
+can't play loot cards or
+activate abilities till
+end of turn.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@DanPaladin,"Unlocked via 12,000 backers for the Requiem Kickstarter."
+Brownie,,"HP: 5 | DC: 3+ | AT: 1
+
+When this dies, search the monster
+deck for a card named Dingle or
+Dangle, put it in a monster slot
+not being attacked, then shuffle
+the monster deck. The active
+player must make an additional
+attack on it this turn.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@extrafabulous,"Unlocked via 15,000 backers for the Requiem Kickstarter."
+Hornfel,,"HP: 2 | DC: 5+ | AT: 1
+
+Each time this deals
+combat damage, it deals
+1 damage to a monster
+chosen at random.
+------------------------------
+Rewards: 6¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@EvilNassu,"Unlocked via 33,000 backers for the Requiem Kickstarter."
+Min Min,,"HP: 4 | DC: 2+ | AT: 1
+
+After each attack roll
+against this, note its
+result till end of turn.
+------------------------------
+Each time the active player
+rolls a number noted by this,
+they take 1 damage.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@JhonenV,"Unlocked via 22,000 backers for the Requiem Kickstarter."
+Mom!,,"HP: 6 | DC: 3+ | AT: 2
+
+Other monsters have +1 HP.
+------------------------------
+When an attack is declared
+on this, expand monster
+slots by 1.
+------------------------------
+Rewards: +1 treasure
+(+2 souls)",Epic Boss (1),FALSE,Alt Ability,@d20monkey,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Satan!,,"HP: 6 | DC: 4+ | AT: 1
+
+The third time a player
+rolls a 6 each turn, kill
+all players.
+------------------------------
+Each time a player would
+roll a 5, change the
+result to a 6.
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),FALSE,Alt Ability,@zoethorogood,"Unlocked via 18,000 backers for the Requiem Kickstarter."
+The Lamb,,"HP: 6 | DC: 3+ | AT: 6!
+
+When this dies, the active
+player may choose 2 other
+players. They each destroy
+a soul they control.
+------------------------------
+""I'll swallow your soul!""
+Not the Bible
+------------------------------
+Rewards: 3¢
+(+1 soul)",Epic Boss (1),FALSE,Alt Ability,@JLcomics,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Delirium,,"HP: 5 | DC: 3+ | AT: 2
+
+While the active player
+controls 2 souls, monsters
+have +1 DC. If the active player
+controls 3+ souls, monsters
+have +2 DC instead.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Loot 6",Epic Boss (1),FALSE,Alt Ability,@_SrPelo_,Unlocked in a celebration of the culmination of all the community's contributions during the Requiem Kickstarter.
+It Lives!,,"HP: 8 | DC: 3+ | AT: 4
+
+While this soul is
+controlled, players need
+to control at least 5
+souls to win.
+------------------------------
+Rewards: <3
+(+2 souls)",Epic Boss (1),FALSE,Alt Ability,@plastiboo,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+Mega Satan!,,"HP: 6 | DC: 6 | AT: 6
+
+Players can be attacked
+and have 4+ DC.
+------------------------------
+At the end of each turn, if
+the active player is the only
+living player, this dies.
+------------------------------
+Rewards: +2 treasure
+(+1 soul)",Epic Boss (1),TRUE,Alt Ability,@_KrisWilson_,"Unlocked via 25,000 backers for the Requiem Kickstarter."
+Mega Satan!,,"HP: 6 | DC: 6 | AT: 6
+
+Players can be attacked and
+have 4+ DC. The active player may
+attack any number of times.
+------------------------------
+Each time a player dies,
+this takes 2 damage.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),TRUE,Alt Ability,@drakeredcrest,"
+
+Unlocked after the Requiem Kickstarter."
+Ultra Greed!,,"HP: 4 | DC: 5+ | AT: 2
+
+When an attack is declared
+on this, put a gold counter
+on a non-eternal item.
+------------------------------
+When this dies, the active
+player may steal an item
+with a gold counter on it.
+------------------------------
+Rewards: 5¢
+(+1 soul)",Epic Boss (1),FALSE,Alt Ability,Sam Kieth,"Unlocked via 40,000 backers for the Requiem Kickstarter."
+The Beast,,"HP: 6 | DC: 6 | AT: 6
+
+When this dies, each player
+destroys each soul they
+control, then each player
+gains +2 treasure
+and loots 6.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Epic Boss (1),FALSE,Original,@Shamfooo,"Unlocked via $6,660,000 total backed on the Requiem Kickstarter."
+,Challenges,,,,,,
+Blank Canvas,,"HP: ? | DC: ? | AT: ?
+
+As this enters play, reveal cards from
+the top of the monster deck until you
+reveal 3 non-event monster cards. This
+has the HP, DC, and AT of the first, gains
+the abilities of the second, and has the
+rewards of the third. Put the revealed
+cards outside the game. When this
+leaves play, put them into discard.
+------------------------------
+Rewards: ?",Basic Enemies (30),FALSE,Alt Art,@orisghost,"This minion card is part of the Day of the Doodler challenge, included with The Unboxing of Isaac #13 for May, 2023, which was given as a free bonus to anyone who subscribed to all of the previous Unboxing boxes."
+Blank Canvas,,"HP: ? | DC: ? | AT: ?
+
+As this enters play, reveal cards from
+the top of the monster deck until you
+reveal 3 non-event monster cards. This
+has the HP, DC, and AT of the first, gains
+the abilities of the second, and has the
+rewards of the third. Put the revealed
+cards outside the game. When this
+leaves play, put them into discard.
+------------------------------
+Rewards: ?",Basic Enemies (30),FALSE,Alt Art,@orisghost,"This minion card is part of the Day of the Doodler challenge, included with The Unboxing of Isaac #13 for May, 2023, which was given as a free bonus to anyone who subscribed to all of the previous Unboxing boxes."
+,The Summer of Isaac,,,,,,
+Coil,,"HP: 3 | DC: 3+ | AT: 1
+
+When this enters play, each
+player gives their hand to the
+player to their right.
+------------------------------
+When this dies, put it in the
+monster deck 4 cards
+from the top.
+------------------------------
+Rewards: Loot 2",Basic Enemies (30),FALSE,Original,Private,"Crossover with the video game Coil.
+
+Part of the Edmund Booster Pack in The Summer of Isaac, released in June, 2024."
+Weltling,,"HP: 3 | DC: 3+ | AT: 1
+
+At the start of each turn,
+put a counter on this.
+------------------------------
+This has -1 HP  for each counter on it.
+------------------------------
+Each time a player rolls an
+attack roll of 1, this deals
+2 damage to each player.
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,Private,"Crossover with the video game Carious Weltling.
+
+Part of the Edmund Booster Pack in The Summer of Isaac, released in June, 2024."
+Light Switch,,"HP: 6 | DC: 1+ | AT: 0
+
+Each time the active player deals
+damage to this, they roll-
+1: Take 3 damage.
+------------------------------
+2: Take 2 damage.  3: Gain 1¢.
+------------------------------
+4: Loot 1.  5: Gain 5¢
+------------------------------
+6: Gain +1 treasure.
+------------------------------
+Rewards: Roll- Gain x¢",Basic Enemies (30),FALSE,Original,"Item: @HamBerry_art
+Background: @WhaleBeanArt","Crossover with the video game AVGM.
+
+Part of the Edmund Booster Pack in The Summer of Isaac, released in June, 2024."
+Police Lineup,,"All non-active players
+secretly decide together on
+which non-active player is guilty
+till end of turn. Then, the active
+player chooses a non-active player.
+If the chosen player is guilty,
+they die and the active player
+gains +1 treasure. Otherwise, the
+guilty player gains +1 treasure
+and the active player skips
+their next turn.",Good Events (8),TRUE,Original,@TikaratheMew,"Crossover with the video game Fingered.
+
+Part of the Edmund Booster Pack in The Summer of Isaac, released in June, 2024."
+Cereus Peashy,,"HP: 3 | DC: 3+ | AT: 1
+
+At the start of each turn, the
+active player rolls-
+1-3: Choose another monster at
+random. Put it into discard.
+------------------------------
+4-6: They must attack this this turn.
+------------------------------
+Each time this takes damage, it deals
+1 damage to the active player.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,Private,"Crossover with the video game Cereus Peashy.
+
+Part of the Edmund Booster Pack in The Summer of Isaac, released in June, 2024."
+Conjoined Fatty,,"HP: 3 | DC: 3+ | AT: 1
+
+Each time a player plays a loot
+card, put a counter on this.
+------------------------------
+Each time this would take damage
+while it has counters on it, prevent
+it. Remove a counter from this, and
+the active player loots 1.
+------------------------------
+Rewards: Loot 3",Basic Enemies (30),FALSE,Alt Ability,"@rich_werner
+","Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Gemini,,"HP: 3 | DC: 4+ | AT: 1
+
+When this reaches 1 HP, put
+a HP counter on a monster
+chosen at random, then put
+a AT counter on a monster
+chosen at random.
+------------------------------
+Rewards: 8¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@Valdevia_Art,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+The Bloat,,"HP: 4 | DC: 4+ | AT: 2
+
+Each time a monster
+dies, this deals 1 damage
+to each other monster
+and each player.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,Joseph Whiteford,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+War,,"HP: 4 | DC: 3+ | AT: 2
+
+At the start
+of each turn, put a
+AT counter on another
+monster chosen at random.
+(AT counters give the
+ability ""This has +1 AT."")
+------------------------------
+Rewards: 9¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@pitchcanker,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Conquest,,"HP: 3 | DC: 3+ | AT: 1
+
+When this dies, the active
+player must make an
+additional attack against
+another player. They have
+4+ DC for the attack.
+------------------------------
+Rewards: 7¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@Personfaces,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Widow,,"HP: 3 | DC: 5+ | AT: 1
+
+At the start of each turn, put a
+spider counter on a character chosen at
+random. Then, the active player rolls for
+each spider counter on their character-
+1-3: Take 1 damage.
+------------------------------
+Each character with a spider
+counter has ↷: Remove a spider
+counter from this.""
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@lehmannthiago,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Headless Horseman,,"HP: 2 | DC: 3+ | AT: 1
+
+If this would die, except on
+an attack roll of 6, prevent
+death. This heals to full HP,
+gains +1 DC and +1 AT till end of
+turn, and the active player
+gains its rewards.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@Rodarounet,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Krampus,,"HP: 5 | DC: 4+ | AT: 1
+
+At the start of each turn, each player
+votes naughty or nice. If naughty wins, the
+active player must attack this this turn.
+------------------------------
+Each time the attacking player rolls
+the same attack roll result twice in
+a row on the same turn, this deals
+1 damage to each other monster.
+------------------------------
+Rewards: Loot 4
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@OmegaBlackArt,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+The Rainmaker,,"HP: 3 | DC: 4+ | AT: 0
+
+This has +1 AT for each curse
+the active player controls.
+------------------------------
+When an attack is declared on this,
+reveal cards from the top of the monster
+deck till you reveal a curse card. Gain
+it, then put the rest on the bottom
+of the deck in a random order.
+------------------------------
+Rewards: 10¢
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@D4V34NN4,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+The Adversary,,"HP: 5 | DC: 3+ | AT: 1
+
+At the start of each
+turn, each player
+chooses a different number
+between 1 and 6 in turn order.
+Till end of turn, each time a
+player's chosen number is
+rolled, they take 1 damage.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Alt Ability,@KrampusParty,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Hush,,"HP: 6 | DC: 1+ | AT: 1
+
+Damage this would take
+is reduced by 1.
+------------------------------
+If an attack roll made against
+this is less than or equal to
+the last attack roll made
+against it this turn, the
+roll counts as a miss.
+------------------------------
+Rewards: +2 treasure
+(+2 souls)",Epic Boss (1),FALSE,Alt Ability,@ZalsNG,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Mother!,,"HP: 8 | DC: 1+ | AT: 2
+
+Before each attack roll against
+this is rolled, the players to the
+active player's left and right
+each choose a number between
+1 and 6. If the next attack roll
+is one of those numbers, it
+counts as a miss.
+------------------------------
+Rewards: Loot 4
+(+2 souls)",Epic Boss (1),TRUE,Alt Ability,@OddOblivion,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Dogma,,"HP: 4 | DC: 4+ | AT: 4
+
+Each time a player rolls a 1, put
+each other monster into discard.
+------------------------------
+When this dies, the active player
+puts an eternal counter on an
+item. (Eternal counters give
+the ability ""eternal."")
+------------------------------
+Rewards: +1 treasure",Epic Boss (1),FALSE,Alt Ability,@SpriBriPlus,"Part of the Alt Art Booster Pack in The Summer of Isaac, released in July, 2024."
+Mulligoon,,"HP: 3 | DC: 4+ | AT: 0
+
+Each time this takes damage, cancel
+an attack against this if able. The
+active player loots 1 and moves
+this to another monster slot.
+------------------------------
+This doesn't heal at the
+end of each turn.
+------------------------------
+Rewards: Deal 2 damage
+to a monster or player",Basic Enemies (30),FALSE,Original,@rojen241,"Design by @MetroDesigner
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Shopkeeper,,"HP: 1 | DC: 0 | AT: 0
+
+If a player would destroy an
+item for the death penalty, they
+put it in a shop slot instead.
+------------------------------
+This can't be attacked.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: 5¢",Basic Enemies (30),FALSE,Original,@HamBerry_art,"Design by @DaveReiby
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Giant Poop,,"HP: 5 | DC: 4+ | AT: 0
+
+Each time a player deals
+damage to this, they loot 1.
+------------------------------
+When an attack is declared on this,
+each non-active player teams up
+with the attacking player.
+------------------------------
+The player who kills this
+gains its rewards.
+------------------------------
+Rewards: Loot 5",Basic Enemies (30),FALSE,Original,Private,"Design by @Gel0_Art
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Charmed Vis,,"HP: 2 | DC: 4+ | AT: 1
+
+Each time a player attacking or
+controlling this takes damage,
+this deals 1 damage to each
+other monster.
+------------------------------
+If this would be killed by another
+player while it's an item, prevent
+death. That player steals this instead.
+------------------------------
+Rewards: If this is a monster, it becomes
+an item with familiar. Gain it",Bosses (30),FALSE,Original,@rojen241,"Design by MrWe$tCoa$t
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Tainted Mulligan,,"HP: 2 | DC: 3+ | AT: 1
+
+When an attack is declared
+on this, this gains +1 HP for
+each loot card in the
+active player's hand till
+end of turn.
+------------------------------
+Rewards: Roll- Loot x",Basic Enemies (30),FALSE,Original,Private,"Design by @megabonez
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Hot Potato!,,"As this enters play, it becomes
+an item. The active player gains it.
+------------------------------
+When this item enters your
+control, gain 2¢, then roll-
+
+1-4: Give this to the player
+to your left.
+------------------------------
+5: Destroy this, then take 3 damage.
+------------------------------
+6: This becomes a soul.
+(+1 soul)",Good Events (8),FALSE,Original,@HamBerry_art,"Design by @Luis_the_person
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Curse of Envy,,"When you die, each
+other player gains
++1 treasure.
+------------------------------
+-Curse-
+(When this enters play, give
+this to a player. When they die,
+they put this into discard.)",Curses (5),FALSE,Original,@TikaratheMew,"Design by @Dicebanned
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Holy Greed,,"HP: 5 | DC: 4+ | AT: 2
+
+Shop items the active player
+purchases cost 3¢ less.
+------------------------------
+Each time a player purchases
+a shop item, put counters on this
+equal to the amount of ¢ they paid.
+------------------------------
+-Indomitable-
+------------------------------
+Rewards: Gain 1¢
+for each counter on this
+(+1 soul)",Bosses (30),FALSE,Original,@rojen241,"Design by @Quinbo51
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+Cursed Haunt,,"HP: 3 | DC: 3+ | AT: 1
+
+While this is a soul, it has +1 DC
+and can be attacked.
+------------------------------
+If this would die while it is a
+soul, prevent death. The active
+player gains its reward and
+steals it instead.
+------------------------------
+Rewards: +1 treasure
+(+1 soul)",Bosses (30),FALSE,Original,@MitBoy_,"Design by @MitBoy_
+
+Part of the Community Booster Pack in The Summer of Isaac, released in August, 2024."
+,Youtooz,,,,,,
+Devil Deal,,"Choose one-
+•Put this into discard.
+------------------------------
+•Loot 2. Take 1 damage.
+------------------------------
+•Take 2 damage. Search
+the treasure deck for a
+Guppy item, gain it, then
+shuffle the treasure deck.",Good Events (8),FALSE,Alt Art,@therealracckun,"Included with the Baphomet Youtooz figure available for pre-order starting February 2nd, 2024."
+,Anniversary,,,,,,
+Wrath of the Lamb,,"Each player votes for
+another player. The
+player with the most
+votes may steal a soul
+from another player. If
+there is a tie, the active
+player chooses a player
+tied for the most votes.",Bad Events (8),TRUE,Original,Private,
+Keeper's Resting Place,,"When this enters play, the
+active player secretly puts this
+back in the monster deck at
+least 3 cards from the top. If
+this is the second time a card
+named Keeper's Resting Place
+resolves this game, this
+becomes a soul instead
+and the active player
+gains it.
+(+1 soul)",Good Events (8),TRUE,Original,Private,
+Game Crash!,,"Destroy each item and
+put each monster and
+each room into discard.
+------------------------------
+foursouls.exe
+------------------------------
+foursouls.exe has stopped working
+A problem has caused the program to stop working correctly.
+Please contact helpcenter@maestromedia.com for support.
+------------------------------
+Close program",Bad Events (8),FALSE,Original,Private,
+Patch Notes,,"Choose three different
+players at random. The first
+puts a HP counter on a non-
+eternal item they control.
+The second puts a AT counter
+on a non-eternal item they
+control. The third puts an
+eternal counter on an
+item they control.",Good Events (8),TRUE,Original,@Tikarathemew,
+Tainted Spitty,,"HP: 4 | DC: 3+ | AT: 1
+
+If the attacking player would
+roll an attack roll against
+this, they instead roll x dice,
+where x is the number of souls
+they control plus 1. Choose
+the lowest as the result.
+------------------------------
+Rewards: +2 treasure",Basic Enemies (30),FALSE,Original,Private,
+,Mewgenics,,,,,,
+Radical Rat,,"HP: 4 | DC: 4+ | AT: 1
+
+At the start of each turn,
+the active player rolls-
+1-3: Deal 2 damage to a player
+chosen at random.
+------------------------------
+4-6: Deal 2 damage to a monster
+chosen at random.
+------------------------------
+Rewards: Loot 3
+(+1 soul)",Bosses (30),FALSE,Original,@HamBerry_art,Included with The Mewgenics Collectible Cat Carrier bundle to celebrate the release of the Mewgenics video game.

@@ -6,7 +6,7 @@ import { GameBoard } from '../components/board/GameBoard';
 import { EdenPickModal } from '../components/board/EdenPickModal';
 import { SadVoteModal } from '../components/board/SadVoteModal';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
-import { RemoteCursors } from '../components/board/RemoteCursors';
+import { DeathPenaltyModal } from '../components/death/DeathPenaltyModal';
 import { useCursorBroadcast } from '../hooks/useCursorBroadcast';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -112,14 +112,16 @@ export function Game() {
     <>
       <GameBoard />
 
-      {/* Remote player cursors */}
-      <RemoteCursors />
+      {/* Remote cursors rendered inside BoardCanvas */}
 
       {/* Eden starting-item pick — blocks interaction until all Edens have chosen */}
       <EdenPickModal />
 
       {/* Saddest character vote — blocks interaction until resolved */}
       <SadVoteModal />
+
+      {/* Death penalty: choose item to destroy */}
+      <DeathPenaltyModal />
 
       {/* Error toast */}
       {error && (
@@ -139,13 +141,33 @@ export function Game() {
       >
         {gameOverInfo && (
           <div className="text-center space-y-4">
-            <div className="text-6xl">🏆</div>
-            <div className="font-display text-fs-gold-light text-2xl font-bold">
-              {gameOverInfo.winnerName} wins!
-            </div>
-            <div className="text-fs-parchment/60 text-sm">
-              They collected 4 souls and emerged victorious.
-            </div>
+            {gameOverInfo.winnerId ? (
+              <>
+                <div className="text-6xl">
+                  {(game?.gameMode === 'coop' || game?.gameMode === 'solitaire') ? '🤝' : '🏆'}
+                </div>
+                <div className="font-display text-fs-gold-light text-2xl font-bold">
+                  {(game?.gameMode === 'coop' || game?.gameMode === 'solitaire')
+                    ? 'Team Victory!'
+                    : `${gameOverInfo.winnerName} wins!`}
+                </div>
+                <div className="text-fs-parchment/60 text-sm">
+                  {(game?.gameMode === 'coop' || game?.gameMode === 'solitaire')
+                    ? 'You collected 4 souls together and beat the D8!'
+                    : 'They collected 4 souls and emerged victorious.'}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-6xl">⏰</div>
+                <div className="font-display text-red-400 text-2xl font-bold">
+                  Time&apos;s Up!
+                </div>
+                <div className="text-fs-parchment/60 text-sm">
+                  The D8 reached 0 — you lose.
+                </div>
+              </>
+            )}
             <div className="flex gap-3 justify-center flex-wrap">
               {isHost && (
                 <Button

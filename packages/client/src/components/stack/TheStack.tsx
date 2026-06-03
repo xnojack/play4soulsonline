@@ -98,6 +98,7 @@ const STACK_TYPE_ICONS: Record<string, string> = {
   dice_roll: '🎲',
   attack_roll: '⚔',
   attack_declaration: '⚔',
+  death: '💀',
 };
 
 export function TheStack() {

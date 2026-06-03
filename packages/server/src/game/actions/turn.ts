@@ -82,9 +82,9 @@ export function endTurn(state: GameState): GameState {
     ...resetState,
     players: resetState.players.map((p) => {
       if (!p.isAlive && p.baseHp + p.hpCounters - p.currentDamage > 0) {
-        return { ...p, isAlive: true };
+        return { ...p, isAlive: true, deadThisTurn: false };
       }
-      return p;
+      return { ...p, deadThisTurn: false };
     }),
   };
 
@@ -116,14 +116,22 @@ export function endTurn(state: GameState): GameState {
     passedPriority: new Set<string>(),
   };
 
-  const newState = resetPriority({
+  let finalState = resetPriority({
     ...recharged,
     turn: newTurn,
     log: [...recharged.log, log],
   });
 
+  // D8 round-end tick: when we cycle back to the round-start player
+  if (state.d8Timer !== null && state.d8RoundStartPlayerId && nextPlayer.id === state.d8RoundStartPlayerId) {
+    finalState = {
+      ...finalState,
+      d8Timer: Math.max(0, state.d8Timer - 1),
+    };
+  }
+
   // Immediately transition to action phase (start phase triggers are manual)
-  return beginActionPhase(newState);
+  return beginActionPhase(finalState);
 }
 
 /** Recharge all items controlled by a player */
@@ -327,6 +335,12 @@ export function returnToDeck(
 
   // Remove from source zone
   if (fromInstanceId) {
+    // Verify ownership: card must belong to the acting player
+    const ownerPlayer = state.players.find((p) =>
+      p.items.some((i) => i.instanceId === fromInstanceId) ||
+      p.handCardIds.includes(cardId)
+    );
+    if (ownerPlayer && ownerPlayer.id !== playerId) return state; // Not owner
     const { newState: afterRemove, instance } = findAndRemoveCardInstance(state, cardId, fromInstanceId);
     if (!instance) return state;
     newState = afterRemove;

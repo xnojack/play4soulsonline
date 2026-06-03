@@ -431,7 +431,7 @@ export function applyDamageToPlayer(
   };
 
   if (effectiveHp <= 0) {
-    newState = killPlayer(newState, targetPlayerId);
+    // Death is deferred to the stack — handler will push it after state update
   }
 
   return newState;
@@ -445,6 +445,12 @@ export function healPlayer(
 ): GameState {
   const player = state.players.find((p) => p.id === targetPlayerId);
   if (!player) return state;
+
+  // Can't heal while death is on the stack
+  const deathOnStack = state.stack.some(
+    (s) => s.type === 'death' && !s.isCanceled && s.data.playerId === targetPlayerId
+  );
+  if (deathOnStack) return state;
 
   const maxHp = player.baseHp + player.hpCounters;
   const newDamage = Math.max(0, player.currentDamage - amount);
@@ -464,35 +470,121 @@ export function healPlayer(
   };
 }
 
-/** Handle player death */
-export function killPlayer(state: GameState, playerId: string): GameState {
+/** Apply death penalty to a player.
+ *  Destroy one non-eternal item (chosen by caller via itemId, or first available),
+ *  discard one loot card, lose 1¢, deactivate all ↷ items.
+ *  Each step is optional — if the player can't pay a part, it's skipped. */
+export function applyDeathPenalty(
+  state: GameState,
+  playerId: string,
+  itemIdToDestroy?: string
+): GameState {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return state;
 
-  // Curse monsters on this player go to monster discard
-  const curseIds = player.curses.map((c) => c.cardId);
+  let s = state;
+  const logs: ReturnType<typeof createLogEntry>[] = [];
 
-  // Player loses all coins and loot; non-eternal items drop
-  const logs = [
-    createLogEntry('death', `${player.name} has died!`, playerId),
-  ];
-
-  const newPlayers = state.players.map((p) => {
-    if (p.id !== playerId) return p;
-    return {
-      ...p,
-      isAlive: false,
-      deathCount: p.deathCount + 1,
-      currentDamage: 0, // reset for respawn
-      curses: [],
-      // Items and hand stay; player respawns next turn start
-    };
+  // 1. Destroy a non-eternal item (player's choice, or first available)
+  const nonEternalItems = player.items.filter((item) => {
+    const card = getCardById(item.cardId);
+    return !card?.isEternal;
   });
 
+  if (nonEternalItems.length > 0) {
+    let chosenItem: CardInPlay | null = null;
+    if (itemIdToDestroy) {
+      chosenItem = nonEternalItems.find((i) => i.instanceId === itemIdToDestroy) || null;
+    }
+    if (!chosenItem) {
+      chosenItem = nonEternalItems[0];
+    }
+
+    if (chosenItem) {
+      const card = getCardById(chosenItem.cardId);
+      s = {
+        ...s,
+        players: s.players.map((p) =>
+          p.id === playerId
+            ? { ...p, items: p.items.filter((i) => i.instanceId !== chosenItem!.instanceId) }
+            : p
+        ),
+        treasureDiscard: [...s.treasureDiscard, chosenItem.cardId],
+      };
+      logs.push(createLogEntry(
+        'death',
+        `${player.name} destroys ${card?.name ?? 'an item'} as death penalty`,
+        playerId
+      ));
+    }
+  }
+
+  // 2. Discard one loot card from hand
+  if (s.players.find((p) => p.id === playerId)!.handCardIds.length > 0) {
+    const discardedCardId = s.players.find((p) => p.id === playerId)!.handCardIds[0];
+    s = {
+      ...s,
+      players: s.players.map((p) =>
+        p.id === playerId
+          ? { ...p, handCardIds: p.handCardIds.filter((id) => id !== discardedCardId) }
+          : p
+      ),
+      lootDiscard: [...s.lootDiscard, discardedCardId],
+    };
+    const card = getCardById(discardedCardId);
+    logs.push(createLogEntry(
+      'death',
+      `${player.name} discards ${card?.name ?? 'a loot card'} as death penalty`,
+      playerId
+    ));
+  }
+
+  // 3. Lose 1¢
+  const currentPlayer = s.players.find((p) => p.id === playerId)!;
+  if (currentPlayer.coins > 0) {
+    s = {
+      ...s,
+      players: s.players.map((p) =>
+        p.id === playerId ? { ...p, coins: p.coins - 1 } : p
+      ),
+    };
+    logs.push(createLogEntry(
+      'death',
+      `${player.name} loses 1¢ as death penalty`,
+      playerId
+    ));
+  }
+
+  // 4. Deactivate all ↷ items (items with activated abilities)
+  const deactivatedItems = s.players.find((p) => p.id === playerId)!.items.map((item) => {
+    const card = getCardById(item.cardId);
+    // Deactivate if the card has an activated ability (gold border / active item)
+    // We check if the ability text contains ↷ or $ tags
+    const hasActivatedAbility = card?.abilityText?.match(/↷|\$/);
+    return hasActivatedAbility ? { ...item, charged: false } : item;
+  });
+  s = {
+    ...s,
+    players: s.players.map((p) =>
+      p.id === playerId ? { ...p, items: deactivatedItems } : p
+    ),
+  };
+
+  // Clear curses → monster discard
+  const curses = s.players.find((p) => p.id === playerId)!.curses;
+  if (curses.length > 0) {
+    const curseIds = curses.map((c) => c.cardId);
+    s = {
+      ...s,
+      players: s.players.map((p) =>
+        p.id === playerId ? { ...p, curses: [] } : p
+      ),
+      monsterDiscard: [...s.monsterDiscard, ...curseIds],
+    };
+  }
+
   return {
-    ...state,
-    players: newPlayers,
-    monsterDiscard: [...state.monsterDiscard, ...curseIds],
-    log: [...state.log, ...logs],
+    ...s,
+    log: [...s.log, ...logs],
   };
 }

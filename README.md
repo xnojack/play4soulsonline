@@ -123,7 +123,26 @@ Set these as environment variables in your `docker-compose.yml` or `.env` file.
 1. One player clicks **Create Game** and shares the 6-character room code.
 2. Other players click **Join Game** and enter the code + their name.
 3. Spectators can join with "Join as spectator" checked.
-4. The host selects which card sets to include and clicks **Start Game**.
+4. The host selects a deck mode (Balanced, All Cards, or Custom Sets), configures options, and clicks **Start Game**.
+
+### Deck modes
+
+When starting a game, the host chooses how decks are built:
+
+| Mode | Description |
+|---|---|
+| **Balanced Deck** | Uses official ratio targets from [foursouls.com](https://foursouls.com/deckbuilder/). Each category (coins, tarot, trinkets, bosses, etc.) is filled to its recommended count by randomly sampling from all available cards. Works for any player count. Eternal starting items remain separate and are not part of the ratio. |
+| **All Cards** | Every available card goes into the deck, expanded by physical copy count (`quantity`). No set filtering. |
+| **Custom Sets** | Host picks which card sets to include via checkboxes. This is the original behavior. |
+
+**Official ratio targets** (from [foursoulsspoiler.net/deck-ratios](https://foursoulsspoiler.net/deck-ratios)):
+
+| Deck | Total | Breakdown |
+|---|---|---|
+| Loot | 95 | Tarot 23, Trinkets 11, Pills 3, Runes 3, Butter Beans 5, Bombs 6, Batteries 6, Dice Shards 3, Soul Hearts 2, Lost Souls 1, Nickels 6, 4¢ 12, 3¢ 11, 2¢ 6, 1¢ 2 |
+| Monster | 100 | Epic Boss 1, Bosses 30, Basic Enemies 30, Cursed Enemies 9, Holy/Charmed 9, Good Events 8, Bad Events 8, Curses 5 |
+| Treasure | 100 | Active 40, Passive 44, Paid 10, One-Use 5, Soul 1 |
+| Bonus Souls | 3 | Separate toggle, not part of main deck |
 
 ### In-game controls
 
@@ -176,6 +195,32 @@ npm run scrape
 ```
 
 The scraper is incremental — it skips cards already in the database and only downloads new ones.
+
+### Scraper: set-by-set discovery
+
+The scraper runs two passes to capture all card variants:
+
+1. **Main pass** — queries foursouls.com's card search with `identical=yes` to get one entry per unique card design.
+2. **Set-by-set pass** — queries each set individually (Gold Box, Requiem, Alt Art, etc.) with `identical=no` to find set-specific variants the main pass misses (e.g., Gold Box alt-art "A Penny!", Requiem "Sticky Nickel").
+
+This ensures all physical copies across all sets are captured with correct quantities.
+
+### Quantity audit
+
+After scraping, verify card quantities against the official spreadsheet:
+
+```bash
+npx ts-node packages/scraper/scripts/audit-quantities.ts
+```
+
+This compares the local spreadsheet CSVs (`card-spreadsheet/`) against `data/cards.db` and reports:
+
+- Per-name comparison (spreadsheet count vs DB `SUM(quantity)`)
+- Category breakdown
+- Missing cards (in spreadsheet, not in DB)
+- Extra cards (in DB, not in spreadsheet)
+
+If mismatches appear, re-run `npm run scrape` to capture missing variants.
 
 ---
 

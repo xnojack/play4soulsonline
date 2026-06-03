@@ -4,6 +4,7 @@ import { scrapeCardList, scrapeCardQuantities } from './scrapeCardList';
 import { scrapeCardDetail } from './scrapeCardDetail';
 import { downloadImages, downloadBackImage } from './downloadImages';
 import { seedDatabase, writeJson } from './seedDatabase';
+import { patchQuantitiesFromSpreadsheet, reclassifyCards } from './patchQuantities';
 import { ScrapedCard } from './types';
 
 const DATA_DIR = path.resolve(__dirname, '../../../data');
@@ -154,6 +155,28 @@ async function main() {
     // Strip the same way to match: b2-a_penny_6 → b2-a_penny, b2-bomb-2 → b2-bomb, etc.
     const baseId = card.id.replace(/[-_]\d+$/, '');
     card.quantity = quantityMap[baseId] ?? 1;
+  }
+  console.log();
+
+  // Step 4b: Reclassify cards (Challenge, Outside, Monster names from spreadsheet)
+  // Must run BEFORE quantity patching so cards are grouped by correct type
+  console.log('Step 4b: Reclassifying cards...');
+  const reclassified = reclassifyCards(allCards);
+  if (reclassified > 0) {
+    console.log(`  Reclassified ${reclassified} cards.`);
+  } else {
+    console.log('  All cards already classified.');
+  }
+  console.log();
+
+  // Step 4c: Patch quantities from official spreadsheet (authoritative source)
+  console.log('Step 4c: Patching quantities from spreadsheet...');
+  const spreadsheetDir = path.resolve(__dirname, '../../../card-spreadsheet');
+  const patched = patchQuantitiesFromSpreadsheet(allCards, spreadsheetDir);
+  if (patched > 0) {
+    console.log(`  Patched ${patched} cards from spreadsheet.`);
+  } else {
+    console.log('  All quantities already match spreadsheet.');
   }
   console.log();
 

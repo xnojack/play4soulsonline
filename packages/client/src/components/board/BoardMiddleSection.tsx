@@ -110,9 +110,13 @@ function StackLivePanel() {
           </div>
         </div>
 
-        {draggingHand && (
-          <div className="text-3xl text-fs-gold text-center font-display font-bold animate-pulse bg-fs-gold/10 border-2 border-fs-gold/40 rounded-lg py-3">Drop here to play</div>
-        )}
+        <div className={`text-center font-display rounded-lg border-2 py-3 transition-all duration-200 ${
+          draggingHand
+            ? 'text-3xl text-fs-gold font-bold animate-pulse bg-fs-gold/20 border-fs-gold/60'
+            : 'text-xl text-fs-parchment/25 border-dashed border-fs-gold/15 bg-transparent'
+        }`}>
+          {draggingHand ? 'DROP HERE TO PLAY' : 'Play cards here'}
+        </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
           <AnimatePresence>

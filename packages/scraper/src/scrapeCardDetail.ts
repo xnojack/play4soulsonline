@@ -1,7 +1,13 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import path from 'path';
 import { ScrapedCard } from './types';
 import { CardListEntry } from './scrapeCardList';
+import { loadMonsterNames, loadOutsideNames } from './patchQuantities';
+
+const SPREADSHEET_DIR = path.resolve(__dirname, '../../../card-spreadsheet');
+const KNOWN_MONSTERS = loadMonsterNames(SPREADSHEET_DIR);
+const KNOWN_OUTSIDE = loadOutsideNames(SPREADSHEET_DIR);
 
 const BASE_URL = 'https://foursouls.com';
 
@@ -42,8 +48,43 @@ function decodeEntities(text: string): string {
     .trim();
 }
 
+// Good/Bad Event classification from spreadsheet — used when HTML type is ambiguous
+const GOOD_EVENTS = new Set([
+  'Secret Room!', 'XL Floor!', 'Shop Upgrade!', 'We Need to Go Deeper!',
+  'I Can See Forever!', 'Devil Deal', 'Chest', 'Gold Chest', 'Dark Chest',
+  'Trap Door!', 'I Am Error!', 'Angel Room', 'Holy Chest', 'Spiked Chest',
+  'TV Static', 'Double Treasure!', 'Golden Troll Bomb!', 'TNT Barrel',
+  'QWOP!', 'Police Lineup', 'Hot Potato!', "Keeper's Resting Place",
+  'Patch Notes',
+]);
+const BAD_EVENTS = new Set([
+  'Troll Bombs', 'Mega Troll Bomb!', 'Ambush!', 'Greed!', 'Cursed Chest',
+  'Head Trauma', 'Boss Rush!', 'Corrupted Data', 'Betrayal!',
+  'Lust for Blood!', "Mother's Shadow!", 'Overflow!', 'Golden Idol',
+  'Brea in Distress', 'Grubfather', 'Fuck Bloat', 'Wrath of the Lamb',
+  'Game Crash!',
+]);
+
+// Tarot/misc card names that lack an explicit HTML type label
+const TAROT_NAMES = new Set([
+  'The Fool', 'The Magician', 'The High Priestess', 'The Empress',
+  'The Emperor', 'The Hierophant', 'The Lovers', 'The Chariot',
+  'Justice', 'The Hermit', 'Wheel Of Fortune', 'Strength',
+  'The Hanged Man', 'Death', 'Temperance', 'The Devil', 'The Tower',
+  'The Stars', 'The Moon', 'The Sun', 'Judgement', 'The World',
+  'Joker', 'Credit Card', 'Holy Card', 'A Sack', 'Get Out Of Jail Card',
+  '? Card', 'Gold Key', 'Two Of Diamonds', 'Two Of Spades',
+  'Ace Of Diamonds', 'Emergency Contact', "Dad's Note", 'Key',
+  'Magic Marker', 'Demon Form', 'Fiend Fire', 'Chunk Of Amber',
+  'Witch', 'Bible Thump!', 'Greed Butt!', 'Cow On A Trash Farm',
+  'Blanks', 'Cheep Cheep Cheep!', 'Murder!', 'Cracked Key',
+  'Monster Card', 'Era Walk', 'Loot Card', 'Wishbone',
+  'The Left Hand', 'Rainbow Tapeworm',
+]);
+
 function inferCardType(
-  raw: string
+  raw: string,
+  cardName: string = ''
 ): { cardType: string; subType: string } {
   const lower = raw.toLowerCase();
 
@@ -78,7 +119,51 @@ function inferCardType(
   if (lower.includes('passive')) return { cardType: 'Treasure', subType: 'Passive' };
   if (lower.includes('treasure')) return { cardType: 'Treasure', subType: 'Passive' };
 
+  // Name-based fallback for Loot cards that lack an explicit HTML type label
+  const nameLower = cardName.toLowerCase();
+  if (/^(?:o\.|i\.|ii\.|iii\.|iv\.|v\.|vi\.|vii\.|viii\.|ix\.|x\.|xi\.|xii\.|xiii\.|xiv\.|xv\.|xvi\.|xvii\.|xviii\.|xix\.|xx\.|xxi\.)\s/i.test(cardName) || TAROT_NAMES.has(cardName)) {
+    return { cardType: 'Loot', subType: 'Tarot' };
+  }
+  if (nameLower.includes('penny') || nameLower.includes('nickel') || nameLower.includes('dime') || nameLower.includes('quarter') || (nameLower.includes('cent') && !nameLower.includes('percent'))) {
+    return { cardType: 'Loot', subType: 'Coin' };
+  }
+  if (nameLower.includes('bean')) return { cardType: 'Loot', subType: 'ButterBean' };
+  if (nameLower === 'dice shard') return { cardType: 'Loot', subType: 'DiceShard' };
+  if (nameLower === 'soul heart') return { cardType: 'Loot', subType: 'SoulHeart' };
+  if (nameLower === 'black heart') return { cardType: 'Loot', subType: 'BlackHeart' };
+  if (nameLower === 'lost soul') return { cardType: 'Loot', subType: 'LostSoul' };
+
   return { cardType: 'Unknown', subType: '' };
+}
+
+/**
+ * Refine Monster subType using card name when HTML label is ambiguous.
+ * "Event" → GoodEvent or BadEvent; generic monsters → HolyMonster if applicable.
+ */
+function refineMonsterSubType(subType: string, cardName: string, soulValue: number): string {
+  if (subType === 'Event') {
+    if (GOOD_EVENTS.has(cardName)) return 'GoodEvent';
+    if (BAD_EVENTS.has(cardName)) return 'BadEvent';
+  }
+  if (subType === 'Basic Monster' || subType === 'Boss' || subType === 'Epic Boss') {
+    const nameLower = cardName.toLowerCase();
+    if (nameLower.includes('holy') || nameLower.includes('charmed')) return 'HolyMonster';
+  }
+  return subType;
+}
+
+/**
+ * Detect coin value from card name for ratio-based deck building.
+ */
+export function detectCoinValue(name: string): number {
+  const lower = name.toLowerCase();
+  if (lower.includes('penny') || lower.includes('1 cent')) return 1;
+  if (lower.includes('2 cent')) return 2;
+  if (lower.includes('3 cent')) return 3;
+  if (lower.includes('4 cent')) return 4;
+  if (lower.includes('nickel') || lower.includes('5 cent')) return 5;
+  if (lower.includes('dime') || lower.includes('10 cent')) return 10;
+  return 0;
 }
 
 /**
@@ -193,7 +278,7 @@ export async function scrapeCardDetail(
   // If there are 2+ paragraphs, second is the type; if only 1, no explicit type
   const rawType = paragraphs.length >= 2 ? paragraphs.last().text().trim() : '';
 
-  const { cardType, subType } = inferCardType(rawType);
+  const { cardType, subType } = inferCardType(rawType, cleanName);
 
   // --- Stats from #StatTable ---
   // Each row: <tr><td><img alt="HP" ...></td><td class="value">: 2</td></tr>
@@ -281,11 +366,33 @@ export async function scrapeCardDetail(
 
   // Fallback: cards with no explicit type label and no monster stats are likely Loot cards
   // (numbered variants of coins, tarot cards, etc.)
-  // Exclude the Challenges set — those are scenario cards, not standard loot.
+  // Classify Outside cards first, then Monster, then Challenge by origin.
+  const normName = cleanName
+    .replace(/['\u2019\u2018]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[""]/g, '')
+    .replace(/[-/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\?$/g, '')
+    .replace(/!$/g, '')
+    .toLowerCase()
+    .trim();
   const resolvedCardType =
-    cardType === 'Unknown' && hp === null && atk === null && origin !== 'Challenges'
-      ? 'Loot'
-      : cardType;
+    cardType === 'Unknown' && KNOWN_OUTSIDE.has(normName)
+      ? 'Outside'
+      : cardType === 'Unknown' && KNOWN_MONSTERS.has(normName)
+        ? 'Monster'
+        : cardType === 'Unknown' && origin === 'Challenges'
+          ? 'Challenge'
+          : cardType === 'Unknown' && hp === null && atk === null && origin !== 'Challenges'
+            ? 'Loot'
+            : cardType;
+
+  // Refine Monster subType using name (GoodEvent/BadEvent, HolyMonster)
+  const resolvedSubType =
+    resolvedCardType === 'Monster'
+      ? refineMonsterSubType(subType, cleanName, soulValue)
+      : subType;
 
   // --- Print status ---
   // #CardTrivia contains a <p> with human-readable print status text.
@@ -342,7 +449,7 @@ export async function scrapeCardDetail(
     sourceUrl: entry.url,
     imageUrl,
     cardType: resolvedCardType,
-    subType,
+    subType: resolvedSubType,
     set: origin || 'Unknown',
     hp,
     atk,
@@ -359,5 +466,6 @@ export async function scrapeCardDetail(
     backLocalImagePath: null, // populated by downloadImages after downloading
     flipSideName: flipSideName || null,
     quantity: 1, // overwritten by scrapeCardQuantities() post-processing pass
+    coinValue: detectCoinValue(cleanName),
   };
 }

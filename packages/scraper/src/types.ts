@@ -20,6 +20,8 @@ export interface ScrapedCard {
   printStatus: string;
   /** Number of physical copies of this card in the game box (e.g. 6 for A Penny!). Defaults to 1. */
   quantity: number;
+  /** Coin value in cents for ratio-based deck building (1, 2, 3, 4, 5, 10). 0 for non-coin cards. */
+  coinValue?: number;
   /**
    * For Character cards: the card ID of their eternal starting item, as linked
    * in #CharitemBox on foursouls.com. null if the character has no fixed starting

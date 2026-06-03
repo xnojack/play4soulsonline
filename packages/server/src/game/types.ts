@@ -9,6 +9,8 @@ export type CardType =
   | 'Loot'
   | 'Room'
   | 'BonusSoul'
+  | 'Challenge'
+  | 'Outside'
   | 'Unknown';
 
 export interface Card {
@@ -42,6 +44,8 @@ export interface Card {
   flipSideName: string | null;
   /** Number of physical copies of this card in the game box (e.g. 6 for A Penny!). */
   quantity: number;
+  /** Coin value in cents for ratio-based deck building (1, 2, 3, 4, 5, 10). 0 for non-coin cards. */
+  coinValue: number;
 }
 
 // ============================================================
@@ -99,7 +103,8 @@ export type StackItemType =
   | 'triggered_ability'
   | 'dice_roll'
   | 'attack_roll'
-  | 'attack_declaration';
+  | 'attack_declaration'
+  | 'death';
 
 export interface StackItem {
   id: string;
@@ -152,6 +157,8 @@ export interface TurnState {
   // Priority timeout tracking (server-side only)
   priorityTimeoutPlayerId?: string;  // which player's timeout is active
   priorityTimeoutDeadline?: number;  // Unix ms when their time expires
+  // Death penalty item choice is pending for this player
+  deathPenaltyPending?: string | null;
 }
 
 // ============================================================
@@ -191,6 +198,8 @@ export interface Player {
 
   isAlive: boolean;
   deathCount: number;
+  deadThisTurn: boolean; // once-per-turn death guard
+  solitairePartnerId: string | null; // other character's player ID in solitaire mode
 }
 
 // ============================================================
@@ -223,12 +232,17 @@ export interface LogEntry {
 
 export type GamePhase = 'lobby' | 'eden_pick' | 'sad_vote' | 'active' | 'ended';
 
+export type GameMode = 'competitive' | 'solitaire' | 'coop';
+
 export interface GameState {
   roomId: string;
   hostPlayerId: string;
   phase: GamePhase;
   activeSets: string[]; // which card sets are enabled
   winnerId: string | null;
+  gameMode: GameMode;
+  d8Timer: number | null; // null = competitive; countdown for solitaire/coop
+  d8RoundStartPlayerId: string | null; // player whose turn starts a new D8 round
 
   turn: TurnState;
   priorityQueue: string[]; // player IDs; [0] = has priority
@@ -286,12 +300,15 @@ export interface ClientPlayer extends Omit<Player, 'handCardIds' | 'reconnectTok
   handCount: number; // always visible (public info)
   effectiveHp: number; // derived: baseHp + hpCounters - currentDamage
   effectiveAtk: number; // derived: baseAtk + atkCounters + item ATK bonuses
+  solitairePartnerId: string | null;
 }
 
 export interface ClientGameState extends Omit<GameState, 'players' | 'turn'> {
   players: ClientPlayer[];
   turn: Omit<TurnState, 'passedPriority'> & { passedPriorityIds: string[] };
   myPlayerId: string;
+  gameMode: GameMode;
+  d8Timer: number | null;
   // Deck counts only (no contents)
   treasureDeckCount: number;
   lootDeckCount: number;
@@ -317,7 +334,10 @@ export interface JoinPayload {
   reconnectToken?: string;
 }
 
+export type DeckMode = 'balanced' | 'all' | 'custom';
+
 export interface StartGamePayload {
+  deckMode?: DeckMode; // default: 'sets'
   activeSets: string[];
   includeBonusSouls: boolean;
   bonusSoulCount?: number; // how many bonus souls to lay out (default 3)
@@ -325,6 +345,13 @@ export interface StartGamePayload {
   excludeNeverPrinted?: boolean; // if true, filter out never_printed cards from all decks
   priorityTimeoutMs?: number; // ms per player priority window; 0 = disabled (default 30000)
   allowPrivilegedActions?: boolean; // default true; host can disable to enforce coded rules only
+  gameMode?: GameMode; // 'competitive' | 'solitaire' | 'coop'
+  customRatios?: {
+    loot: Record<string, number>;
+    monster: Record<string, number>;
+    treasure: Record<string, number>;
+  };
+  allowDuplicates?: boolean; // when true, duplicate cards to meet custom ratio targets
 }
 
 export interface PlayLootPayload {

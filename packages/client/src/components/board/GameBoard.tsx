@@ -12,6 +12,7 @@ import { DiceResultToast } from '../dice/DiceRoller';
 import { AttributionFooter } from '../ui/AttributionFooter';
 import { SoundManager } from '../audio/SoundManager';
 import { PriorityBanner } from './PriorityBanner';
+import { D8Timer } from '../ui/D8Timer';
 import { BoardTopSection } from '../player/BoardTopSection';
 import { BoardMiddleSection } from './BoardMiddleSection';
 import { BoardBottomSection, BottomBar } from './BoardBottomSection';
@@ -80,6 +81,12 @@ export function GameBoard() {
                 {/* Middle — takes remaining space */}
                 <div className="flex-1 min-h-0 relative border-t-2 border-b-2 border-fs-gold/10">
                   <BoardMiddleSection />
+                  {/* D8 Timer overlay — centered at top of middle section */}
+                  {game.d8Timer !== null && (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
+                      <D8Timer value={game.d8Timer} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom 1/4 — player panel */}

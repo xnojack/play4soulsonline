@@ -3,6 +3,7 @@ import { GameState, StackItem, StackItemType, LogEntry } from './types';
 import { createLogEntry } from './GameRoom';
 import { getCardById } from '../db/cards';
 import { createCardInPlay } from './decks';
+import { applyDeathPenalty } from './actions/monsters';
 
 /** Push a new item onto the top of the stack */
 export function pushStack(
@@ -45,6 +46,69 @@ export function pushStack(
   return startPriorityTimeout(resultState, newQueue[0]);
 }
 
+/** Push a player's death onto the stack.
+ *  Death goes on the stack when a player reaches 0 HP.
+ *  Returns { newState, deathStackItemId } or null if death already on stack or player already dead this turn. */
+export function pushDeathToStack(state: GameState, dyingPlayerId: string): {
+  newState: GameState;
+  deathStackItemId: string;
+} | null {
+  const player = state.players.find((p) => p.id === dyingPlayerId);
+  if (!player) return null;
+
+  // Can't die twice on the same turn
+  if (player.deadThisTurn) return null;
+
+  // Death already on the stack for this player
+  if (state.stack.some((s) => s.type === 'death' && !s.isCanceled && s.data.playerId === dyingPlayerId)) {
+    return null;
+  }
+
+  const deathItem: StackItem = {
+    id: uuidv4(),
+    type: 'death',
+    sourceCardInstanceId: dyingPlayerId,
+    sourcePlayerId: dyingPlayerId,
+    description: `${player.name}'s death`,
+    targets: [dyingPlayerId],
+    data: { playerId: dyingPlayerId },
+    isCanceled: false,
+  };
+
+  // Priority: start from the dying player so others can respond
+  const alivePlayers = state.players.filter((p) => !p.isSpectator && p.isAlive);
+  const dyingIdx = alivePlayers.findIndex((p) => p.id === dyingPlayerId);
+  const newQueue: string[] =
+    dyingIdx >= 0
+      ? [
+          ...alivePlayers.slice(dyingIdx).map((p) => p.id),
+          ...alivePlayers.slice(0, dyingIdx).map((p) => p.id),
+        ]
+      : alivePlayers.map((p) => p.id);
+
+  const log = createLogEntry(
+    'death',
+    `${player.name} has 0 HP — death added to stack`,
+    dyingPlayerId
+  );
+
+  const newState: GameState = {
+    ...state,
+    stack: [...state.stack, deathItem],
+    priorityQueue: newQueue,
+    turn: {
+      ...state.turn,
+      passedPriority: new Set<string>(),
+    },
+    log: [...state.log, log],
+  };
+
+  return {
+    newState: startPriorityTimeout(newState, newQueue[0]),
+    deathStackItemId: deathItem.id,
+  };
+}
+
 /** Cancel a specific stack item by ID */
 export function cancelStackItem(state: GameState, stackItemId: string): GameState {
   const targetItem = state.stack.find((item) => item.id === stackItemId);
@@ -69,6 +133,32 @@ export function cancelStackItem(state: GameState, stackItemId: string): GameStat
         'card_play',
         `${state.players.find((p) => p.id === sourcePlayerId)?.name ?? 'Player'}'s loot card returns to their hand`,
         sourcePlayerId
+      );
+      return { ...newState, log: [...newState.log, log] };
+    }
+  }
+
+  if (targetItem && targetItem.type === 'death') {
+    const dyingPlayerId = targetItem.data.playerId as string;
+    const dyingPlayer = state.players.find((p) => p.id === dyingPlayerId);
+    if (dyingPlayer) {
+      // Canceling death: heal to 1 HP
+      const newDamage = dyingPlayer.baseHp + dyingPlayer.hpCounters - 1;
+      newState = {
+        ...state,
+        stack: state.stack.map((item) =>
+          item.id === stackItemId ? { ...item, isCanceled: true } : item
+        ),
+        players: state.players.map((p) =>
+          p.id === dyingPlayerId
+            ? { ...p, currentDamage: newDamage, isAlive: true }
+            : p
+        ),
+      };
+      const log = createLogEntry(
+        'death',
+        `${dyingPlayer.name}'s death was prevented — healed to 1 HP`,
+        dyingPlayerId
       );
       return { ...newState, log: [...newState.log, log] };
     }
@@ -166,6 +256,70 @@ export function resolveTopOfStack(state: GameState): {
       turn: { ...newState.turn, currentAttack: null },
       log: [...newState.log, cancelLog],
     };
+  }
+
+  // Handle death resolution
+  if (resolved.type === 'death' && !resolved.isCanceled) {
+    const dyingPlayerId = resolved.data.playerId as string;
+    const dyingPlayer = newState.players.find((p) => p.id === dyingPlayerId);
+
+    if (dyingPlayer) {
+      // Cancel any active attack involving this player
+      if (newState.turn.currentAttack) {
+        const attackLog = createLogEntry(
+          'attack',
+          `Attack canceled due to ${dyingPlayer.name}'s death`,
+          dyingPlayerId
+        );
+        newState = {
+          ...newState,
+          turn: { ...newState.turn, currentAttack: null },
+          log: [...newState.log, attackLog],
+        };
+      }
+
+      // Mark player as dead
+      newState = {
+        ...newState,
+        players: newState.players.map((p) =>
+          p.id === dyingPlayerId
+            ? {
+                ...p,
+                isAlive: false,
+                deathCount: p.deathCount + 1,
+                currentDamage: 0,
+                deadThisTurn: true,
+              }
+            : p
+        ),
+      };
+
+      const deathLog = createLogEntry(
+        'death',
+        `${dyingPlayer.name} has died!`,
+        dyingPlayerId
+      );
+      newState = { ...newState, log: [...newState.log, deathLog] };
+
+      // D8 death tick
+      if (newState.d8Timer !== null) {
+        newState = {
+          ...newState,
+          d8Timer: Math.max(0, newState.d8Timer - 1),
+        };
+      }
+
+      // If active player: set deathPenaltyPending so player can choose item
+      if (newState.turn.activePlayerId === dyingPlayerId) {
+        newState = {
+          ...newState,
+          turn: { ...newState.turn, deathPenaltyPending: dyingPlayerId },
+        };
+      } else {
+        // Non-active player: auto-apply death penalty
+        newState = applyDeathPenalty(newState, dyingPlayerId);
+      }
+    }
   }
 
   return {

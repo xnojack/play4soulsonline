@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, GameMode } from '../store/gameStore';
 import { connectSocket, getSocket } from '../socket/client';
 import { Button } from '../components/ui/Button';
 import { AttributionFooter } from '../components/ui/AttributionFooter';
@@ -173,8 +173,25 @@ export function Lobby() {
   const [includeRooms, setIncludeRooms] = useState(true);
   const [excludeNeverPrinted, setExcludeNeverPrinted] = useState(true);
   const [priorityTimeoutSeconds, setPriorityTimeoutSeconds] = useState(30);
+  const [gameMode, setGameMode] = useState<GameMode>('competitive');
+  const [deckMode, setDeckMode] = useState<'balanced' | 'all' | 'custom'>('balanced');
   const [starting, setStarting] = useState(false);
   const inRoom = game?.roomId === roomId;
+
+  // Custom ratios state
+  const [deckCategories, setDeckCategories] = useState<Record<string, Record<string, { count: number; unique: number }>> | null>(null);
+  const [customRatios, setCustomRatios] = useState<{
+    loot: Record<string, number>;
+    monster: Record<string, number>;
+    treasure: Record<string, number>;
+  }>({ loot: {}, monster: {}, treasure: {} });
+  const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    sets: true,
+    loot: true,
+    monster: true,
+    treasure: true,
+  });
 
   // Fetch available sets from server and default to all selected
   useEffect(() => {
@@ -222,15 +239,81 @@ export function Lobby() {
   const handleSelectAll = () => setSelectedSets([...availableSets]);
   const handleSelectNone = () => setSelectedSets([]);
 
+  // Fetch deck categories when custom mode is selected or sets change
+  useEffect(() => {
+    if (deckMode !== 'custom') return;
+    const params = new URLSearchParams();
+    if (selectedSets && selectedSets.length > 0) params.set('sets', selectedSets.join(','));
+    if (excludeNeverPrinted) params.set('excludeNeverPrinted', 'true');
+    const queryString = params.toString();
+    fetch(`${SERVER_URL}/api/deck-categories${queryString ? '?' + queryString : ''}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setDeckCategories(data);
+        // Pre-fill with official balanced ratios if not already set
+        if (Object.keys(customRatios.loot).length === 0) {
+          setCustomRatios({
+            loot: { Tarot: 23, Trinket: 11, Pill: 3, Rune: 3, ButterBean: 5, Bomb: 6, Battery: 6, DiceShard: 3, SoulHeart: 2, BlackHeart: 0, LostSoul: 1, Nickel: 6, Coin4: 12, Coin3: 11, Coin2: 6, Coin1: 2 },
+            monster: { EpicBoss: 1, Boss: 30, BasicMonster: 30, CursedMonster: 9, HolyMonster: 9, GoodEvent: 8, BadEvent: 8, Curse: 5 },
+            treasure: { Active: 40, Passive: 44, Paid: 10, OneUse: 5, Soul: 1 },
+          });
+        }
+      })
+      .catch(() => {
+        setDeckCategories(null);
+      });
+  }, [deckMode, selectedSets, excludeNeverPrinted]);
+
+  const handleRatioChange = (deck: 'loot' | 'monster' | 'treasure', category: string, value: number) => {
+    setCustomRatios(prev => ({
+      ...prev,
+      [deck]: { ...(prev as any)[deck], [category]: Math.max(0, value) },
+    }));
+  };
+
+  const handleMaxCategory = (deck: 'loot' | 'monster' | 'treasure', category: string) => {
+    if (!deckCategories?.[deck]?.[category]) return;
+    setCustomRatios(prev => ({
+      ...prev,
+      [deck]: { ...(prev as any)[deck], [category]: deckCategories[deck][category].count },
+    }));
+  };
+
+  const handleLoadBalanced = () => {
+    setCustomRatios({
+      loot: { Tarot: 23, Trinket: 11, Pill: 3, Rune: 3, ButterBean: 5, Bomb: 6, Battery: 6, DiceShard: 3, SoulHeart: 2, BlackHeart: 0, LostSoul: 1, Nickel: 6, Coin4: 12, Coin3: 11, Coin2: 6, Coin1: 2 },
+      monster: { EpicBoss: 1, Boss: 30, BasicMonster: 30, CursedMonster: 9, HolyMonster: 9, GoodEvent: 8, BadEvent: 8, Curse: 5 },
+      treasure: { Active: 40, Passive: 44, Paid: 10, OneUse: 5, Soul: 1 },
+    });
+  };
+
+  const handleMaxAll = () => {
+    if (!deckCategories) return;
+    const maxRatios: any = { loot: {}, monster: {}, treasure: {} };
+    for (const deck of ['loot', 'monster', 'treasure']) {
+      for (const [cat, info] of Object.entries(deckCategories[deck] || {})) {
+        maxRatios[deck][cat] = info.count;
+      }
+    }
+    setCustomRatios(maxRatios);
+  };
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const handleStart = () => {
     setStarting(true);
     getSocket().emit('action:start_game', {
+      deckMode,
       activeSets: selectedSets ?? [],
       includeBonusSouls,
       bonusSoulCount,
       includeRooms,
       excludeNeverPrinted,
       priorityTimeoutMs: priorityTimeoutSeconds * 1000,
+      gameMode,
+      ...(deckMode === 'custom' ? { customRatios, allowDuplicates } : {}),
     });
   };
 
@@ -332,41 +415,191 @@ export function Lobby() {
         {/* Card sets (host only) */}
         {isHost && (
         <div className="panel p-6 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="section-title">Card Sets</div>
+            <div className="section-title mb-3">Deck Mode</div>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {[
+                { value: 'balanced' as const, label: 'Balanced', desc: 'Official ratios' },
+                { value: 'all' as const, label: 'All Cards', desc: 'Every card' },
+                { value: 'custom' as const, label: 'Custom', desc: 'Set ratios manually' },
+              ].map((m) => (
+                <label
+                  key={m.value}
+                  className={`cursor-pointer rounded-lg border-2 px-3 py-2 text-center transition-all ${
+                    deckMode === m.value
+                      ? 'border-fs-gold bg-fs-gold/10 shadow-sm'
+                      : 'border-fs-gold/10 bg-fs-darker/50 hover:border-fs-gold/30'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="deckMode"
+                    value={m.value}
+                    checked={deckMode === m.value}
+                    onChange={() => setDeckMode(m.value)}
+                    className="sr-only"
+                  />
+                  <div className={`text-sm font-medium ${deckMode === m.value ? 'text-fs-gold' : 'text-fs-parchment/80'}`}>
+                    {m.label}
+                  </div>
+                  <div className="text-[10px] text-fs-parchment/40 mt-0.5">{m.desc}</div>
+                </label>
+              ))}
+            </div>
+
+            {/* Card Sets — always visible, collapsible */}
+            <div className="border border-fs-gold/10 rounded-lg mb-4">
+              <button
+                onClick={() => setCollapsedSections(prev => ({ ...prev, sets: !prev.sets }))}
+                className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
+              >
+                <span className="text-sm font-medium text-fs-gold">Card Sets</span>
+                <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections.sets ? '' : 'rotate-90'}`}>▶</span>
+              </button>
+              {!collapsedSections.sets && (
+                <div className="px-3 pb-2">
+                  <div className="flex gap-2 mb-2">
+                    <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">All</button>
+                    <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">None</button>
+                  </div>
+                  {availableSets.length === 0 ? (
+                    <div className="text-xs text-fs-parchment/30 italic">Loading sets…</div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                      {availableSets.map((set) => (
+                        <label key={set} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={(selectedSets ?? []).includes(set)}
+                            onChange={() => handleToggleSet(set)}
+                            className="accent-fs-gold flex-shrink-0"
+                          />
+                          <span className="text-xs text-fs-parchment/70 truncate">{set}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Custom Ratios — only shown when custom mode is selected */}
+            {deckMode === 'custom' && (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="section-title">Custom Ratios</div>
+                  <div className="flex gap-2">
+                    <button onClick={handleLoadBalanced} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Balanced</button>
+                    <button onClick={handleMaxAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Max All</button>
+                  </div>
+                </div>
+
+                {/* Ratio sections */}
+                {deckCategories ? (
+                  <div className="space-y-2 mb-3">
+                    {(['loot', 'monster', 'treasure'] as const).map(deck => (
+                      <div key={deck} className="border border-fs-gold/10 rounded-lg">
+                        <button
+                          onClick={() => toggleSection(deck)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
+                        >
+                          <span className="text-sm font-medium text-fs-gold capitalize">{deck} Deck</span>
+                          <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections[deck] ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsedSections[deck] && (
+                          <div className="px-3 pb-2 space-y-1">
+                            {Object.entries(deckCategories[deck]).map(([cat, info]) => (
+                              <div key={cat} className="flex items-center gap-2">
+                                <span className="text-xs text-fs-parchment/60 flex-1 truncate">{cat}</span>
+                                <input
+                                  type="number"
+                                  value={customRatios[deck][cat] ?? 0}
+                                  onChange={(e) => handleRatioChange(deck, cat, parseInt(e.target.value, 10) || 0)}
+                                  className="w-16 bg-fs-darker border border-fs-gold/20 rounded px-2 py-1 text-xs text-fs-parchment focus:outline-none focus:border-fs-gold"
+                                  min="0"
+                                />
+                                <span className="text-[10px] text-fs-parchment/30">/ {info.count}</span>
+                                <button
+                                  onClick={() => handleMaxCategory(deck, cat)}
+                                  className="text-[10px] text-fs-parchment/40 hover:text-fs-link transition-colors"
+                                >
+                                  Max
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-fs-parchment/30 italic mb-3">Loading categories…</div>
+                )}
+
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={allowDuplicates}
+                    onChange={(e) => setAllowDuplicates(e.target.checked)}
+                    className="accent-fs-gold"
+                  />
+                  <span className="text-xs text-fs-parchment/60">Allow duplicates (copy cards when target exceeds available)</span>
+                </label>
+              </>
+            )}
+            {/* Game mode selector */}
+            <div className="border-t border-fs-gold/10 pt-3 mt-3">
+              <div className="text-xs text-fs-parchment/60 mb-2 font-medium">Game Mode</div>
               <div className="flex gap-2">
-                <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">All</button>
-                <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">None</button>
+                {([
+                  { value: 'competitive' as GameMode, label: 'Competitive', desc: 'Normal multiplayer' },
+                  { value: 'solitaire' as GameMode, label: 'Solitaire', desc: '1 player, 2 characters, D8 timer' },
+                  { value: 'coop' as GameMode, label: 'Co-op', desc: '2 players, shared souls, D8 timer' },
+                ]).map((m) => {
+                  const disabled = m.value === 'solitaire' && nonSpectators.length > 1
+                    || m.value === 'coop' && nonSpectators.length < 2;
+                  return (
+                    <label
+                      key={m.value}
+                      className={`flex-1 cursor-pointer rounded-lg border-2 px-3 py-2 text-center transition-all ${
+                        disabled
+                          ? 'border-fs-gold/5 bg-fs-darker/30 opacity-40 cursor-not-allowed'
+                          : gameMode === m.value
+                          ? 'border-fs-gold bg-fs-gold/10 shadow-sm'
+                          : 'border-fs-gold/10 bg-fs-darker/50 hover:border-fs-gold/30'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="gameMode"
+                        value={m.value}
+                        checked={gameMode === m.value}
+                        onChange={() => !disabled && setGameMode(m.value)}
+                        disabled={disabled}
+                        className="sr-only"
+                      />
+                      <div className={`text-sm font-medium ${gameMode === m.value ? 'text-fs-gold' : 'text-fs-parchment/80'}`}>
+                        {m.label}
+                      </div>
+                      <div className="text-[10px] text-fs-parchment/40 mt-0.5">{m.desc}</div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
-            {availableSets.length === 0 ? (
-              <div className="text-xs text-fs-parchment/30 italic">Loading sets…</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-1.5 mb-3 max-h-56 overflow-y-auto pr-1">
-                {availableSets.map((set) => (
-                  <label key={set} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(selectedSets ?? []).includes(set)}
-                      onChange={() => handleToggleSet(set)}
-                      className="accent-fs-gold flex-shrink-0"
-                    />
-                    <span className="text-sm text-fs-parchment/80 truncate">{set}</span>
-                  </label>
-                ))}
-              </div>
-            )}
+
             <div className="flex gap-4 flex-wrap items-center border-t border-fs-gold/10 pt-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeBonusSouls}
-                  onChange={(e) => setIncludeBonusSouls(e.target.checked)}
-                  className="accent-fs-gold"
-                />
-                <span className="text-sm text-fs-parchment/80">Bonus Souls</span>
-              </label>
-              {includeBonusSouls && (
+              {gameMode === 'competitive' && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeBonusSouls}
+                    onChange={(e) => setIncludeBonusSouls(e.target.checked)}
+                    className="accent-fs-gold"
+                  />
+                  <span className="text-sm text-fs-parchment/80">Bonus Souls</span>
+                </label>
+              )}
+              {includeBonusSouls && gameMode === 'competitive' && (
                 <label className="flex items-center gap-1.5">
                   <span className="text-xs text-fs-parchment/60">Count:</span>
                   <input

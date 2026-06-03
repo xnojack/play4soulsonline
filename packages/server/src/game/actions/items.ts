@@ -146,9 +146,10 @@ export function destroyCard(state: GameState, instanceId: string, actorPlayerId?
   let sourcePlayerId: string | null = null;
 
   let players = state.players.map((p) => {
-    // Check items
+    // Check items — only owner can destroy
     const itemIdx = p.items.findIndex((i) => i.instanceId === instanceId);
     if (itemIdx !== -1) {
+      if (actorPlayerId && actorPlayerId !== p.id) return p; // Not owner
       const card = getCardById(p.items[itemIdx].cardId);
       if (card?.isEternal) return p; // Eternal items can't be destroyed
       destroyed = p.items[itemIdx] as CardInPlay;
@@ -156,25 +157,28 @@ export function destroyCard(state: GameState, instanceId: string, actorPlayerId?
       sourcePlayerId = p.id;
       return { ...p, items: p.items.filter((i) => i.instanceId !== instanceId) };
     }
-    // Check souls
+    // Check souls — only owner can destroy
     const soulIdx = p.souls.findIndex((i) => i.instanceId === instanceId);
     if (soulIdx !== -1) {
+      if (actorPlayerId && actorPlayerId !== p.id) return p; // Not owner
       destroyed = p.souls[soulIdx] as CardInPlay;
       sourceType = 'soul';
       sourcePlayerId = p.id;
       return { ...p, souls: p.souls.filter((i) => i.instanceId !== instanceId) };
     }
-    // Check curses
+    // Check curses — only owner can destroy
     const curseIdx = p.curses.findIndex((i) => i.instanceId === instanceId);
     if (curseIdx !== -1) {
+      if (actorPlayerId && actorPlayerId !== p.id) return p; // Not owner
       destroyed = p.curses[curseIdx] as CardInPlay;
       sourceType = 'curse';
       sourcePlayerId = p.id;
       return { ...p, curses: p.curses.filter((i) => i.instanceId !== instanceId) };
     }
-    // Check kills — Curse subtype kills cannot be removed
+    // Check kills — only owner can destroy, Curse subtype kills cannot be removed
     const killIdx = p.kills.findIndex((i) => i.instanceId === instanceId);
     if (killIdx !== -1) {
+      if (actorPlayerId && actorPlayerId !== p.id) return p; // Not owner
       const card = getCardById(p.kills[killIdx].cardId);
       if (card?.subType === 'Curse') return p; // true curse cards are permanent
       destroyed = p.kills[killIdx] as CardInPlay;
@@ -625,6 +629,14 @@ export function coverMonster(
 
   if (instanceId) {
     // Multi-zone source: find and remove the existing CardInPlay
+    // Verify ownership: card must belong to the acting player
+    const ownerPlayer = state.players.find((p) =>
+      p.items.some((i) => i.instanceId === instanceId) ||
+      p.handCardIds.includes(cardId)
+    );
+    if (ownerPlayer && ownerPlayer.id !== playerId) {
+      return { newState: state, error: 'You do not own this card' };
+    }
     const wasRoomSlot = state.roomSlots.some((s) => s.instanceId === instanceId);
     const { newState: afterRemove, instance: found } = findAndRemoveCardInstance(state, cardId, instanceId);
     if (!found) return { newState: state, error: 'Card instance not found in any zone' };

@@ -1,15 +1,16 @@
 import { useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { useGameStore } from '../../store/gameStore';
 import { useCursorStore, playerColor, type CursorData } from '../../store/cursorStore';
+import { useBoardScale } from '../../context/BoardScaleContext';
 
 const EXPIRE_MS = 2000;
 
-/** Renders remote player cursors as colored dots over the page. */
+/** Renders remote player cursors as colored dots inside the board's scaled container. */
 export function RemoteCursors() {
   const game = useGameStore((s) => s.game);
   const cursors = useCursorStore((s) => s.cursors);
   const expire = useCursorStore((s) => s.expireCursors);
+  const { totalScale, panX, panY } = useBoardScale();
 
   // Expire stale cursors every second
   useEffect(() => {
@@ -34,27 +35,41 @@ export function RemoteCursors() {
     return map;
   }, [game]);
 
+  // Get canvas rect for viewport-to-board conversion
+  const canvasEl = document.querySelector('[data-board-canvas]') as HTMLElement | null;
+  const canvasRect = canvasEl?.getBoundingClientRect();
+
+  // Convert viewport coords to board-local coords (inside scaled container)
+  const toBoardLocal = (vx: number, vy: number) => {
+    if (!canvasRect) return { x: vx, y: vy };
+    return {
+      x: (vx - canvasRect.x - panX) / totalScale,
+      y: (vy - canvasRect.y - panY) / totalScale,
+    };
+  };
+
   const cursorEntries = Object.entries(cursors) as [string, CursorData][];
   const filtered = cursorEntries.filter(([id]) => id !== myPlayerId);
 
   if (filtered.length === 0) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 pointer-events-none z-[9000]">
+  return (
+    <div className="absolute inset-0 pointer-events-none">
       {filtered.map(([playerId, cursor]) => {
         const info = playerMap.get(playerId);
         const color = info
           ? playerColor(playerId, info.seatIndex, info.totalPlayers)
           : '#888';
         const initial = cursor.playerName.charAt(0).toUpperCase();
+        const local = toBoardLocal(cursor.x, cursor.y);
 
         return (
           <div
             key={playerId}
             style={{
-              position: 'fixed',
-              left: cursor.x,
-              top: cursor.y,
+              position: 'absolute',
+              left: local.x,
+              top: local.y,
               transform: 'translate(-50%, -50%)',
             }}
           >
@@ -70,7 +85,6 @@ export function RemoteCursors() {
           </div>
         );
       })}
-    </div>,
-    document.body
+    </div>
   );
 }

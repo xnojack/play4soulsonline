@@ -274,129 +274,182 @@ export function PlayerExpandedPanel({
                 </div>
               )}
 
-              {/* Cards: grid [souls | char | items(1fr)] */}
-              <div className={`grid ${screenScale ? 'gap-2' : 'gap-4'} items-start min-h-0 flex-1 mt-4`} style={{ gridTemplateColumns: 'auto auto 1fr' }}>
-               {/* Souls vertical stack */}
-                 <div className={`flex flex-col ${screenScale ? 'gap-1' : 'gap-2'} flex-shrink-0`}>
-                 {player.souls.length === 0 && (
-                     <div className={`${screenScale ? 'w-[26px] h-[35px]' : 'w-[52px] h-[71px]'} rounded border-2 border-dashed border-purple-700/20 flex items-center justify-center ${screenScale ? 'text-[10px]' : 'text-xs'} text-fs-parchment/20`}>
-                       no souls
-                     </div>
-                   )}
-                  {player.souls.map((soul) => {
-                    const isGeneric = soul.cardId === '';
-                    const draggable = isMe;
-                    const inner = isGeneric ? (
-                       <div className="relative group">
-                 <img
-                           src="/soul-back.png"
-                           alt="Soul"
-                           className="rounded border-2 border-purple-700/50"
-                           style={{ width: screenScale ? 26 : 52, height: screenScale ? 35 : 71, objectFit: 'cover' }}
-                         />
-                        {isMe && (
-                          <button
-                            onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
-                            className={`absolute -top-1 -right-1 ${screenScale ? 'w-4 h-4 text-[10px]' : 'w-6 h-6 text-xl'} rounded-full bg-red-900/80 border border-red-500/60 text-red-300 leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity`}
-                            title="Remove this soul"
+             {/* Cards: grid layout */}
+              {isMe ? (
+                  /* 2x2 soul grid | character | items(1fr) */
+                  <div className={`grid ${screenScale ? 'gap-2' : 'gap-4'} items-start min-h-0 flex-1 mt-4`} style={{ gridTemplateColumns: 'auto auto 1fr' }}>
+                    {/* Souls 2x2 grid */}
+                    <div className="grid grid-cols-2 gap-2 flex-shrink-0">
+                      {Array.from({ length: 4 }).map((_, i) => {
+                        const soul = player.souls[i];
+                        if (soul) {
+                          const isGeneric = soul.cardId === '';
+                          const inner = isGeneric ? (
+                            <div className="relative group">
+                              <img
+                                src="/soul-back.png"
+                                alt="Soul"
+                                className="rounded border-2 border-purple-700/50"
+                                style={{ width: 104, height: 142, objectFit: 'cover' }}
+                              />
+                              <button
+                                onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
+                                className="absolute -top-1 -right-1 w-6 h-6 text-xl rounded-full bg-red-900/80 border border-red-500/60 text-red-300 leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove this soul"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <ResolvedCard
+                              instance={soul}
+                              size="xs"
+                              showCounters={false}
+                            />
+                          );
+                          return (
+                            <Draggable
+                              key={soul.instanceId}
+                              id={`soul-${soul.instanceId}`}
+                              payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
+                            >
+                              {inner}
+                            </Draggable>
+                          );
+                        }
+                        return (
+                          <div
+                            key={`empty-${i}`}
+                            className="w-[104px] h-[142px] rounded-lg border-2 border-dashed border-purple-700/20 flex items-center justify-center text-fs-parchment/15"
                           >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                <ResolvedCard
-                         instance={soul}
-                         size={screenScale ? '3xs' : '2xs'}
-                         showCounters={false}
-                       />
-                   );
-                    return draggable ? (
-                      <Draggable
-                        key={soul.instanceId}
-                        id={`soul-${soul.instanceId}`}
-                        payload={{ cardId: soul.cardId, instanceId: soul.instanceId, sourceZone: 'soul', sourceZoneId: player.id }}
-                      >
-                        {inner}
-                      </Draggable>
-                    ) : (
-                      <div key={soul.instanceId}>{inner}</div>
-                    );
-                  })}
-                  {isMe && (
-                    <button
-                      onClick={() => getSocket().emit('action:gain_generic_soul')}
-                      className={`${screenScale ? 'text-[10px]' : 'text-3xl'} h-16 px-6 rounded-lg border-2 border-purple-700/50 bg-purple-900/20 text-purple-400/70 hover:text-purple-300 hover:border-purple-500 hover:bg-purple-900/30 transition-colors`}
-                      title="Gain a soul"
-                    >
-                      +Soul
-                    </button>
-                  )}
-                </div>
-
-                {/* Character card */}
-                {charInstance && (
-                  <div className="flex flex-col items-center gap-4 flex-shrink-0">
-                    {isMe ? (
-                      <Draggable
-                        id={`char-${charInstance.instanceId}`}
-                        payload={{
-                          cardId: charInstance.cardId,
-                          instanceId: charInstance.instanceId,
-                          sourceZone: 'character',
-                          sourceZoneId: player.id,
-                        }}
-                      >
-                  <ResolvedCard
-                          instance={charInstance}
-                          size={screenScale ? '2xs' : (compact ? 'xs' : 'sm')}
-                        />
-                      </Draggable>
-                    ) : (
-                      <ResolvedCard
-                        instance={charInstance}
-                        size={compact ? 'xs' : 'sm'}
-                      />
-                    )}
-                  </div>
-                )}
-
-                {/* Items — 3rd column (1fr), wrap + scroll */}
-                <Droppable
-                  id={`drop-items-${player.id}`}
-                  payload={{ targetZone: 'items', targetZoneId: player.id }}
-                  className="min-w-0"
-                >
-                  <div className="overflow-x-auto" data-zone={isMe ? "my-items" : `items-${player.id}`}>
-                    <div className={`flex flex-wrap ${screenScale ? 'gap-1' : 'gap-2'} content-start overflow-y-auto`} style={{ maxHeight: screenScale ? (compact ? 71 : 160) : (compact ? 142 : 320) }}>
-                      {player.items.length === 0 && (
-                        <span className={`${screenScale ? 'text-[11px]' : 'text-3xl'} text-fs-parchment/20 italic self-center`}>no items</span>
-                      )}
-                      {player.items.map((item) => {
-                        const draggableId = `item-${item.instanceId}`;
-                        const draggablePayload = { cardId: item.cardId, instanceId: item.instanceId, sourceZone: 'items', sourceZoneId: player.id };
-                        const cardEl = (
-                  <ResolvedCard
-                            instance={item}
-                            size={screenScale ? '2xs' : (compact ? 'xs' : 'sm')}
-                          />
-                        );
-                        return isMe ? (
-                          <Draggable
-                            key={item.instanceId}
-                            id={draggableId}
-                            payload={draggablePayload}
-                          >
-                            {cardEl}
-                          </Draggable>
-                        ) : (
-                          <React.Fragment key={item.instanceId}>{cardEl}</React.Fragment>
+                            <span className="text-4xl">👻</span>
+                          </div>
                         );
                       })}
                     </div>
+
+                    {/* Character card */}
+                    {charInstance && (
+                      <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                        <Draggable
+                          id={`char-${charInstance.instanceId}`}
+                          payload={{
+                            cardId: charInstance.cardId,
+                            instanceId: charInstance.instanceId,
+                            sourceZone: 'character',
+                            sourceZoneId: player.id,
+                          }}
+                        >
+                          <ResolvedCard
+                            instance={charInstance}
+                            size="sm"
+                          />
+                        </Draggable>
+                      </div>
+                    )}
+
+                    {/* Items — 3rd column (1fr), wrap + scroll */}
+                    <Droppable
+                      id={`drop-items-${player.id}`}
+                      payload={{ targetZone: 'items', targetZoneId: player.id }}
+                      className="min-w-0"
+                    >
+                      <div className="overflow-x-auto" data-zone="my-items">
+                        <div className="flex flex-wrap gap-2 content-start overflow-y-auto" style={{ maxHeight: 320 }}>
+                          {player.items.length === 0 && (
+                            <span className="text-3xl text-fs-parchment/20 italic self-center">no items</span>
+                          )}
+                          {player.items.map((item) => (
+                            <Draggable
+                              key={item.instanceId}
+                              id={`item-${item.instanceId}`}
+                              payload={{ cardId: item.cardId, instanceId: item.instanceId, sourceZone: 'items', sourceZoneId: player.id }}
+                            >
+                              <ResolvedCard
+                                instance={item}
+                                size="sm"
+                              />
+                            </Draggable>
+                          ))}
+                        </div>
+                      </div>
+                    </Droppable>
                   </div>
-                </Droppable>
-              </div>
+                ) : (
+                 /* Original 3-column grid for non-current players */
+                 <div className={`grid ${screenScale ? 'gap-2' : 'gap-4'} items-start min-h-0 flex-1 mt-4`} style={{ gridTemplateColumns: 'auto auto 1fr' }}>
+                   {/* Souls vertical stack */}
+                   <div className={`flex flex-col ${screenScale ? 'gap-1' : 'gap-2'} flex-shrink-0`}>
+                     {player.souls.length === 0 && (
+                       <div className={`${screenScale ? 'w-[26px] h-[35px]' : 'w-[52px] h-[71px]'} rounded border-2 border-dashed border-purple-700/20 flex items-center justify-center ${screenScale ? 'text-[10px]' : 'text-xs'} text-fs-parchment/20`}>
+                         no souls
+                       </div>
+                     )}
+                     {player.souls.map((soul) => {
+                       const isGeneric = soul.cardId === '';
+                       const inner = isGeneric ? (
+                         <div className="relative group">
+                           <img
+                             src="/soul-back.png"
+                             alt="Soul"
+                             className="rounded border-2 border-purple-700/50"
+                             style={{ width: screenScale ? 26 : 52, height: screenScale ? 35 : 71, objectFit: 'cover' }}
+                           />
+                           {isMe && (
+                             <button
+                               onClick={() => getSocket().emit('action:remove_soul', { instanceId: soul.instanceId })}
+                               className={`absolute -top-1 -right-1 ${screenScale ? 'w-4 h-4 text-[10px]' : 'w-6 h-6 text-xl'} rounded-full bg-red-900/80 border border-red-500/60 text-red-300 leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity`}
+                               title="Remove this soul"
+                             >
+                               ×
+                             </button>
+                           )}
+                         </div>
+                       ) : (
+                         <ResolvedCard
+                           instance={soul}
+                           size={screenScale ? '3xs' : '2xs'}
+                           showCounters={false}
+                         />
+                       );
+                       return <div key={soul.instanceId}>{inner}</div>;
+                     })}
+                   </div>
+
+                   {/* Character card */}
+                   {charInstance && (
+                     <div className="flex flex-col items-center gap-4 flex-shrink-0">
+                       <ResolvedCard
+                         instance={charInstance}
+                         size={compact ? 'xs' : 'sm'}
+                       />
+                     </div>
+                   )}
+
+                   {/* Items — 3rd column (1fr), wrap + scroll */}
+                   <Droppable
+                     id={`drop-items-${player.id}`}
+                     payload={{ targetZone: 'items', targetZoneId: player.id }}
+                     className="min-w-0"
+                   >
+                     <div className="overflow-x-auto" data-zone={isMe ? "my-items" : `items-${player.id}`}>
+                       <div className={`flex flex-wrap ${screenScale ? 'gap-1' : 'gap-2'} content-start overflow-y-auto`} style={{ maxHeight: screenScale ? (compact ? 71 : 160) : (compact ? 142 : 320) }}>
+                         {player.items.length === 0 && (
+                           <span className={`${screenScale ? 'text-[11px]' : 'text-3xl'} text-fs-parchment/20 italic self-center`}>no items</span>
+                         )}
+                         {player.items.map((item) => (
+                           <React.Fragment key={item.instanceId}>
+                             <ResolvedCard
+                               instance={item}
+                               size={screenScale ? '2xs' : (compact ? 'xs' : 'sm')}
+                             />
+                           </React.Fragment>
+                         ))}
+                       </div>
+                     </div>
+                   </Droppable>
+                 </div>
+               )}
 
               {/* Curses row — only when non-empty */}
               {player.curses.length > 0 && (

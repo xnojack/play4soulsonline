@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, WheelEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useBoardScale, updateCanvasRect, zoomLevelRef } from '../../context/BoardScaleContext';
 import { useDragState } from './DnDProvider';
+import { RemoteCursors } from './RemoteCursors';
 
 const ZOOM_SENSITIVITY = 0.001;
 const MIDDLE_BUTTON = 1;
@@ -340,6 +341,8 @@ export function BoardCanvas({
         />
         <div className="absolute inset-0 bg-black/30 pointer-events-none" />
         <div className="relative w-full h-full">{children}</div>
+        {/* Remote cursors — inside scaled div so they follow board transform */}
+        <RemoteCursors />
       </div>
     </div>
   );

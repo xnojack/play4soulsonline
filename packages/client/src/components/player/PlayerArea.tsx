@@ -107,6 +107,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
   const game = useGameStore((s) => s.game);
 
   const isActiveTurn = game?.turn.activePlayerId === player.id;
+  const isSolitaireInactive = game?.gameMode === 'solitaire' && !isActiveTurn && !player.isSpectator;
   const otherPlayers = game?.players.filter((p) => p.id !== player.id && !p.isSpectator) ?? [];
 
   const handleTapCharacter = () => {
@@ -153,6 +154,7 @@ export function PlayerArea({ player, isMe }: PlayerAreaProps) {
       }
       className={`panel p-4 transition-colors relative ${
         isActiveTurn ? 'border-fs-gold/80 bg-fs-gold/5' : ''
+      } ${isSolitaireInactive ? 'opacity-60' : ''}
       } ${!player.isAlive ? 'opacity-60' : ''}`}
     >
       <AnimatePresence>

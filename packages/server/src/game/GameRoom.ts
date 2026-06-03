@@ -1,18 +1,22 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
-  GameState,
-  Player,
-  CardInPlay,
-  MonsterSlot,
-  ShopSlot,
-  BonusSoulState,
-  TurnState,
-  LogEntry,
-  LogEntryType,
   ClientGameState,
   ClientPlayer,
+  CardInPlay,
+  DeckMode,
+  GameMode,
+  GameState,
+  Player,
+  StartGamePayload,
+  TurnState,
+  BonusSoulState,
   Card,
+  LogEntryType,
+  LogEntry,
+  ShopSlot,
+  MonsterSlot,
 } from './types';
+import { buildBalancedDeck, buildAllCardsDeck, buildCustomDeck, LOOT_RATIOS, MONSTER_RATIOS, TREASURE_RATIOS } from './deckbuilder';
 import { shuffle, drawFromDeck, createCardInPlay } from './decks';
 import { resetPriority } from './stack';
 import { rechargePlayerItems } from './actions/turn';
@@ -76,6 +80,9 @@ export class GameRoom {
       phase: 'lobby',
       activeSets: [],
       winnerId: null,
+      gameMode: 'competitive',
+      d8Timer: null,
+      d8RoundStartPlayerId: null,
       turn: emptyTurn,
       priorityQueue: [],
       stack: [],
@@ -261,6 +268,8 @@ export class GameRoom {
       kills: [],
       isAlive: true,
       deathCount: 0,
+      deadThisTurn: false,
+      solitairePartnerId: null,
     };
 
     this.state = {
@@ -291,6 +300,7 @@ export class GameRoom {
   // ─── Game start ────────────────────────────────────────────────────────────
 
   startGame(options: {
+    deckMode?: DeckMode;
     activeSets: string[];
     includeBonusSouls: boolean;
     bonusSoulCount?: number;
@@ -298,14 +308,62 @@ export class GameRoom {
     excludeNeverPrinted?: boolean;
     priorityTimeoutMs?: number;
     allowPrivilegedActions?: boolean;
+    gameMode?: GameMode;
+    customRatios?: {
+      loot: Record<string, number>;
+      monster: Record<string, number>;
+      treasure: Record<string, number>;
+    };
+    allowDuplicates?: boolean;
   }): string | null {
     if (this.state.phase !== 'lobby') return 'Game already started';
-    const nonSpectators = this.state.players.filter((p) => !p.isSpectator);
+    const gameMode = options.gameMode ?? 'competitive';
+    let nonSpectators = this.state.players.filter((p) => !p.isSpectator);
+
+    // Solitaire: create ghost player for second character
+    if (gameMode === 'solitaire' && nonSpectators.length === 1) {
+      const human = nonSpectators[0];
+      const ghostId = uuidv4();
+      const ghost: Player = {
+        ...human,
+        id: ghostId,
+        seatIndex: 1,
+        reconnectToken: '',
+        handCardIds: [],
+        handSharedWith: [],
+        items: [],
+        souls: [],
+        curses: [],
+        kills: [],
+        coins: 0,
+        characterInstanceId: '',
+        characterCardId: '',
+        startingItemInstanceId: '',
+        currentDamage: 0,
+        hpCounters: 0,
+        atkCounters: 0,
+        solitairePartnerId: human.id,
+      };
+      this.state = {
+        ...this.state,
+        players: this.state.players.map((p) =>
+          p.id === human.id ? { ...p, solitairePartnerId: ghostId } : p
+        ).concat(ghost),
+      };
+      nonSpectators = this.state.players.filter((p) => !p.isSpectator);
+    }
+
+    // Validate player count for mode
+    if (gameMode === 'solitaire' && nonSpectators.length !== 2)
+      return 'Solitaire mode requires exactly 1 player';
+    if (gameMode === 'coop' && nonSpectators.length !== 2)
+      return 'Co-op mode requires exactly 2 players';
     if (nonSpectators.length < 1) return 'Need at least 1 player';
 
     this.state = { ...this.state, activeSets: options.activeSets };
 
     // Build decks from DB
+    const deckMode = options.deckMode ?? 'balanced';
     const sets = options.activeSets.length > 0 ? options.activeSets : undefined;
 
     const treasureCards = sets
@@ -325,15 +383,15 @@ export class GameRoom {
         ? getCardsByTypeAndSets('Room', sets)
         : getCardsByType('Room')
       : [];
-    const bonusSoulCards = options.includeBonusSouls
+    const bonusSoulCards = (options.includeBonusSouls && gameMode === 'competitive')
       ? sets
         ? getCardsByTypeAndSets('BonusSoul', sets)
         : getCardsByType('BonusSoul')
       : [];
 
-    // Filter 3+ player only cards if < 3 players
+    // Filter: 3+ player only cards if < 3 players (disabled for balanced mode)
     const playerCount = nonSpectators.length;
-    const filter3p = playerCount < 3;
+    const filter3p = deckMode !== 'balanced' && playerCount < 3;
     const filterCards = (cards: Card[]) => {
       let filtered = filter3p ? cards.filter((c) => !c.threePlayerOnly) : cards;
       if (options.excludeNeverPrinted) {
@@ -342,9 +400,15 @@ export class GameRoom {
       return filtered;
     };
 
-    // Split eternal cards out of treasure and loot — they form their own deck.
+    // Exclude filter for balanced/all modes (never_printed only, no 3+ filter)
+    const excludeFilter = (c: Card) => {
+      if (options.excludeNeverPrinted && c.printStatus === 'never_printed') return true;
+      return false;
+    };
+
+   // Split eternal cards out of treasure and loot — they form their own deck.
     // Exception: Keeper's Sack stays in treasure; Tick stays in loot.
-    const filteredTreasure = filterCards(treasureCards);
+    const filteredTreasure = treasureCards.filter((c) => !excludeFilter(c));
     const eternalTreasure = filteredTreasure.filter(
       (c) => c.isEternal && !ETERNAL_IN_TREASURE_DECK.has(c.id)
     );
@@ -352,7 +416,7 @@ export class GameRoom {
       (c) => !c.isEternal || ETERNAL_IN_TREASURE_DECK.has(c.id)
     );
 
-    const filteredLoot = filterCards(lootCards);
+    const filteredLoot = lootCards.filter((c) => !excludeFilter(c));
     const eternalLoot = filteredLoot.filter(
       (c) => c.isEternal && !ETERNAL_IN_LOOT_DECK.has(c.id)
     );
@@ -360,12 +424,51 @@ export class GameRoom {
       (c) => !c.isEternal || ETERNAL_IN_LOOT_DECK.has(c.id)
     );
 
-   // Assemble all cards from active sets, then shuffle once
-    const eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
-    const treasureDeck = shuffle(nonEternalTreasure.flatMap((c) => Array(c.quantity).fill(c.id)));
-    const lootDeck = shuffle(nonEternalLoot.flatMap((c) => Array(c.quantity).fill(c.id)));
-    const monsterDeck = shuffle(filterCards(monsterCards).flatMap((c) => Array(c.quantity).fill(c.id)));
-    const roomDeck = shuffle(filterCards(roomCards).flatMap((c) => Array(c.quantity).fill(c.id)));
+    // Assemble decks based on deck mode
+    let eternalDeck: string[];
+    let treasureDeck: string[];
+    let lootDeck: string[];
+    let monsterDeck: string[];
+    let roomDeck: string[];
+
+    if (deckMode === 'balanced') {
+      // Balanced mode: use official ratios
+      treasureDeck = buildBalancedDeck(nonEternalTreasure, TREASURE_RATIOS, excludeFilter);
+      lootDeck = buildBalancedDeck(nonEternalLoot, LOOT_RATIOS, excludeFilter);
+      monsterDeck = buildBalancedDeck(monsterCards, MONSTER_RATIOS, excludeFilter);
+      roomDeck = options.includeRooms ? buildAllCardsDeck(roomCards, excludeFilter) : [];
+      eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
+    } else if (deckMode === 'all') {
+      // All cards mode: every available card
+      treasureDeck = buildAllCardsDeck(nonEternalTreasure, excludeFilter);
+      lootDeck = buildAllCardsDeck(nonEternalLoot, excludeFilter);
+      monsterDeck = buildAllCardsDeck(monsterCards, excludeFilter);
+      roomDeck = options.includeRooms ? buildAllCardsDeck(roomCards, excludeFilter) : [];
+      eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
+    } else if (deckMode === 'custom') {
+      // Custom mode: user-defined ratios
+      const allowDuplicates = options.allowDuplicates ?? false;
+      const ratios = options.customRatios;
+      if (!ratios) {
+        // Fallback to balanced if no custom ratios provided
+        treasureDeck = buildBalancedDeck(nonEternalTreasure, TREASURE_RATIOS, excludeFilter);
+        lootDeck = buildBalancedDeck(nonEternalLoot, LOOT_RATIOS, excludeFilter);
+        monsterDeck = buildBalancedDeck(monsterCards, MONSTER_RATIOS, excludeFilter);
+      } else {
+        treasureDeck = buildCustomDeck(nonEternalTreasure, ratios.treasure, excludeFilter, allowDuplicates);
+        lootDeck = buildCustomDeck(nonEternalLoot, ratios.loot, excludeFilter, allowDuplicates);
+        monsterDeck = buildCustomDeck(monsterCards, ratios.monster, excludeFilter, allowDuplicates);
+      }
+      roomDeck = options.includeRooms ? buildAllCardsDeck(roomCards, excludeFilter) : [];
+      eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
+    } else {
+      // Default: balanced mode
+      treasureDeck = buildBalancedDeck(nonEternalTreasure, TREASURE_RATIOS, excludeFilter);
+      lootDeck = buildBalancedDeck(nonEternalLoot, LOOT_RATIOS, excludeFilter);
+      monsterDeck = buildBalancedDeck(monsterCards, MONSTER_RATIOS, excludeFilter);
+      roomDeck = options.includeRooms ? buildAllCardsDeck(roomCards, excludeFilter) : [];
+      eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
+    }
 
     // Assign characters randomly — each player gets a unique character
     // If there are more players than characters, cycle with offset so no two share
@@ -375,6 +478,12 @@ export class GameRoom {
       charPool.push(...shuffle([...characterCards]));
     }
     const assignedChars = charPool.slice(0, nonSpectators.length);
+
+    // Solitaire: ensure exactly 2 unique characters (no duplicates)
+    if (gameMode === 'solitaire' && assignedChars.length === 2 && assignedChars[0].id === assignedChars[1].id) {
+      const other = characterCards.find((c) => c.id !== assignedChars[0].id);
+      if (other) assignedChars[1] = other;
+    }
     const charMap: Record<string, CardInPlay> = {};
     const startingItemMap: Record<string, CardInPlay> = {};
 
@@ -521,6 +630,9 @@ export class GameRoom {
       ...this.state,
       phase: 'active',
       activeSets: options.activeSets,
+      gameMode,
+      d8Timer: (gameMode === 'solitaire' || gameMode === 'coop') ? 8 : null,
+      d8RoundStartPlayerId: null,
       priorityTimeoutMs: typeof options.priorityTimeoutMs === 'number' ? options.priorityTimeoutMs : 30000,
       allowPrivilegedActions: options.allowPrivilegedActions !== false,
       turn: {
@@ -580,13 +692,19 @@ export class GameRoom {
     return null;
   }
 
-  /** Transition to sad_vote phase, or skip directly to active if only 1 non-spectator */
+  /** Transition to sad_vote phase, or skip directly to active if only 1 non-spectator or co-op mode */
   transitionToSadVote(state: GameState): GameState {
     const nonSpectators = state.players.filter((p) => !p.isSpectator);
-    if (nonSpectators.length <= 1) {
-      // Solo game — skip the vote
-      let s = resetPriority({ ...state, phase: 'active', sadVotes: {} });
+    if (nonSpectators.length <= 1 || state.gameMode === 'coop') {
+      // Solo or co-op — skip the vote
       const first = nonSpectators[0] ?? state.players[0];
+      let s = resetPriority({
+        ...state,
+        phase: 'active',
+        sadVotes: {},
+        d8RoundStartPlayerId: (state.gameMode === 'solitaire' || state.gameMode === 'coop') && first ? first.id : null,
+        turn: { ...state.turn, activePlayerId: first?.id ?? '' },
+      });
       if (first) s = rechargePlayerItems(s, first.id);
       return s;
     }
@@ -626,6 +744,7 @@ export class GameRoom {
       ...state,
       phase: 'active',
       sadVotes: {},
+      d8RoundStartPlayerId: (state.gameMode === 'solitaire' || state.gameMode === 'coop') ? winnerId : null,
       turn: { ...state.turn, activePlayerId: winnerId },
       log: [...state.log, log],
     });
@@ -651,6 +770,24 @@ export class GameRoom {
   // ─── Win check ────────────────────────────────────────────────────────────
 
   checkWin(): string | null {
+    const nonSpectators = this.state.players.filter((p) => !p.isSpectator);
+
+    // Co-op/solitaire: combined soul pool — any player reaching threshold wins for the team
+    if (this.state.gameMode === 'coop' || this.state.gameMode === 'solitaire') {
+      let combinedSouls = 0;
+      for (const player of nonSpectators) {
+        combinedSouls += player.souls.reduce((sum, soul) => {
+          const card = getCardById(soul.cardId);
+          return sum + (card?.soulValue ?? 1);
+        }, 0);
+      }
+      if (combinedSouls >= WINNING_SOUL_VALUE) {
+        return nonSpectators[0]?.id ?? null;
+      }
+      return null;
+    }
+
+    // Competitive: individual player check
     for (const player of this.state.players) {
       if (player.isSpectator) continue;
       const totalSoulValue = player.souls.reduce((sum, soul) => {
@@ -664,8 +801,20 @@ export class GameRoom {
     return null;
   }
 
-  endGame(winnerId: string): void {
-    const winner = this.state.players.find((p) => p.id === winnerId);
+  checkD8Loss(): boolean {
+    if (this.state.d8Timer !== null && this.state.d8Timer <= 0) {
+      this.endGame(null);
+      return true;
+    }
+    return false;
+  }
+
+  endGame(winnerId: string | null): void {
+    if (this.state.phase === 'ended') return; // already ended
+    const winner = winnerId ? this.state.players.find((p) => p.id === winnerId) : null;
+    const logMsg = winnerId
+      ? `${winner?.name ?? 'Unknown'} wins with ${WINNING_SOUL_VALUE}+ souls!`
+      : 'Time\'s up! The D8 reached 0 — you lose.';
     this.state = {
       ...this.state,
       phase: 'ended',
@@ -674,7 +823,7 @@ export class GameRoom {
         ...this.state.log,
         createLogEntry(
           'info',
-          `${winner?.name ?? 'Unknown'} wins with ${WINNING_SOUL_VALUE}+ souls!`,
+          logMsg,
           winnerId
         ),
       ],
@@ -719,6 +868,8 @@ export class GameRoom {
       kills: [],
       isAlive: true,
       deathCount: 0,
+      deadThisTurn: false,
+      solitairePartnerId: null,
     }));
 
     this.state = {
@@ -727,6 +878,9 @@ export class GameRoom {
       phase: 'lobby',
       activeSets: this.state.activeSets,
       winnerId: null,
+      gameMode: 'competitive',
+      d8Timer: null,
+      d8RoundStartPlayerId: null,
       turn: emptyTurn,
       priorityQueue: [],
       stack: [],

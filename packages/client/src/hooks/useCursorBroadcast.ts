@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { getSocket } from '../socket/client';
 import { useGameStore } from '../store/gameStore';
 
-const THROTTLE_MS = 150;
+const THROTTLE_MS = 50;
 
 /** Broadcasts mouse position to the room. Only active when in a game (not lobby). */
 export function useCursorBroadcast() {
