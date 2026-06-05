@@ -396,6 +396,25 @@ export function registerHandlers(io: Server, socket: Socket): void {
     broadcastState(io, ctx.roomId);
   }));
 
+  socket.on('action:toggle_ready', safeHandler<void>(socket, () => {
+    if (isRateLimited(socket.id)) return;
+    const ctx = getCtx(socket);
+    if (!ctx) return sendError(socket, 'Not in a room');
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return sendError(socket, 'Room not found');
+    const state = room.getState();
+    if (state.phase !== 'lobby') return sendError(socket, 'Game already started');
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player || player.isSpectator) return sendError(socket, 'Only players can toggle ready');
+    room.setState({
+      ...state,
+      players: state.players.map((p) =>
+        p.id === ctx.playerId ? { ...p, isReady: !p.isReady } : p
+      ),
+    });
+    broadcastState(io, ctx.roomId);
+  }));
+
   // ─── Eden starting-item pick ─────────────────────────────────────────────────
 
   socket.on('action:eden_pick', safeHandler<unknown>(socket, (raw) => {

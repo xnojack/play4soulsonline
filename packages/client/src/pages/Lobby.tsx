@@ -310,6 +310,8 @@ export function Lobby() {
   };
 
   const handleStart = () => {
+    const allReady = nonSpectators.length > 0 && nonSpectators.every((p) => p.isReady);
+    if (!allReady && !confirm(`${readyCount} / ${nonSpectators.length} players ready. Start anyway?`)) return;
     setStarting(true);
     setStartError(null);
     const socket = getSocket();
@@ -366,6 +368,8 @@ export function Lobby() {
   const players = game?.players ?? [];
   const nonSpectators = players.filter((p) => !p.isSpectator);
   const spectators = players.filter((p) => p.isSpectator);
+  const myPlayerId = game?.myPlayerId ?? null;
+  const readyCount = nonSpectators.filter((p) => p.isReady).length;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -401,20 +405,33 @@ export function Lobby() {
             <div className="text-fs-parchment/30 text-sm italic">Waiting for players…</div>
           ) : (
             <div className="space-y-2">
-              {nonSpectators.map((p) => (
-                <div key={p.id} className="flex items-center gap-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${p.connected ? 'bg-green-500' : 'bg-yellow-600'}`}
-                  />
-                  <span className="text-fs-parchment">{p.name}</span>
-                  {p.id === game?.hostPlayerId && (
-                    <span className="text-xs text-fs-link/60">(host)</span>
-                  )}
-                  {!p.connected && (
-                    <span className="text-xs text-yellow-600/70">disconnected</span>
-                  )}
-                </div>
-              ))}
+{nonSpectators.map((p) => (
+                 <div key={p.id} className="flex items-center gap-2">
+                   <div
+                     className={`w-2 h-2 rounded-full ${p.connected ? 'bg-green-500' : 'bg-yellow-600'}`}
+                   />
+                   <span className="text-fs-parchment">{p.name}</span>
+                   {p.isReady && <span className="text-green-400 text-sm" title="Ready">✓</span>}
+                   {p.id === game?.hostPlayerId && (
+                     <span className="text-xs text-fs-link/60">(host)</span>
+                   )}
+                   {!p.connected && (
+                     <span className="text-xs text-yellow-600/70">disconnected</span>
+                   )}
+                   {p.id === myPlayerId && p.connected && (
+                     <button
+                       onClick={() => getSocket().emit('action:toggle_ready')}
+                       className={`ml-auto text-xs px-2 py-0.5 rounded border transition-colors ${
+                         p.isReady
+                           ? 'border-green-500/50 text-green-400 hover:border-green-400'
+                           : 'border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60'
+                       }`}
+                     >
+                       {p.isReady ? 'Ready' : 'Not Ready'}
+                     </button>
+                   )}
+                 </div>
+               ))}
             </div>
           )}
           {spectators.length > 0 && (
@@ -804,6 +821,13 @@ export function Lobby() {
             {startError && (
               <div className="bg-red-900/30 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-300 text-center mb-2">
                 {startError}
+              </div>
+            )}
+            {nonSpectators.length > 0 && (
+              <div className="text-center text-sm text-fs-parchment/50 mb-2">
+                <span className={readyCount === nonSpectators.length ? 'text-green-400' : ''}>
+                  {readyCount} / {nonSpectators.length} ready
+                </span>
               </div>
             )}
             <Button

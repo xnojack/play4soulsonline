@@ -96,6 +96,7 @@ export interface ClientPlayer {
   effectiveHp: number;
   effectiveAtk: number;
   solitairePartnerId: string | null;
+  isReady: boolean;
 }
 
 export interface TurnState {

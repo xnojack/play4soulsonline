@@ -200,6 +200,7 @@ export interface Player {
   deathCount: number;
   deadThisTurn: boolean; // once-per-turn death guard
   solitairePartnerId: string | null; // other character's player ID in solitaire mode
+  isReady: boolean; // player readiness in lobby
 }
 
 // ============================================================

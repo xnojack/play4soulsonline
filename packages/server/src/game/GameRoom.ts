@@ -281,6 +281,7 @@ export class GameRoom {
       deathCount: 0,
       deadThisTurn: false,
       solitairePartnerId: null,
+      isReady: false,
     };
 
     this.state = {
@@ -965,6 +966,7 @@ export class GameRoom {
       deathCount: 0,
       deadThisTurn: false,
       solitairePartnerId: null,
+      isReady: false,
     }));
 
     this.state = {
