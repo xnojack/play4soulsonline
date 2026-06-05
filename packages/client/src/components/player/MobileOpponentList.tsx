@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClientPlayer } from '../../store/gameStore';
+import { ClientPlayer, useGameStore } from '../../store/gameStore';
 import { useCard } from '../board/CardResolver';
 import { SERVER_URL } from '../../config';
 
@@ -11,6 +11,7 @@ interface MobileOpponentListProps {
 }
 
 export function MobileOpponentList({ players, activePlayerId, priorityPlayerId, onSelectPlayer }: MobileOpponentListProps) {
+  const sharedCoinPool = useGameStore((s) => s.game?.sharedCoinPool ?? false);
   if (players.length === 0) return null;
 
   return (
@@ -23,7 +24,7 @@ export function MobileOpponentList({ players, activePlayerId, priorityPlayerId, 
         const atk = p.effectiveAtk;
         const handCount = p.handCount;
         const souls = p.souls.length;
-        const coins = p.coins;
+        const coins = sharedCoinPool ? null : p.coins;
         const charCard = useCard(p.characterCardId);
 
         return (
@@ -74,9 +75,11 @@ export function MobileOpponentList({ players, activePlayerId, priorityPlayerId, 
                     <span className="text-purple-400/60">★</span> {souls}
                   </span>
                 )}
-                <span>
-                  <span className="text-fs-gold/40">¢</span> {coins}
-                </span>
+                {coins !== null && (
+                  <span>
+                    <span className="text-fs-gold/40">¢</span> {coins}
+                  </span>
+                )}
               </div>
             </div>
           </button>

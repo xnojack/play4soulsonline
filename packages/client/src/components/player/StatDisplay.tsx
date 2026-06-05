@@ -154,7 +154,7 @@ export function StatDisplay({ player, isMe, screenScale = false }: StatDisplayPr
         <div className={`flex items-center ${screenScale ? 'gap-1.5' : 'gap-3'}`}>
           <span className={`text-fs-gold ${screenScale ? 'text-sm' : 'text-3xl'} font-bold`} title="Coins">¢</span>
           <span className={`${screenScale ? 'text-sm' : 'text-3xl'} font-display font-semibold text-fs-parchment`}>
-            {player.coins}
+            {game?.sharedCoinPool ? '—' : player.coins}
           </span>
           {isMe && (
             <div className={`flex ${screenScale ? 'gap-1' : 'gap-1'}`}>

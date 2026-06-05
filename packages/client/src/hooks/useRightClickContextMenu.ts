@@ -67,6 +67,22 @@ export function useRightClickContextMenu() {
           onClick: () => { playSound('cardSlide'); },
         });
 
+        // Flip — only for dual-sided cards
+        if (hoveredCard && (hoveredCard.backImageUrl || hoveredCard.flipSideName)) {
+          const cardInstance = game.characterCards[instanceId]
+            || game.startingItemCards[instanceId]
+            || game.shopSlots.find((s) => s.card?.instanceId === instanceId)?.card
+            || game.monsterSlots.flatMap((s) => s.stack).find((c) => c.instanceId === instanceId)
+            || myPlayer?.items.find((i) => i.instanceId === instanceId);
+          const isFlipped = cardInstance?.flipped ?? false;
+          actions.push({
+            action: 'action:flip_card',
+            payload: { instanceId },
+            label: isFlipped ? 'Flip to Front' : 'Flip to Back',
+            onClick: () => { playSound('cardFlip'); },
+          });
+        }
+
         // Return to Deck
         const deckType = hoveredCard ? inferDeckType(hoveredCard.cardType) : null;
         if (deckType) {

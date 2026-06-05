@@ -160,3 +160,125 @@ export function getCardsByTypeAndSets(cardType: string, sets: string[]): Card[] 
     .all(cardType, ...sets) as DbRow[];
   return rows.map(rowToCard);
 }
+
+// ─── Challenge card helpers ──────────────────────────────────────────────────
+
+/** Main challenge names (12 unique challenges, each with difficulty variants) */
+const MAIN_CHALLENGE_NAMES = new Set([
+  'Resurrection Day',
+  'Motherly Love',
+  "Greed's Gamble",
+  'Masquerade',
+  'Delirious',
+  'Lord of the Flies',
+  'Trick/Treat',
+  "Fatty's Feast",
+  'How the Krampus Stole Christmas',
+  'Live, Laugh, Lust',
+  'Day of the Doodler',
+  'Stomping Ground',
+]);
+
+/** Challenge → related monster card names mapping */
+const CHALLENGE_RELATED_MAP: Record<string, string[]> = {
+  'Resurrection Day': ['Resurrected Rag Man'],
+  'Motherly Love': ['Devout Mom!'],
+  "Greed's Gamble": ['Avaricious Greed'],
+  'Masquerade': ['Anonymous Mask of Infamy'],
+  'Delirious': ['Unrelenting Delirium'],
+  'Lord of the Flies': ['Swarming The Duke of Flies', 'Swarming the Duke of Flies'],
+  'Trick/Treat': ['Mischievous The Haunt', 'Mischievous the Haunt'],
+  "Fatty's Feast": ['Engorged Mega Fatty'],
+  'How the Krampus Stole Christmas': ['Pilfering Krampus'],
+  'Live, Laugh, Lust': ['Lascivious Lust'],
+  'Day of the Doodler': ['The Doodler', 'Blank Canvas'],
+  'Stomping Ground': ['Marauding Daddy Long Legs'],
+};
+
+/** Get all challenge card variants (all difficulties of all 12 main challenges) */
+export function getChallengeCards(): Card[] {
+  const db = getDb();
+  const rows = db
+    .prepare(`SELECT * FROM cards WHERE card_type = 'Challenge'`)
+    .all() as DbRow[];
+  return rows.map(rowToCard);
+}
+
+/** Get related monster cards for a given challenge name (all difficulty variants) */
+export function getChallengeRelatedCards(challengeName: string): Card[] {
+  // Normalize apostrophes for map lookup (DB uses curly apostrophes)
+  const normalized = challengeName.replace(/[\u2019\u2018\u201B]/g, "'");
+  const relatedNames = CHALLENGE_RELATED_MAP[normalized] || CHALLENGE_RELATED_MAP[challengeName];
+  if (!relatedNames || relatedNames.length === 0) return [];
+  const db = getDb();
+  const placeholders = relatedNames.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT * FROM cards WHERE origin = 'Challenges' AND name IN (${placeholders}) COLLATE NOCASE`)
+    .all(...relatedNames) as DbRow[];
+  return rows.map(rowToCard);
+}
+
+/** Boss card names for each challenge */
+const CHALLENGE_BOSS_MAP: Record<string, string> = {
+  'Resurrection Day': 'Resurrected Rag Man',
+  'Motherly Love': 'Devout Mom!',
+  "Greed's Gamble": 'Avaricious Greed',
+  'Masquerade': 'Anonymous Mask of Infamy',
+  'Delirious': 'Unrelenting Delirium',
+  'Lord of the Flies': 'Swarming The Duke of Flies',
+  'Trick/Treat': 'Mischievous The Haunt',
+  "Fatty's Feast": 'Engorged Mega Fatty',
+  'How the Krampus Stole Christmas': 'Pilfering Krampus',
+  'Live, Laugh, Lust': 'Lascivious Lust',
+  'Day of the Doodler': 'The Doodler',
+  'Stomping Ground': 'Marauding Daddy Long Legs',
+};
+
+/** Get the boss card for a challenge at a specific difficulty */
+export function getChallengeBossCard(challengeName: string, difficulty: string): Card | null {
+  // Normalize apostrophes for map lookup (DB uses curly apostrophes)
+  const normalized = challengeName.replace(/[\u2019\u2018\u201B]/g, "'");
+  const bossName = CHALLENGE_BOSS_MAP[normalized] || CHALLENGE_BOSS_MAP[challengeName];
+  if (!bossName) return null;
+  const db = getDb();
+  // Get all variants of the boss card, then find the matching difficulty
+  const rows = db
+    .prepare(`SELECT * FROM cards WHERE origin = 'Challenges' AND name = ? COLLATE NOCASE`)
+    .all(bossName) as DbRow[];
+  const cards = rows.map(rowToCard);
+  // Match by difficulty in the card ID (e.g. "-norm", "-hard", "-ultra")
+  const diffMap: Record<string, string[]> = {
+    'normal': ['-norm', '_norm'],
+    'hard': ['-hard', '_hard'],
+    'ultra': ['-ultra', '_ultra'],
+  };
+  const suffixes = diffMap[difficulty.toLowerCase()] || [];
+  return cards.find((c) => suffixes.some((s) => c.id.includes(s))) || cards[0] || null;
+}
+
+/** Normalize a card name for comparison: lowercase, normalize apostrophes, trim */
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[\u2019\u2018\u201B\u201C\u201D]/g, "'") // curly quotes → straight
+    .replace(/\s*\(.*\)$/, '') // strip difficulty suffix like " (Hard)"
+    .trim();
+}
+
+/** Get the challenge reference card for a challenge at a specific difficulty */
+export function getChallengeCardByNameAndDifficulty(challengeName: string, difficulty: string): Card | null {
+  const db = getDb();
+  const rows = db
+    .prepare(`SELECT * FROM cards WHERE card_type = 'Challenge'`)
+    .all() as DbRow[];
+  const allChallengeCards = rows.map(rowToCard);
+  const normalized = normalizeName(challengeName);
+  const matching = allChallengeCards.filter((c) => normalizeName(c.name) === normalized);
+  const diffMap: Record<string, string[]> = {
+    'normal': ['-norm', '_norm'],
+    'hard': ['-hard', '_hard'],
+    'ultra': ['-ultra', '_ultra'],
+  };
+  const suffixes = diffMap[difficulty.toLowerCase()] || [];
+  return matching.find((c) => suffixes.some((s) => c.id.includes(s))) || matching[0] || null;
+}

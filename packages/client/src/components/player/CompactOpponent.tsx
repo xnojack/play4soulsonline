@@ -17,6 +17,7 @@ interface CompactOpponentProps {
 export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) {
   const [expanded, setExpanded] = useState(false);
   const characterCards = useGameStore((s) => s.game?.characterCards ?? {});
+  const sharedCoinPool = useGameStore((s) => s.game?.sharedCoinPool ?? false);
 
   const charInstance = player.characterInstanceId
     ? (characterCards[player.characterInstanceId] ?? {
@@ -73,7 +74,7 @@ export function CompactOpponent({ player, isActiveTurn }: CompactOpponentProps) 
           <div className="flex items-center gap-2 text-xs text-fs-parchment/60">
             <span>❤ {player.effectiveHp}</span>
             <span>🗡 {player.effectiveAtk}</span>
-            <span>¢ {player.coins}</span>
+            <span>¢ {sharedCoinPool ? '—' : player.coins}</span>
             {player.souls.length > 0 && (
               <span className="text-purple-400">♦ {player.souls.length}</span>
             )}

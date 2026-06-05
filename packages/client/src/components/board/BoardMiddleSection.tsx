@@ -442,6 +442,29 @@ function RoomSlotCard({
   );
 }
 
+// ─── Minion Slots ──────────────────────────────────────────────────────────
+
+function MinionSlotsRow({ minions }: { minions: CardInPlay[] }) {
+  if (minions.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xl text-fs-parchment/40 font-display uppercase tracking-wider">Minions ({minions.length})</span>
+      <div className="flex gap-2 flex-wrap">
+        {minions.map((m) => (
+          <div key={m.instanceId}>
+            <ResolvedCard
+              instance={m}
+              size="xs"
+              showCounters
+              alwaysPopover
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main middle section ────────────────────────────────────────────────────
 
 export function BoardMiddleSection() {
@@ -487,9 +510,9 @@ export function BoardMiddleSection() {
           </div>
         )}
 
-        {/* Col 4 — loot (top row) + room (bottom row); grows at 1x priority, yields to col 5 */}
+        {/* Col 4 — loot + challenge + outside (top row) + room (bottom row); grows at 1x priority, yields to col 5 */}
         <div className="flex flex-col gap-3 justify-center min-w-0" style={{ flex: '1 1 0' }}>
-        {/* Row 1: loot deck pair */}
+        {/* Row 1: loot deck + challenge + outside, inline */}
         <div className="flex gap-2 items-start flex-nowrap min-w-0" style={{ paddingLeft: 58 }}>
           <DiscardDeckPair
             deckType="loot"
@@ -500,6 +523,7 @@ export function BoardMiddleSection() {
             discardSize="sm"
             deckIsDraggable
           />
+          
         </div>
 
         {/* Row 2: room deck + slots, or disabled notice */}
@@ -600,13 +624,17 @@ export function BoardMiddleSection() {
           showAddSlot
           deckIsDraggable
         >
-          {monsterSlots.map((slot) => (
+{monsterSlots.map((slot) => (
             <MonsterSlotComponent key={slot.slotIndex} slot={slot} size="md" />
           ))}
         </DeckRow>
+
+        {game.minionSlots.length > 0 && (
+          <MinionSlotsRow minions={game.minionSlots} />
+        )}
       </div>
 
-       </div>{/* end card panel */}
+        </div>{/* end card panel */}
     </div>
   );
 }

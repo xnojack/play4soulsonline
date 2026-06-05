@@ -488,6 +488,18 @@ export function changeCoins(
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return state;
 
+  // In shared coin pool mode (Greed's Gamble), all coins go to/from the shared pool
+  if (state.sharedCoinPool) {
+    const newPool = Math.max(0, state.coinPool + amount);
+    const delta = newPool - state.coinPool;
+    const log = createLogEntry(
+      'info',
+      `${player.name} ${amount > 0 ? 'adds' : 'spends'} ${Math.abs(amount)}¢ to shared pool (now ${newPool}¢)`,
+      playerId
+    );
+    return { ...state, coinPool: newPool, log: [...state.log, log] };
+  }
+
   const newCoins = Math.max(0, player.coins + amount);
   const delta = newCoins - player.coins;
 

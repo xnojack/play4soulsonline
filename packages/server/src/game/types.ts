@@ -249,6 +249,7 @@ export interface GameState {
   stack: StackItem[];
 
   coinPool: number;
+  sharedCoinPool: boolean; // true for Greed's Gamble — all coins go to shared pool
 
   // Decks — arrays of card IDs (shuffled). Top of deck = last element.
   treasureDeck: string[];
@@ -267,6 +268,12 @@ export interface GameState {
   monsterSlots: MonsterSlot[]; // 2+ slots (expands with Indomitable)
   roomSlots: CardInPlay[]; // 0+ room/item cards in play as rooms
   bonusSouls: BonusSoulState[];
+  challengeSlot: CardInPlay | null; // 1 challenge reference card, fixed for the game
+  finalBossSlot: CardInPlay | null; // final boss card (Outside or Challenge mode)
+  minionSlots: CardInPlay[]; // temporary minion slots for challenges
+  outsideCards: CardInPlay[]; // outside cards (e.g. The Harbingers), face-up, never move
+  challengeName: string | null; // name of active challenge (e.g. "Resurrection Day")
+  challengeDifficulty: 'normal' | 'hard' | 'ultra' | null; // difficulty of active challenge
 
   // All CardInPlay instances for characters + starting items
   // (kept separate so they persist through player.items changes)
@@ -315,6 +322,12 @@ export interface ClientGameState extends Omit<GameState, 'players' | 'turn'> {
   monsterDeckCount: number;
   roomDeckCount: number;
   eternalDeckCount: number;
+  challengeSlot: CardInPlay | null;
+  finalBossSlot: CardInPlay | null;
+  minionSlots: CardInPlay[];
+  outsideCards: CardInPlay[];
+  challengeName: string | null;
+  challengeDifficulty: 'normal' | 'hard' | 'ultra' | null;
   // Eden pick: options only visible to the current picker
   edenPickOptions: string[]; // empty for everyone except edenPickQueue[0]
   // Seconds remaining on the current player's priority timeout (0 = no timeout or expired)
@@ -352,6 +365,10 @@ export interface StartGamePayload {
     treasure: Record<string, number>;
   };
   allowDuplicates?: boolean; // when true, duplicate cards to meet custom ratio targets
+  includeChallenges?: boolean; // when true, draw 1 challenge card at game start
+  includeOutside?: boolean; // when true, place outside cards face-up
+  challengeName?: string | null; // name of challenge to use (e.g. "Resurrection Day")
+  challengeDifficulty?: 'normal' | 'hard' | 'ultra' | null; // difficulty of challenge
 }
 
 export interface PlayLootPayload {

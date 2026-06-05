@@ -5,6 +5,7 @@ import { ClientPlayer, useGameStore } from '../../store/gameStore';
 import { ResolvedCard } from '../board/CardResolver';
 import { Droppable } from '../board/DnDPrimitives';
 import { PlayerExpandedPanel } from './PlayerExpandedPanel';
+import { ChallengeRow, FinalBossZone } from '../board/ChallengeBossZone';
 
 interface BoardTopSectionProps {
   myPlayerId: string | undefined;
@@ -37,6 +38,7 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
 
   const activePlayer = allPlayers.find((p) => p.id === activePlayerId) ?? null;
   const rightPanePlayer = allPlayers.find((p) => p.id === rightPaneId) ?? null;
+  const hasChallengeOrBoss = !!(game?.challengeSlot || game?.finalBossSlot);
 
   // Auto-scroll active player into view when changed
   useEffect(() => {
@@ -102,6 +104,18 @@ export function BoardTopSection({ myPlayerId }: BoardTopSectionProps) {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Center column: challenge/boss cards (only takes space when present) */}
+        {hasChallengeOrBoss && (
+          <div className="flex-shrink-0 flex flex-row gap-2 items-start justify-center min-h-0">
+            {game.challengeSlot && (
+              <ChallengeRow slot={game.challengeSlot} challengeName={game.challengeName} challengeDifficulty={game.challengeDifficulty} />
+            )}
+            {game.finalBossSlot && (
+              <FinalBossZone boss={game.finalBossSlot} challengeName={game.challengeName} challengeDifficulty={game.challengeDifficulty} />
+            )}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0 min-h-0">
           <AnimatePresence mode="wait">
@@ -173,6 +187,7 @@ function StripEntry({
   onLeave: () => void;
 }) {
   const characterCards = useGameStore((s) => s.game?.characterCards ?? {});
+  const sharedCoinPool = useGameStore((s) => s.game?.sharedCoinPool ?? false);
   const charInstance = player.characterInstanceId
     ? (characterCards[player.characterInstanceId] ?? {
         instanceId: player.characterInstanceId,
@@ -226,7 +241,7 @@ function StripEntry({
           <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-2xl text-fs-parchment/60">
             <span title="HP">❤ {player.effectiveHp}</span>
             <span title="ATK">🗡 {player.effectiveAtk}</span>
-            <span title="Coins">¢ {player.coins}</span>
+            <span title="Coins">¢ {sharedCoinPool ? '—' : player.coins}</span>
             <span title="Items" className="flex items-center gap-1">
               <img src="/treasure-back.png" alt="" className="w-[34px] h-[46px] object-cover rounded-sm opacity-80" />
               {player.items.length}

@@ -347,9 +347,9 @@ export function registerHandlers(io: Server, socket: Socket): void {
   socket.on('action:start_game', safeHandler<unknown>(socket, (raw) => {
     if (isRateLimited(socket.id)) return;
     const ctx = getCtx(socket);
-    if (!ctx) return;
+    if (!ctx) return sendError(socket, 'Not in a room');
     const room = gameStore.get(ctx.roomId);
-    if (!room) return;
+    if (!room) return sendError(socket, 'Room not found');
     if (room.getState().hostPlayerId !== ctx.playerId)
       return sendError(socket, 'Only the host can start the game');
 
@@ -370,8 +370,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
         treasure: isObject(payload.customRatios.treasure) ? payload.customRatios.treasure : {},
       } : undefined,
       allowDuplicates: isBoolean(payload.allowDuplicates) ? payload.allowDuplicates : false,
+      includeChallenges: isBoolean(payload.includeChallenges) ? payload.includeChallenges : false,
+      includeOutside: isBoolean(payload.includeOutside) ? payload.includeOutside : false,
+      challengeName: typeof payload.challengeName === 'string' ? payload.challengeName : null,
+      challengeDifficulty: typeof payload.challengeDifficulty === 'string' && ['normal', 'hard', 'ultra'].includes(payload.challengeDifficulty) ? payload.challengeDifficulty as 'normal' | 'hard' | 'ultra' : null,
     });
-    if (err) return sendError(socket, err);
+    if (err) {
+      console.error(`[start_game] Error for room ${ctx.roomId}: ${err}`);
+      return sendError(socket, err);
+    }
 
     broadcastState(io, ctx.roomId);
   }));

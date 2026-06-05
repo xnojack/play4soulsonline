@@ -92,6 +92,20 @@ export function useDeckKeyboardShortcuts() {
         return;
       }
 
+      // F — Flip card (if it has 2 sides)
+      if (key === 'F' && hoveredCardInstance) {
+        const instanceId = hoveredCardInstance.instanceId;
+        if (instanceId && !instanceId.startsWith('hand-')) {
+          const card = hoveredCard;
+          if (card && (card.backImageUrl || card.flipSideName)) {
+            e.preventDefault();
+            playSound('cardFlip');
+            getSocket().emit('action:flip_card', { instanceId });
+          }
+        }
+        return;
+      }
+
       // C — Add counter, Shift+C — Remove counter
       if (key === 'C' && hoveredCardInstance) {
         const instanceId = hoveredCardInstance.instanceId;

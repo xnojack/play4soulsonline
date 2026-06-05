@@ -171,11 +171,15 @@ export function Lobby() {
   const [includeBonusSouls, setIncludeBonusSouls] = useState(true);
   const [bonusSoulCount, setBonusSoulCount] = useState(3);
   const [includeRooms, setIncludeRooms] = useState(true);
+  const [gameVariant, setGameVariant] = useState<'standard' | 'outside' | 'challenge'>('standard');
+  const [challengeName, setChallengeName] = useState<string>('');
+  const [challengeDifficulty, setChallengeDifficulty] = useState<'normal' | 'hard' | 'ultra'>('normal');
   const [excludeNeverPrinted, setExcludeNeverPrinted] = useState(true);
   const [priorityTimeoutSeconds, setPriorityTimeoutSeconds] = useState(30);
   const [gameMode, setGameMode] = useState<GameMode>('competitive');
   const [deckMode, setDeckMode] = useState<'balanced' | 'all' | 'custom'>('balanced');
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const inRoom = game?.roomId === roomId;
 
   // Custom ratios state
@@ -304,12 +308,39 @@ export function Lobby() {
 
   const handleStart = () => {
     setStarting(true);
-    getSocket().emit('action:start_game', {
+    setStartError(null);
+    const socket = getSocket();
+
+    // Listen for game:error from the server
+    const onErr = (payload: { message: string }) => {
+      setStartError(payload.message);
+      setStarting(false);
+      socket.off('game:error', onErr);
+      setTimeout(() => setStartError(null), 5000);
+    };
+
+    // Listen for game:state confirming the game started
+    const onState = (state: { phase: string }) => {
+      if (state.phase === 'active' || state.phase === 'eden_pick' || state.phase === 'sad_vote') {
+        setStarting(false);
+        socket.off('game:state', onState);
+        socket.off('game:error', onErr);
+      }
+    };
+
+    socket.on('game:error', onErr);
+    socket.on('game:state', onState);
+
+    socket.emit('action:start_game', {
       deckMode,
       activeSets: selectedSets ?? [],
       includeBonusSouls,
       bonusSoulCount,
       includeRooms,
+      includeChallenges: gameVariant === 'challenge',
+      includeOutside: gameVariant === 'outside',
+      challengeName: gameVariant === 'challenge' ? challengeName || null : null,
+      challengeDifficulty: gameVariant === 'challenge' ? challengeDifficulty : null,
       excludeNeverPrinted,
       priorityTimeoutMs: priorityTimeoutSeconds * 1000,
       gameMode,
@@ -621,6 +652,94 @@ export function Lobby() {
                 />
                 <span className="text-sm text-fs-parchment/80">Room Deck</span>
               </label>
+
+              {/* Game Variant Selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-fs-parchment/80">Variant:</span>
+                <div className="flex gap-1">
+                  {([
+                    { value: 'standard', label: 'Standard' },
+                    { value: 'outside', label: 'Outside' },
+                    { value: 'challenge', label: 'Challenge' },
+                  ] as const).map((v) => (
+                    <button
+                      key={v.value}
+                      onClick={() => setGameVariant(v.value)}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                        gameVariant === v.value
+                          ? 'bg-fs-gold/20 border border-fs-gold text-fs-gold'
+                          : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/60 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                      }`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {gameVariant === 'challenge' && (
+                <>
+                  <div className="flex flex-col gap-2 w-full">
+                    <span className="text-sm text-fs-parchment/80">Challenge:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {([
+                        { value: '', label: 'Random' },
+                        { value: "Resurrection Day", label: 'Resurrection Day' },
+                        { value: "Greed's Gamble", label: "Greed's Gamble" },
+                        { value: 'Masquerade', label: 'Masquerade' },
+                        { value: 'Delirious', label: 'Delirious' },
+                        { value: 'Lord of the Flies', label: 'Lord of the Flies' },
+                        { value: 'Trick/Treat', label: 'Trick/Treat' },
+                        { value: "Fatty's Feast", label: "Fatty's Feast" },
+                        { value: 'How the Krampus Stole Christmas', label: 'Krampus' },
+                        { value: 'Live, Laugh, Lust', label: 'Live, Laugh, Lust' },
+                        { value: 'Day of the Doodler', label: 'Day of the Doodler' },
+                        { value: 'Motherly Love', label: 'Motherly Love' },
+                        { value: 'Stomping Ground', label: 'Stomping Ground' },
+                      ]).map((c) => (
+                        <button
+                          key={c.value}
+                          onClick={() => setChallengeName(c.value)}
+                          className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                            challengeName === c.value
+                              ? 'bg-purple-900/40 border border-purple-500 text-purple-300'
+                              : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                          }`}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-fs-parchment/80">Difficulty:</span>
+                    <div className="flex gap-1">
+                      {([
+                        { value: 'normal', label: 'Normal' },
+                        { value: 'hard', label: 'Hard' },
+                        { value: 'ultra', label: 'Ultra' },
+                      ] as const).map((d) => (
+                        <button
+                          key={d.value}
+                          onClick={() => setChallengeDifficulty(d.value)}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                            challengeDifficulty === d.value
+                              ? d.value === 'normal'
+                                ? 'bg-green-900/40 border border-green-500 text-green-300'
+                                : d.value === 'hard'
+                                ? 'bg-orange-900/40 border border-orange-500 text-orange-300'
+                                : 'bg-red-900/40 border border-red-500 text-red-300'
+                              : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -647,14 +766,21 @@ export function Lobby() {
 
         {/* Start button */}
         {isHost ? (
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleStart}
-            disabled={starting || nonSpectators.length < 1}
-          >
-            {starting ? 'Starting…' : 'Start Game'}
-          </Button>
+          <>
+            {startError && (
+              <div className="bg-red-900/30 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-300 text-center mb-2">
+                {startError}
+              </div>
+            )}
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleStart}
+              disabled={starting || nonSpectators.length < 1}
+            >
+              {starting ? 'Starting…' : 'Start Game'}
+            </Button>
+          </>
         ) : (
           <div className="text-center text-fs-parchment/50 text-sm panel p-5">
             Waiting for the host to start the game…

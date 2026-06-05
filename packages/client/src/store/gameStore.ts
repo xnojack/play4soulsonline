@@ -146,6 +146,7 @@ export interface GameState {
   stack: StackItem[];
 
   coinPool: number;
+  sharedCoinPool: boolean;
 
   treasureDeckCount: number;
   treasureDiscard: string[];
@@ -162,6 +163,12 @@ export interface GameState {
   monsterSlots: MonsterSlot[];
   roomSlots: CardInPlay[];
   bonusSouls: BonusSoulState[];
+  challengeSlot: CardInPlay | null;
+  finalBossSlot: CardInPlay | null;
+  minionSlots: CardInPlay[];
+  outsideCards: CardInPlay[];
+  challengeName: string | null;
+  challengeDifficulty: 'normal' | 'hard' | 'ultra' | null;
 
   characterCards: Record<string, CardInPlay>;
   startingItemCards: Record<string, CardInPlay>;

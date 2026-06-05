@@ -8,3 +8,4 @@ data/
 *.log
 AGENTS.md
 .opencode
+helper-data/

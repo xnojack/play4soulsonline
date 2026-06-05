@@ -24,6 +24,10 @@ import {
   getCardsByTypeAndSets,
   getCardsByType,
   getCardById,
+  getChallengeCards,
+  getChallengeRelatedCards,
+  getChallengeBossCard,
+  getChallengeCardByNameAndDifficulty,
 } from '../db/cards';
 import { getStartingItemId } from './startingItems';
 import {
@@ -87,6 +91,7 @@ export class GameRoom {
       priorityQueue: [],
       stack: [],
       coinPool: DEFAULT_COIN_POOL,
+      sharedCoinPool: false,
       treasureDeck: [],
       treasureDiscard: [],
       lootDeck: [],
@@ -107,6 +112,12 @@ export class GameRoom {
       })),
       roomSlots: [],
       bonusSouls: [],
+      challengeSlot: null,
+      finalBossSlot: null,
+      minionSlots: [],
+      outsideCards: [],
+      challengeName: null,
+      challengeDifficulty: null,
       characterCards: {},
       startingItemCards: {},
       players: [],
@@ -315,6 +326,10 @@ export class GameRoom {
       treasure: Record<string, number>;
     };
     allowDuplicates?: boolean;
+    includeChallenges?: boolean;
+    includeOutside?: boolean;
+    challengeName?: string | null;
+    challengeDifficulty?: 'normal' | 'hard' | 'ultra' | null;
   }): string | null {
     if (this.state.phase !== 'lobby') return 'Game already started';
     const gameMode = options.gameMode ?? 'competitive';
@@ -560,7 +575,7 @@ export class GameRoom {
         characterInstanceId: charInstance.instanceId,
         characterCardId: char?.id ?? '',
         startingItemInstanceId: siInstance.instanceId,
-        coins: DEFAULT_STARTING_COINS,
+        coins: options.challengeName === "Greed's Gamble" ? 0 : DEFAULT_STARTING_COINS,
         baseHp: char?.hp ?? 2,
         baseAtk: char?.atk ?? 1,
         handCardIds: drawn,
@@ -610,6 +625,77 @@ export class GameRoom {
       }
     }
 
+    // Challenge card — draw 1 from all challenge variants, add related monsters to deck
+    let challengeSlot: CardInPlay | null = null;
+    let finalBossSlot: CardInPlay | null = null;
+    const minionSlots: CardInPlay[] = [];
+    let challengeName: string | null = null;
+    let challengeDifficulty: 'normal' | 'hard' | 'ultra' | null = null;
+
+    if (options.includeChallenges || (options.challengeName && options.challengeName.length > 0)) {
+      // Challenge mode: use specified challenge or random
+      const allChallenges = getChallengeCards();
+      const challengeDeck = shuffle(allChallenges.flatMap((c) => Array(c.quantity).fill(c.id)));
+      if (challengeDeck.length > 0) {
+        let drawnChallengeId: string;
+        let drawnBossId: string | null = null;
+
+        if (options.challengeName && options.challengeDifficulty) {
+          // Use specific challenge + difficulty
+          const challengeCard = getChallengeCardByNameAndDifficulty(options.challengeName, options.challengeDifficulty);
+          const bossCard = getChallengeBossCard(options.challengeName, options.challengeDifficulty);
+          drawnChallengeId = challengeCard?.id ?? challengeDeck[Math.floor(Math.random() * challengeDeck.length)];
+          drawnBossId = bossCard?.id ?? null;
+          challengeName = options.challengeName;
+          challengeDifficulty = options.challengeDifficulty;
+        } else {
+          // Random challenge
+          drawnChallengeId = challengeDeck[Math.floor(Math.random() * challengeDeck.length)];
+          const card = allChallenges.find((c) => c.id === drawnChallengeId);
+          if (card) {
+            const baseName = card.name.replace(/[\u2019\u2018\u201B]/g, "'").replace(/\s*\(.*\)$/, '').trim() || card.name;
+            // Detect difficulty from the drawn card's ID
+            let diff: 'normal' | 'hard' | 'ultra' = 'normal';
+            if (card.id.includes('-hard') || card.id.includes('_hard')) diff = 'hard';
+            else if (card.id.includes('-ultra') || card.id.includes('_ultra')) diff = 'ultra';
+            const boss = getChallengeBossCard(baseName, diff);
+            drawnBossId = boss?.id ?? null;
+            challengeName = baseName;
+            challengeDifficulty = diff;
+          }
+        }
+
+        // Challenge slot = challenge reference card (e.g. "Greed's Gamble (Hard)")
+        challengeSlot = createCardInPlay(drawnChallengeId);
+
+        // Final boss slot = boss monster card (e.g. "Avaricious Greed (Hard)")
+        if (drawnBossId) {
+          finalBossSlot = createCardInPlay(drawnBossId);
+        }
+
+        // Use challenge name to look up related cards for the monster deck
+        if (challengeName) {
+          const relatedCards = getChallengeRelatedCards(challengeName);
+          if (relatedCards.length > 0) {
+            const relatedIds = relatedCards.flatMap((c) => Array(c.quantity).fill(c.id));
+            monsterDeck = shuffle([...monsterDeck, ...relatedIds]);
+          }
+        }
+      }
+    }
+
+    // Outside cards — place Harbingers in final boss slot (Beast side up)
+    const outsideCards: CardInPlay[] = [];
+    if (options.includeOutside) {
+      const outsideCardList = getCardsByType('Outside');
+      for (const c of outsideCardList) {
+        const inst = createCardInPlay(c.id);
+        inst.flipped = true; // Start with Beast side up
+        outsideCards.push(inst);
+        finalBossSlot = inst; // Also place in final boss slot
+      }
+    }
+
     // Bonus souls (pick configurable count, default 3)
     const bonusSoulLimit = options.bonusSoulCount ?? 3;
     const bonusSouls: BonusSoulState[] = shuffle([...bonusSoulCards])
@@ -649,7 +735,10 @@ export class GameRoom {
         priorityTimeoutDeadline: undefined,
       },
       stack: [],
-      coinPool: DEFAULT_COIN_POOL - players.length * DEFAULT_STARTING_COINS,
+      coinPool: options.challengeName === "Greed's Gamble"
+        ? DEFAULT_COIN_POOL
+        : DEFAULT_COIN_POOL - players.length * DEFAULT_STARTING_COINS,
+      sharedCoinPool: options.challengeName === "Greed's Gamble",
       treasureDeck: currentTreasureDeck,
       treasureDiscard: currentTreasureDiscard,
       lootDeck: currentLootDeck,
@@ -664,6 +753,12 @@ export class GameRoom {
       monsterSlots,
       roomSlots,
       bonusSouls,
+      challengeSlot,
+      finalBossSlot,
+      minionSlots,
+      outsideCards,
+      challengeName,
+      challengeDifficulty,
       characterCards: charMap,
       startingItemCards: startingItemMap,
       players: [...players, ...spectators],
@@ -885,6 +980,7 @@ export class GameRoom {
       priorityQueue: [],
       stack: [],
       coinPool: DEFAULT_COIN_POOL,
+      sharedCoinPool: false,
       treasureDeck: [],
       treasureDiscard: [],
       lootDeck: [],
@@ -905,6 +1001,12 @@ export class GameRoom {
       })),
       roomSlots: [],
       bonusSouls: [],
+      challengeSlot: null,
+      finalBossSlot: null,
+      minionSlots: [],
+      outsideCards: [],
+      challengeName: null,
+      challengeDifficulty: null,
       characterCards: {},
       startingItemCards: {},
       players: resetPlayers,

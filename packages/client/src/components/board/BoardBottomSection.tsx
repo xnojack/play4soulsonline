@@ -73,7 +73,11 @@ export function BottomBar() {
             <span className="text-fs-parchment/30">|</span>
             <span>Room: <span className="text-fs-parchment/60">{game.roomId}</span></span>
             <span className="text-fs-parchment/30">|</span>
-            <span>¢ pool: <span className="text-fs-parchment/60">{game.coinPool}</span></span>
+            <span>¢ pool: <span className={`${game.sharedCoinPool ? 'text-yellow-400 font-bold' : 'text-fs-parchment/60'}`}>
+                {game.coinPool}
+              </span>
+              {game.sharedCoinPool && <span className="text-yellow-400/60 text-[10px] ml-1">SHARED</span>}
+            </span>
           </>
         )}
         {spectators.length > 0 && (
