@@ -4,7 +4,8 @@ WORKDIR /app
 # npm ci can install from the single monorepo lockfile reproducibly.
 COPY package-lock.json package.json ./
 COPY packages/client/package.json ./packages/client/
-RUN npm ci --workspace=packages/client
+RUN npm ci --ignore-scripts --workspace=packages/client && \
+    npm rebuild --workspace=packages/client
 COPY packages/client/tsconfig.json packages/client/tsconfig.node.json packages/client/vite.config.ts ./packages/client/
 COPY packages/client/postcss.config.js packages/client/tailwind.config.js ./packages/client/
 COPY packages/client/index.html ./packages/client/
