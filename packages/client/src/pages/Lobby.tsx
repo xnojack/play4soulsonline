@@ -71,7 +71,7 @@ function JoinForm({ roomId, onJoined }: JoinFormProps) {
 
   const handleJoin = () => {
     const trimmed = name.trim();
-    if (!trimmed) return setErr('Enter your name');
+    if (!trimmed) return setErr('Please enter your display name');
     setLoading(true);
     setErr(null);
 
@@ -393,7 +393,7 @@ export function Lobby() {
 
         {/* Players */}
           <div className="panel p-6 mb-4">
-          <div className="section-title mb-3">Players ({nonSpectators.length})</div>
+          <div className="section-title mb-3">Players ({nonSpectators.length}) <span className="text-xs text-fs-parchment/30 font-normal">(1&ndash;4+ players)</span></div>
           {nonSpectators.length === 0 ? (
             <div className="text-fs-parchment/30 text-sm italic">Waiting for players…</div>
           ) : (

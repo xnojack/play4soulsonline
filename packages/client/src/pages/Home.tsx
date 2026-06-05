@@ -21,7 +21,7 @@ export function Home() {
   };
 
   const handleCreate = async () => {
-    if (!name.trim()) return setError('Enter your name');
+    if (!name.trim()) return setError('Please enter your display name');
     setLoading(true);
 
     try {
@@ -42,14 +42,14 @@ export function Home() {
 
       socket.emit('action:create_room', { name: name.trim() });
     } catch (e) {
-      setError('Failed to create room');
+      setError('Could not create room. Check your connection and try again.');
       setLoading(false);
     }
   };
 
   const handleJoin = async () => {
-    if (!name.trim()) return setError('Enter your name');
-    if (!roomCode.trim()) return setError('Enter a room code');
+    if (!name.trim()) return setError('Please enter your display name');
+    if (!roomCode.trim()) return setError('Enter the 6-character room code shared by your host');
     setLoading(true);
 
     try {
@@ -88,10 +88,10 @@ export function Home() {
       joinTimeout = setTimeout(() => {
         socket.off('game:state', onState);
         setLoading(false);
-        setError('Room not found or could not join');
+        setError('Room not found. Check the room code with your host or ask them to share the lobby link.');
       }, 5000);
     } catch (e) {
-      setError('Failed to join room');
+      setError('Could not connect to the server. Check your internet connection and try again.');
       setLoading(false);
     }
   };
@@ -110,6 +110,7 @@ export function Home() {
           <p className="text-fs-parchment/40 text-sm mt-2 font-display tracking-widest uppercase">
             Unofficial Online Companion
           </p>
+          <p className="text-fs-parchment/30 text-xs mt-1">Play 1&ndash;4+ players online</p>
         </div>
 
         {/* Error */}
@@ -214,7 +215,7 @@ export function Home() {
           </div>
         )}
 
-        <AttributionFooter />
+        <AttributionFooter compact />
       </div>
     </div>
   );
