@@ -747,7 +747,10 @@ export function Lobby() {
                   onChange={(e) => setExcludeNeverPrinted(e.target.checked)}
                   className="accent-fs-gold"
                 />
-                <span className="text-sm text-fs-parchment/80">Exclude Unprinted Cards</span>
+                <span className="text-sm text-fs-parchment/80 flex items-center gap-1">
+                  Exclude unreleased cards
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-fs-parchment/10 text-fs-parchment/40 text-[10px] font-bold cursor-help" title="Cards that haven't been physically printed in a product yet">?</span>
+                </span>
               </label>
               <label className="flex items-center gap-1.5">
                 <span className="text-xs text-fs-parchment/60">Priority timeout (s, 0 = off):</span>
