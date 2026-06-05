@@ -450,6 +450,37 @@ export function registerHandlers(io: Server, socket: Socket): void {
     broadcastState(io, ctx.roomId);
   }));
 
+  socket.on('action:select_character', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!isObject(raw)) return sendError(socket, 'Invalid payload');
+    const payload = raw as { characterId?: string | null };
+
+    const ctx = getCtx(socket);
+    if (!ctx) return sendError(socket, 'Not in a room');
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return sendError(socket, 'Room not found');
+
+    const state = room.getState();
+    if (state.phase !== 'lobby') return sendError(socket, 'Game already started');
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player || player.isSpectator) return sendError(socket, 'Only players can select characters');
+
+    // If characterId is provided, validate it exists
+    const charId = payload.characterId ?? null;
+    if (charId !== null) {
+      const card = getCardById(charId);
+      if (!card || card.cardType !== 'Character') return sendError(socket, 'Invalid character');
+    }
+
+    room.setState({
+      ...state,
+      players: state.players.map((p) =>
+        p.id === ctx.playerId ? { ...p, selectedCharacterId: charId } : p
+      ),
+    });
+    broadcastState(io, ctx.roomId);
+  }));
+
   // ─── Eden starting-item pick ─────────────────────────────────────────────────
 
   socket.on('action:eden_pick', safeHandler<unknown>(socket, (raw) => {

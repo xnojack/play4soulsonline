@@ -283,6 +283,7 @@ export class GameRoom {
       deadThisTurn: false,
       solitairePartnerId: null,
       isReady: false,
+      selectedCharacterId: null,
     };
 
     this.state = {
@@ -360,6 +361,7 @@ export class GameRoom {
         hpCounters: 0,
         atkCounters: 0,
         solitairePartnerId: human.id,
+        selectedCharacterId: null,
       };
       this.state = {
         ...this.state,
@@ -487,18 +489,41 @@ export class GameRoom {
       eternalDeck = shuffle([...eternalTreasure, ...eternalLoot].flatMap((c) => Array(c.quantity).fill(c.id)));
     }
 
-    // Assign characters randomly — each player gets a unique character
-    // If there are more players than characters, cycle with offset so no two share
-    // Pad if needed: repeat the deck until we have enough unique assignments
-    const charPool: typeof characterCards = [];
-    while (charPool.length < nonSpectators.length) {
-      charPool.push(...shuffle([...characterCards]));
+    // Assign characters — respect player selections, handle conflicts by seat order
+    const sortedPlayers = [...nonSpectators].sort((a, b) => a.seatIndex - b.seatIndex);
+    const usedCharIds = new Set<string>();
+    const assignedChars: (Card | null)[] = new Array(sortedPlayers.length).fill(null);
+
+    // First pass: honor selections in seat order; later players with the same pick are bumped
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      const player = sortedPlayers[i];
+      if (player.selectedCharacterId) {
+        const char = characterCards.find((c) => c.id === player.selectedCharacterId);
+        if (char && !usedCharIds.has(char.id)) {
+          assignedChars[i] = char;
+          usedCharIds.add(char.id);
+        }
+        // If duplicate or invalid, leave null for random assignment below
+      }
     }
-    const assignedChars = charPool.slice(0, nonSpectators.length);
+
+    // Second pass: fill remaining slots randomly from available characters
+    const availableChars = shuffle(characterCards.filter((c) => !usedCharIds.has(c.id)));
+    let availIdx = 0;
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      if (assignedChars[i] === null) {
+        if (availIdx < availableChars.length) {
+          assignedChars[i] = availableChars[availIdx++];
+        } else {
+          // Cycle back if we've exhausted unique characters
+          assignedChars[i] = shuffle(characterCards)[availIdx % characterCards.length];
+        }
+      }
+    }
 
     // Solitaire: ensure exactly 2 unique characters (no duplicates)
-    if (gameMode === 'solitaire' && assignedChars.length === 2 && assignedChars[0].id === assignedChars[1].id) {
-      const other = characterCards.find((c) => c.id !== assignedChars[0].id);
+    if (gameMode === 'solitaire' && assignedChars.length === 2 && assignedChars[0]?.id === assignedChars[1]?.id) {
+      const other = characterCards.find((c) => c.id !== assignedChars[0]?.id);
       if (other) assignedChars[1] = other;
     }
     const charMap: Record<string, CardInPlay> = {};
@@ -517,7 +542,7 @@ export class GameRoom {
     //   string    — known item ID (assign it)
     //   null      — explicitly Eden (must pick from treasure deck)
     //   undefined — character not in map (treat as no starting item, not Eden)
-    const resolvedStartingItems: (string | null | undefined)[] = assignedChars.slice(0, nonSpectators.length).map((char) => {
+    const resolvedStartingItems: (string | null | undefined)[] = assignedChars.slice(0, sortedPlayers.length).map((char) => {
       const startingItemId = getStartingItemId(char?.id ?? '');
       if (startingItemId === null) return null; // Eden-type — will pick later
       if (startingItemId !== undefined) {
@@ -541,16 +566,24 @@ export class GameRoom {
     // Track which players are Eden (need to pick their starting item)
     const edenPlayerIds: string[] = [];
 
-    const players = nonSpectators.map((p, i) => {
-      const char = assignedChars[i];
+    // Build lookup maps from player id → assigned char and starting item
+    const charByPlayerId = new Map<string, Card | null>();
+    const resolvedItemByPlayerId = new Map<string, string | null | undefined>();
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      charByPlayerId.set(sortedPlayers[i].id, assignedChars[i]);
+      resolvedItemByPlayerId.set(sortedPlayers[i].id, resolvedStartingItems[i]);
+    }
+
+    const players = nonSpectators.map((p) => {
+      const char = charByPlayerId.get(p.id);
       const charInstance = createCardInPlay(char?.id ?? 'unknown', false); // all start tapped
       charMap[charInstance.instanceId] = charInstance;
 
-      // resolvedStartingItems[i]:
+      // resolvedItemId:
       //   string    → known item, assign it
       //   null      → Eden, must pick from treasure deck
       //   undefined → unknown character, no starting item (not Eden)
-      const resolvedItemId = resolvedStartingItems[i];
+      const resolvedItemId = resolvedItemByPlayerId.get(p.id);
       const isEden = resolvedItemId === null;
 
       if (isEden) {
@@ -968,6 +1001,7 @@ export class GameRoom {
       deadThisTurn: false,
       solitairePartnerId: null,
       isReady: false,
+      selectedCharacterId: null,
     }));
 
     this.state = {

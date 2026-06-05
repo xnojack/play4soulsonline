@@ -5,6 +5,7 @@ import { connectSocket, getSocket } from '../socket/client';
 import { Button } from '../components/ui/Button';
 import { AttributionFooter } from '../components/ui/AttributionFooter';
 import { HowToPlayModal } from '../components/ui/HowToPlayModal';
+import { CharacterPicker } from '../components/ui/CharacterPicker';
 import { useIsHost } from '../hooks/useMyPlayer';
 import { SERVER_URL } from '../config';
 
@@ -199,6 +200,7 @@ export function Lobby() {
   });
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [howToPlayOpen, setHowToPlayOpen] = useState(false);
+  const [charPickerOpen, setCharPickerOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -420,32 +422,44 @@ export function Lobby() {
           ) : (
             <div className="space-y-2">
 {nonSpectators.map((p) => (
-                 <div key={p.id} className="flex items-center gap-2">
-                   <div
-                     className={`w-2 h-2 rounded-full ${p.connected ? 'bg-green-500' : 'bg-yellow-600'}`}
-                   />
-                   <span className="text-fs-parchment">{p.name}</span>
-                   {p.isReady && <span className="text-green-400 text-sm" title="Ready">✓</span>}
-                   {p.id === game?.hostPlayerId && (
-                     <span className="text-xs text-fs-link/60">(host)</span>
-                   )}
-                   {!p.connected && (
-                     <span className="text-xs text-yellow-600/70">disconnected</span>
-                   )}
-                   {p.id === myPlayerId && p.connected && (
-                     <button
-                       onClick={() => getSocket().emit('action:toggle_ready')}
-                       className={`ml-auto text-xs px-2 py-0.5 rounded border transition-colors ${
-                         p.isReady
-                           ? 'border-green-500/50 text-green-400 hover:border-green-400'
-                           : 'border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60'
-                       }`}
-                     >
-                       {p.isReady ? 'Ready' : 'Not Ready'}
-                     </button>
-                   )}
-                 </div>
-               ))}
+                  <div key={p.id} className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${p.connected ? 'bg-green-500' : 'bg-yellow-600'}`}
+                    />
+                    <span className="text-fs-parchment">{p.name}</span>
+                    {p.isReady && <span className="text-green-400 text-sm" title="Ready">✓</span>}
+                    {p.id === game?.hostPlayerId && (
+                      <span className="text-xs text-fs-link/60">(host)</span>
+                    )}
+                    {!p.connected && (
+                      <span className="text-xs text-yellow-600/70">disconnected</span>
+                    )}
+                    {/* Character display for other players */}
+                    {p.selectedCharacterId && p.id !== myPlayerId && (
+                      <span className="text-xs text-fs-parchment/40">(has pick)</span>
+                    )}
+                    {p.id === myPlayerId && p.connected && (
+                      <>
+                        <button
+                          onClick={() => getSocket().emit('action:toggle_ready')}
+                          className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                            p.isReady
+                              ? 'border-green-500/50 text-green-400 hover:border-green-400'
+                              : 'border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60'
+                          }`}
+                        >
+                          {p.isReady ? 'Ready' : 'Not Ready'}
+                        </button>
+                        <button
+                          onClick={() => setCharPickerOpen(true)}
+                          className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
+                        >
+                          {p.selectedCharacterId ? 'Change Char' : '🎲 Pick Char'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
             </div>
           )}
           {spectators.length > 0 && (
@@ -895,6 +909,11 @@ export function Lobby() {
       </div>
 
       <HowToPlayModal isOpen={howToPlayOpen} onClose={() => setHowToPlayOpen(false)} />
+      <CharacterPicker
+        isOpen={charPickerOpen}
+        onClose={() => setCharPickerOpen(false)}
+        currentId={game?.players.find((p) => p.id === myPlayerId)?.selectedCharacterId ?? null}
+      />
     </div>
   );
 }
