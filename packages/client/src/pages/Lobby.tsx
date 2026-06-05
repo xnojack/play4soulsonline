@@ -196,6 +196,7 @@ export function Lobby() {
     monster: true,
     treasure: true,
   });
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Fetch available sets from server and default to all selected
   useEffect(() => {
@@ -443,149 +444,50 @@ export function Lobby() {
           </button>
         </div>
 
-        {/* Card sets (host only) */}
+        {/* Host settings */}
         {isHost && (
-        <div className="panel p-6 mb-4">
-            <div className="section-title mb-3">Deck Mode</div>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {[
-                { value: 'balanced' as const, label: 'Balanced', desc: 'Official ratios' },
-                { value: 'all' as const, label: 'All Cards', desc: 'Every card' },
-                { value: 'custom' as const, label: 'Custom', desc: 'Set ratios manually' },
-              ].map((m) => (
-                <label
-                  key={m.value}
-                  className={`cursor-pointer rounded-lg border-2 px-3 py-2 text-center transition-all ${
-                    deckMode === m.value
-                      ? 'border-fs-gold bg-fs-gold/10 shadow-sm'
-                      : 'border-fs-gold/10 bg-fs-darker/50 hover:border-fs-gold/30'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="deckMode"
-                    value={m.value}
-                    checked={deckMode === m.value}
-                    onChange={() => setDeckMode(m.value)}
-                    className="sr-only"
-                  />
-                  <div className={`text-sm font-medium ${deckMode === m.value ? 'text-fs-gold' : 'text-fs-parchment/80'}`}>
-                    {m.label}
-                  </div>
-                  <div className="text-[10px] text-fs-parchment/40 mt-0.5">{m.desc}</div>
-                </label>
-              ))}
-            </div>
-
-            {/* Card Sets — always visible, collapsible */}
-            <div className="border border-fs-gold/10 rounded-lg mb-4">
-              <button
-                onClick={() => setCollapsedSections(prev => ({ ...prev, sets: !prev.sets }))}
-                className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
-              >
-                <span className="text-sm font-medium text-fs-gold">Card Sets</span>
-                <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections.sets ? '' : 'rotate-90'}`}>▶</span>
-              </button>
-              {!collapsedSections.sets && (
-                <div className="px-3 pb-2">
-                  <div className="flex gap-2 mb-2">
-                    <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">All</button>
-                    <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">None</button>
-                  </div>
-                  {availableSets.length === 0 ? (
-                    <div className="text-xs text-fs-parchment/30 italic">Loading sets…</div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                      {availableSets.map((set) => (
-                        <label key={set} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={(selectedSets ?? []).includes(set)}
-                            onChange={() => handleToggleSet(set)}
-                            className="accent-fs-gold flex-shrink-0"
-                          />
-                          <span className="text-xs text-fs-parchment/70 truncate">{set}</span>
-                        </label>
-                      ))}
+          <>
+            {/* Quick Start — always visible */}
+            <div className="panel p-6 mb-4">
+              <div className="section-title mb-3">Deck Mode</div>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  { value: 'balanced' as const, label: 'Balanced', desc: 'Official ratios' },
+                  { value: 'all' as const, label: 'All Cards', desc: 'Every card' },
+                  { value: 'custom' as const, label: 'Custom', desc: 'Set ratios manually' },
+                ].map((m) => (
+                  <label
+                    key={m.value}
+                    className={`cursor-pointer rounded-lg border-2 px-3 py-2 text-center transition-all ${
+                      deckMode === m.value
+                        ? 'border-fs-gold bg-fs-gold/10 shadow-sm'
+                        : 'border-fs-gold/10 bg-fs-darker/50 hover:border-fs-gold/30'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="deckMode"
+                      value={m.value}
+                      checked={deckMode === m.value}
+                      onChange={() => setDeckMode(m.value)}
+                      className="sr-only"
+                    />
+                    <div className={`text-sm font-medium ${deckMode === m.value ? 'text-fs-gold' : 'text-fs-parchment/80'}`}>
+                      {m.label}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    <div className="text-[10px] text-fs-parchment/40 mt-0.5">{m.desc}</div>
+                  </label>
+                ))}
+              </div>
 
-            {/* Custom Ratios — only shown when custom mode is selected */}
-            {deckMode === 'custom' && (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="section-title">Custom Ratios</div>
-                  <div className="flex gap-2">
-                    <button onClick={handleLoadBalanced} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Balanced</button>
-                    <button onClick={handleMaxAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Max All</button>
-                  </div>
-                </div>
-
-                {/* Ratio sections */}
-                {deckCategories ? (
-                  <div className="space-y-2 mb-3">
-                    {(['loot', 'monster', 'treasure'] as const).map(deck => (
-                      <div key={deck} className="border border-fs-gold/10 rounded-lg">
-                        <button
-                          onClick={() => toggleSection(deck)}
-                          className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
-                        >
-                          <span className="text-sm font-medium text-fs-gold capitalize">{deck} Deck</span>
-                          <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections[deck] ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsedSections[deck] && (
-                          <div className="px-3 pb-2 space-y-1">
-                            {Object.entries(deckCategories[deck]).map(([cat, info]) => (
-                              <div key={cat} className="flex items-center gap-2">
-                                <span className="text-xs text-fs-parchment/60 flex-1 truncate">{cat}</span>
-                                <input
-                                  type="number"
-                                  value={customRatios[deck][cat] ?? 0}
-                                  onChange={(e) => handleRatioChange(deck, cat, parseInt(e.target.value, 10) || 0)}
-                                  className="w-16 bg-fs-darker border border-fs-gold/20 rounded px-2 py-1 text-xs text-fs-parchment focus:outline-none focus:border-fs-gold"
-                                  min="0"
-                                />
-                                <span className="text-[10px] text-fs-parchment/30">/ {info.count}</span>
-                                <button
-                                  onClick={() => handleMaxCategory(deck, cat)}
-                                  className="text-[10px] text-fs-parchment/40 hover:text-fs-link transition-colors"
-                                >
-                                  Max
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-fs-parchment/30 italic mb-3">Loading categories…</div>
-                )}
-
-                <label className="flex items-center gap-2 cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={allowDuplicates}
-                    onChange={(e) => setAllowDuplicates(e.target.checked)}
-                    className="accent-fs-gold"
-                  />
-                  <span className="text-xs text-fs-parchment/60">Allow duplicates (copy cards when target exceeds available)</span>
-                </label>
-              </>
-            )}
-            {/* Game mode selector */}
-            <div className="border-t border-fs-gold/10 pt-3 mt-3">
+              {/* Game mode selector */}
               <div className="text-xs text-fs-parchment/60 mb-2 font-medium">Game Mode</div>
               <div className="flex gap-2">
-                {([
+                {[
                   { value: 'competitive' as GameMode, label: 'Competitive', desc: 'Normal multiplayer' },
                   { value: 'solitaire' as GameMode, label: 'Solitaire', desc: '1 player, 2 characters, D8 timer' },
                   { value: 'coop' as GameMode, label: 'Co-op', desc: '2 players, shared souls, D8 timer' },
-                ]).map((m) => {
+                ].map((m) => {
                   const disabled = m.value === 'solitaire' && nonSpectators.length > 1
                     || m.value === 'coop' && nonSpectators.length < 2;
                   return (
@@ -618,153 +520,273 @@ export function Lobby() {
               </div>
             </div>
 
-            <div className="flex gap-4 flex-wrap items-center border-t border-fs-gold/10 pt-3">
-              {gameMode === 'competitive' && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={includeBonusSouls}
-                    onChange={(e) => setIncludeBonusSouls(e.target.checked)}
-                    className="accent-fs-gold"
-                  />
-                  <span className="text-sm text-fs-parchment/80">Bonus Souls</span>
-                </label>
-              )}
-              {includeBonusSouls && gameMode === 'competitive' && (
-                <label className="flex items-center gap-1.5">
-                  <span className="text-xs text-fs-parchment/60">Count:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={bonusSoulCount}
-                    onChange={(e) => setBonusSoulCount(Math.max(1, Math.min(10, Number(e.target.value))))}
-                    className="w-14 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
-                  />
-                </label>
-              )}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeRooms}
-                  onChange={(e) => setIncludeRooms(e.target.checked)}
-                  className="accent-fs-gold"
-                />
-                <span className="text-sm text-fs-parchment/80">Room Deck</span>
-              </label>
-
-              {/* Game Variant Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-fs-parchment/80">Variant:</span>
-                <div className="flex gap-1">
-                  {([
-                    { value: 'standard', label: 'Standard' },
-                    { value: 'outside', label: 'Outside' },
-                    { value: 'challenge', label: 'Challenge' },
-                  ] as const).map((v) => (
+            {/* Advanced Settings — collapsible */}
+            <div className="panel mb-4">
+              <button
+                onClick={() => setAdvancedOpen(!advancedOpen)}
+                className="w-full flex items-center justify-between px-6 py-3 text-left hover:bg-fs-darker/30 transition-colors"
+              >
+                <span className="text-sm font-medium text-fs-gold">Advanced Settings</span>
+                <span className={`text-xs text-fs-parchment/40 transition-transform ${advancedOpen ? 'rotate-90' : ''}`}>▶</span>
+              </button>
+              {advancedOpen && (
+                <div className="px-6 pb-6 space-y-4">
+                  {/* Card Sets */}
+                  <div className="border border-fs-gold/10 rounded-lg">
                     <button
-                      key={v.value}
-                      onClick={() => setGameVariant(v.value)}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-all ${
-                        gameVariant === v.value
-                          ? 'bg-fs-gold/20 border border-fs-gold text-fs-gold'
-                          : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/60 hover:border-fs-gold/30 hover:text-fs-parchment/80'
-                      }`}
+                      onClick={() => setCollapsedSections(prev => ({ ...prev, sets: !prev.sets }))}
+                      className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
                     >
-                      {v.label}
+                      <span className="text-sm font-medium text-fs-gold">Card Sets</span>
+                      <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections.sets ? '' : 'rotate-90'}`}>▶</span>
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {gameVariant === 'challenge' && (
-                <>
-                  <div className="flex flex-col gap-2 w-full">
-                    <span className="text-sm text-fs-parchment/80">Challenge:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {([
-                        { value: '', label: 'Random' },
-                        { value: "Resurrection Day", label: 'Resurrection Day' },
-                        { value: "Greed's Gamble", label: "Greed's Gamble" },
-                        { value: 'Masquerade', label: 'Masquerade' },
-                        { value: 'Delirious', label: 'Delirious' },
-                        { value: 'Lord of the Flies', label: 'Lord of the Flies' },
-                        { value: 'Trick/Treat', label: 'Trick/Treat' },
-                        { value: "Fatty's Feast", label: "Fatty's Feast" },
-                        { value: 'How the Krampus Stole Christmas', label: 'Krampus' },
-                        { value: 'Live, Laugh, Lust', label: 'Live, Laugh, Lust' },
-                        { value: 'Day of the Doodler', label: 'Day of the Doodler' },
-                        { value: 'Motherly Love', label: 'Motherly Love' },
-                        { value: 'Stomping Ground', label: 'Stomping Ground' },
-                      ]).map((c) => (
-                        <button
-                          key={c.value}
-                          onClick={() => setChallengeName(c.value)}
-                          className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                            challengeName === c.value
-                              ? 'bg-purple-900/40 border border-purple-500 text-purple-300'
-                              : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
-                    </div>
+                    {!collapsedSections.sets && (
+                      <div className="px-3 pb-2">
+                        <div className="flex gap-2 mb-2">
+                          <button onClick={handleSelectAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">All</button>
+                          <button onClick={handleSelectNone} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">None</button>
+                        </div>
+                        {availableSets.length === 0 ? (
+                          <div className="text-xs text-fs-parchment/30 italic">Loading sets…</div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                            {availableSets.map((set) => (
+                              <label key={set} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={(selectedSets ?? []).includes(set)}
+                                  onChange={() => handleToggleSet(set)}
+                                  className="accent-fs-gold flex-shrink-0"
+                                />
+                                <span className="text-xs text-fs-parchment/70 truncate">{set}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Custom Ratios — only shown when custom mode is selected */}
+                  {deckMode === 'custom' && (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="section-title">Custom Ratios</div>
+                        <div className="flex gap-2">
+                          <button onClick={handleLoadBalanced} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Balanced</button>
+                          <button onClick={handleMaxAll} className="text-xs text-fs-parchment/50 hover:text-fs-link transition-colors">Max All</button>
+                        </div>
+                      </div>
+
+                      {/* Ratio sections */}
+                      {deckCategories ? (
+                        <div className="space-y-2 mb-3">
+                          {(['loot', 'monster', 'treasure'] as const).map(deck => (
+                            <div key={deck} className="border border-fs-gold/10 rounded-lg">
+                              <button
+                                onClick={() => toggleSection(deck)}
+                                className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-fs-darker/30 transition-colors"
+                              >
+                                <span className="text-sm font-medium text-fs-gold capitalize">{deck} Deck</span>
+                                <span className={`text-xs text-fs-parchment/40 transition-transform ${collapsedSections[deck] ? '' : 'rotate-90'}`}>▶</span>
+                              </button>
+                              {!collapsedSections[deck] && (
+                                <div className="px-3 pb-2 space-y-1">
+                                  {Object.entries(deckCategories[deck]).map(([cat, info]) => (
+                                    <div key={cat} className="flex items-center gap-2">
+                                      <span className="text-xs text-fs-parchment/60 flex-1 truncate">{cat}</span>
+                                      <input
+                                        type="number"
+                                        value={customRatios[deck][cat] ?? 0}
+                                        onChange={(e) => handleRatioChange(deck, cat, parseInt(e.target.value, 10) || 0)}
+                                        className="w-16 bg-fs-darker border border-fs-gold/20 rounded px-2 py-1 text-xs text-fs-parchment focus:outline-none focus:border-fs-gold"
+                                        min="0"
+                                      />
+                                      <span className="text-[10px] text-fs-parchment/30">/ {info.count}</span>
+                                      <button
+                                        onClick={() => handleMaxCategory(deck, cat)}
+                                        className="text-[10px] text-fs-parchment/40 hover:text-fs-link transition-colors"
+                                      >
+                                        Max
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-fs-parchment/30 italic mb-3">Loading categories…</div>
+                      )}
+
+                      <label className="flex items-center gap-2 cursor-pointer mb-2">
+                        <input
+                          type="checkbox"
+                          checked={allowDuplicates}
+                          onChange={(e) => setAllowDuplicates(e.target.checked)}
+                          className="accent-fs-gold"
+                        />
+                        <span className="text-xs text-fs-parchment/60">Allow duplicates (copy cards when target exceeds available)</span>
+                      </label>
+                    </>
+                  )}
+
+                  {/* Bonus Souls + Room Deck */}
+                  <div className="flex gap-4 flex-wrap items-center">
+                    {gameMode === 'competitive' && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={includeBonusSouls}
+                          onChange={(e) => setIncludeBonusSouls(e.target.checked)}
+                          className="accent-fs-gold"
+                        />
+                        <span className="text-sm text-fs-parchment/80">Bonus Souls</span>
+                      </label>
+                    )}
+                    {includeBonusSouls && gameMode === 'competitive' && (
+                      <label className="flex items-center gap-1.5">
+                        <span className="text-xs text-fs-parchment/60">Count:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={bonusSoulCount}
+                          onChange={(e) => setBonusSoulCount(Math.max(1, Math.min(10, Number(e.target.value))))}
+                          className="w-14 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
+                        />
+                      </label>
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeRooms}
+                        onChange={(e) => setIncludeRooms(e.target.checked)}
+                        className="accent-fs-gold"
+                      />
+                      <span className="text-sm text-fs-parchment/80">Room Deck</span>
+                    </label>
+                  </div>
+
+                  {/* Variant selector */}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-fs-parchment/80">Difficulty:</span>
+                    <span className="text-sm text-fs-parchment/80">Variant:</span>
                     <div className="flex gap-1">
-                      {([
-                        { value: 'normal', label: 'Normal' },
-                        { value: 'hard', label: 'Hard' },
-                        { value: 'ultra', label: 'Ultra' },
-                      ] as const).map((d) => (
+                      {[
+                        { value: 'standard', label: 'Standard' },
+                        { value: 'outside', label: 'Outside' },
+                        { value: 'challenge', label: 'Challenge' },
+                      ].map((v) => (
                         <button
-                          key={d.value}
-                          onClick={() => setChallengeDifficulty(d.value)}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-all ${
-                            challengeDifficulty === d.value
-                              ? d.value === 'normal'
-                                ? 'bg-green-900/40 border border-green-500 text-green-300'
-                                : d.value === 'hard'
-                                ? 'bg-orange-900/40 border border-orange-500 text-orange-300'
-                                : 'bg-red-900/40 border border-red-500 text-red-300'
-                              : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                          key={v.value}
+                          onClick={() => setGameVariant(v.value as 'standard' | 'outside' | 'challenge')}
+                          className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                            gameVariant === v.value
+                              ? 'bg-fs-gold/20 border border-fs-gold text-fs-gold'
+                              : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/60 hover:border-fs-gold/30 hover:text-fs-parchment/80'
                           }`}
                         >
-                          {d.label}
+                          {v.label}
                         </button>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={excludeNeverPrinted}
-                  onChange={(e) => setExcludeNeverPrinted(e.target.checked)}
-                  className="accent-fs-gold"
-                />
-                <span className="text-sm text-fs-parchment/80 flex items-center gap-1">
-                  Exclude unreleased cards
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-fs-parchment/10 text-fs-parchment/40 text-[10px] font-bold cursor-help" title="Cards that haven't been physically printed in a product yet">?</span>
-                </span>
-              </label>
-              <label className="flex items-center gap-1.5">
-                <span className="text-xs text-fs-parchment/60">Priority timeout (s, 0 = off):</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={120}
-                  value={priorityTimeoutSeconds}
-                  onChange={(e) => setPriorityTimeoutSeconds(Math.max(0, Math.min(120, Number(e.target.value))))}
-                    className="w-16 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
-                />
-              </label>
+                  {/* Challenge picker */}
+                  {gameVariant === 'challenge' && (
+                    <>
+                      <div className="flex flex-col gap-2 w-full">
+                        <span className="text-sm text-fs-parchment/80">Challenge:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { value: '', label: 'Random' },
+                            { value: "Resurrection Day", label: 'Resurrection Day' },
+                            { value: "Greed's Gamble", label: "Greed's Gamble" },
+                            { value: 'Masquerade', label: 'Masquerade' },
+                            { value: 'Delirious', label: 'Delirious' },
+                            { value: 'Lord of the Flies', label: 'Lord of the Flies' },
+                            { value: 'Trick/Treat', label: 'Trick/Treat' },
+                            { value: "Fatty's Feast", label: "Fatty's Feast" },
+                            { value: 'How the Krampus Stole Christmas', label: 'Krampus' },
+                            { value: 'Live, Laugh, Lust', label: 'Live, Laugh, Lust' },
+                            { value: 'Day of the Doodler', label: 'Day of the Doodler' },
+                            { value: 'Motherly Love', label: 'Motherly Love' },
+                            { value: 'Stomping Ground', label: 'Stomping Ground' },
+                          ].map((c) => (
+                            <button
+                              key={c.value}
+                              onClick={() => setChallengeName(c.value)}
+                              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                challengeName === c.value
+                                  ? 'bg-purple-900/40 border border-purple-500 text-purple-300'
+                                  : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                              }`}
+                            >
+                              {c.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-fs-parchment/80">Difficulty:</span>
+                        <div className="flex gap-1">
+                          {[
+                            { value: 'normal', label: 'Normal' },
+                            { value: 'hard', label: 'Hard' },
+                            { value: 'ultra', label: 'Ultra' },
+                          ].map((d) => (
+                            <button
+                              key={d.value}
+                              onClick={() => setChallengeDifficulty(d.value as 'normal' | 'hard' | 'ultra')}
+                              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                                challengeDifficulty === d.value
+                                  ? d.value === 'normal'
+                                    ? 'bg-green-900/40 border border-green-500 text-green-300'
+                                    : d.value === 'hard'
+                                    ? 'bg-orange-900/40 border border-orange-500 text-orange-300'
+                                    : 'bg-red-900/40 border border-red-500 text-red-300'
+                                  : 'bg-fs-darker/50 border border-fs-gold/10 text-fs-parchment/50 hover:border-fs-gold/30 hover:text-fs-parchment/80'
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Exclude unreleased + Priority timeout */}
+                  <div className="flex gap-4 flex-wrap items-center">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={excludeNeverPrinted}
+                        onChange={(e) => setExcludeNeverPrinted(e.target.checked)}
+                        className="accent-fs-gold"
+                      />
+                      <span className="text-sm text-fs-parchment/80 flex items-center gap-1">
+                        Exclude unreleased cards
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-fs-parchment/10 text-fs-parchment/40 text-[10px] font-bold cursor-help" title="Cards that haven't been physically printed in a product yet">?</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <span className="text-xs text-fs-parchment/60">Priority timeout (s, 0 = off):</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={priorityTimeoutSeconds}
+                        onChange={(e) => setPriorityTimeoutSeconds(Math.max(0, Math.min(120, Number(e.target.value))))}
+                        className="w-16 bg-fs-darker border border-fs-link/30 rounded px-2 py-1 text-fs-parchment text-sm focus:outline-none focus:border-fs-link"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </>
         )}
 
         {/* Start button */}
