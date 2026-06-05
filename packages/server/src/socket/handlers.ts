@@ -46,6 +46,7 @@ import {
   PlaceInShopPayload,
   MoveToItemsPayload,
   DeckMode,
+  LogEntry,
 } from '../game/types';
 import {
   passPriority,
@@ -411,6 +412,40 @@ export function registerHandlers(io: Server, socket: Socket): void {
       players: state.players.map((p) =>
         p.id === ctx.playerId ? { ...p, isReady: !p.isReady } : p
       ),
+    });
+    broadcastState(io, ctx.roomId);
+  }));
+
+  socket.on('action:lobby_chat', safeHandler<unknown>(socket, (raw) => {
+    if (isRateLimited(socket.id)) return;
+    if (!isObject(raw)) return sendError(socket, 'Invalid payload');
+    const payload = raw as { message?: string };
+    if (!isNonEmptyString(payload.message)) return sendError(socket, 'Message is required');
+
+    const ctx = getCtx(socket);
+    if (!ctx) return sendError(socket, 'Not in a room');
+    const room = gameStore.get(ctx.roomId);
+    if (!room) return sendError(socket, 'Room not found');
+
+    const state = room.getState();
+    const player = state.players.find((p) => p.id === ctx.playerId);
+    if (!player) return sendError(socket, 'Player not found');
+
+    const trimmed = payload.message.trim().slice(0, 280);
+    if (!trimmed) return sendError(socket, 'Message is empty');
+
+    const entry: LogEntry = {
+      id: uuidv4(),
+      timestamp: Date.now(),
+      type: 'chat',
+      message: `${player.name}: ${trimmed}`,
+      playerId: ctx.playerId,
+    };
+
+    const newLobbyChat = [...state.lobbyChat, entry].slice(-50);
+    room.setState({
+      ...state,
+      lobbyChat: newLobbyChat,
     });
     broadcastState(io, ctx.roomId);
   }));

@@ -283,6 +283,7 @@ export interface GameState {
 
   players: Player[];
   log: LogEntry[];
+  lobbyChat: LogEntry[];
 
   // Eden starting-item pick phase
   edenPickQueue: string[]; // player IDs still waiting to pick (in order); empty when not in eden_pick phase

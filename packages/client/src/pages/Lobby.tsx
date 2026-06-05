@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameStore, GameMode } from '../store/gameStore';
 import { connectSocket, getSocket } from '../socket/client';
@@ -199,6 +199,8 @@ export function Lobby() {
   });
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [howToPlayOpen, setHowToPlayOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch available sets from server and default to all selected
   useEffect(() => {
@@ -236,6 +238,11 @@ export function Lobby() {
       emitJoin(roomId!, savedName, false, () => {}, () => {}, savedToken);
     }
   }, [inRoom, roomId]);
+
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [game?.lobbyChat?.length]);
 
   const handleToggleSet = (set: string) => {
     setSelectedSets((prev) =>
@@ -307,6 +314,13 @@ export function Lobby() {
 
   const toggleSection = (section: string) => {
     setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const handleSendChat = () => {
+    const trimmed = chatMessage.trim();
+    if (!trimmed) return;
+    setChatMessage('');
+    getSocket().emit('action:lobby_chat', { message: trimmed });
   };
 
   const handleStart = () => {
@@ -814,6 +828,37 @@ export function Lobby() {
             </div>
           </>
         )}
+
+        {/* Lobby Chat */}
+        <div className="panel p-4 mb-4">
+          <div className="section-title mb-2">Lobby Chat</div>
+          <div className="max-h-48 overflow-y-auto space-y-1 mb-2">
+            {game?.lobbyChat?.length ? game.lobbyChat.map((entry) => (
+              <div key={entry.id} className="text-sm text-fs-parchment/60">{entry.message}</div>
+            )) : (
+              <div className="text-sm text-fs-parchment/30 italic">No messages yet</div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="flex gap-1">
+            <input
+              type="text"
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+              placeholder="Type a message…"
+              maxLength={280}
+              className="flex-1 bg-fs-darker border border-fs-link/30 rounded px-3 py-2 text-sm text-fs-parchment placeholder-fs-parchment/30 focus:outline-none focus:border-fs-link"
+            />
+            <button
+              onClick={handleSendChat}
+              disabled={!chatMessage.trim()}
+              className="px-4 py-2 rounded bg-fs-gold/20 border border-fs-gold/40 text-fs-gold text-sm font-medium hover:bg-fs-gold/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Send
+            </button>
+          </div>
+        </div>
 
         {/* Start button */}
         {isHost ? (
