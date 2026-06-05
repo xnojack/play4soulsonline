@@ -31,6 +31,7 @@ export function GameBoard() {
   useDeckKeyboardShortcuts();
   useRightClickContextMenu();
   const [isPortrait, setIsPortrait] = useState(() => window.innerWidth < window.innerHeight);
+  const [portraitDismissed, setPortraitDismissed] = useState(false);
 
   React.useEffect(() => {
     const checkOrientation = () => setIsPortrait(window.innerWidth < window.innerHeight);
@@ -46,6 +47,7 @@ export function GameBoard() {
   const boardReady = game.phase === 'active' || game.phase === 'ended';
 
   const myPlayer = game.players.find((p) => p.id === game.myPlayerId) ?? null;
+  const showPortraitOverlay = isPortrait && !portraitDismissed && game.phase === 'active' && myPlayer && !myPlayer.isSpectator;
   const setShowLog = useGameStore((s) => s.setShowLog);
 
   return (
@@ -53,12 +55,18 @@ export function GameBoard() {
     <DnDProvider>
       <div className="h-screen flex flex-col overflow-hidden bg-black">
         {/* Portrait overlay */}
-        {isPortrait && (
+        {showPortraitOverlay && (
           <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center">
             <div className="text-center space-y-4">
               <div className="text-6xl">↻</div>
               <div className="font-display text-fs-gold text-2xl font-bold">Rotate to Landscape</div>
               <div className="text-fs-parchment/60 text-sm">This app works best in landscape mode.</div>
+              <button
+                onClick={() => setPortraitDismissed(true)}
+                className="mt-4 px-4 py-2 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors text-sm"
+              >
+                Continue (Spectate)
+              </button>
             </div>
           </div>
         )}
