@@ -825,7 +825,7 @@ export class GameRoom {
   /** Transition to sad_vote phase, or skip directly to active if only 1 non-spectator or co-op mode */
   transitionToSadVote(state: GameState): GameState {
     const nonSpectators = state.players.filter((p) => !p.isSpectator);
-    if (nonSpectators.length <= 1 || state.gameMode === 'coop') {
+    if (nonSpectators.length <= 1 || state.gameMode === 'coop' || state.gameMode === 'solitaire') {
       // Solo or co-op — skip the vote
       const first = nonSpectators[0] ?? state.players[0];
       let s = resetPriority({

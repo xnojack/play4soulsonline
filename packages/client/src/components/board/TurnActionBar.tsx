@@ -67,7 +67,7 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
   const handleEndTurn = () => getSocket().emit('action:end_turn');
   const handlePassPriority = () => getSocket().emit('action:pass_priority');
   const handleResolveTop = () => getSocket().emit('action:resolve_top');
- const handleDrawLoot = () => getSocket().emit('action:draw_loot', { playerId: myPlayer!.id, count: 1 });
+  const handleDrawLoot = () => getSocket().emit('action:draw_loot', { playerId: game.turn.activePlayerId, count: 1 });
 
   // ── Priority (not your turn) ─────────────────────────────────────────────
   if (!isMyTurn && hasPriority) {
@@ -133,11 +133,15 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
 
   // ── Active turn ──────────────────────────────────────────────────────────
   if (isMyTurn) {
+    const turnLabel =
+      game.gameMode === 'solitaire' && activePlayer?.id !== myPlayer?.id
+        ? `${activePlayer?.name ?? 'Ghost'} turn`
+        : 'Your Turn';
     const innerContent = (
       <div className={`${bare ? '' : inline ? '' : 'max-w-6xl mx-auto'} px-3 md:px-4 py-2 flex items-center gap-2 md:gap-3`}>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-sm font-display text-fs-gold font-bold px-2 py-0.5 bg-fs-gold/15 rounded">
-            Your Turn
+            {turnLabel}
           </span>
         </div>
 
@@ -243,23 +247,27 @@ export function TurnActionBar({ onScrollToPlayer, inline = false, bare = false }
   }
 
   // ── Idle — not your turn, no priority ───────────────────────────────────
+  const idleLabel =
+    activePlayer?.id === myPlayer?.id
+      ? 'Your turn'
+      : (game.gameMode === 'solitaire' && myPlayer?.solitairePartnerId === activePlayer?.id)
+        ? `${activePlayer?.name ?? 'Ghost'} turn`
+        : `${activePlayer?.name ?? '?'}'s turn`;
   const idleInnerContent = (
     <div className={`${bare ? '' : inline ? '' : 'max-w-6xl mx-auto'} px-4 py-2 flex items-center justify-between gap-4`}>
       <div className="flex items-center gap-3 text-sm flex-1 min-w-0">
         <span className="text-fs-parchment/50">
-          <span className="text-fs-parchment/80 font-display">
-            {activePlayer?.id === myPlayer?.id ? 'Your turn' : `${activePlayer?.name ?? '?'}'s turn`}
-          </span>
+          <span className="text-fs-parchment/80 font-display">{idleLabel}</span>
         </span>
         {priorityPlayer && !priorityIsActive && (
           <span className="text-fs-parchment/40 text-xs flex items-center gap-1">
             <span className="text-fs-gold">⚡</span>
-            <span>{priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority</span>
+            <span>{priorityPlayer.id === myPlayer?.id || (game.gameMode === 'solitaire' && myPlayer?.solitairePartnerId === priorityPlayer.id) ? 'You have' : `${priorityPlayer.name} has`} priority</span>
           </span>
         )}
         {priorityIsActive && priorityPlayer && (
           <span className="text-fs-parchment/30 text-xs">
-            {priorityPlayer.id === myPlayer?.id ? 'You have' : `${priorityPlayer.name} has`} priority
+            {priorityPlayer.id === myPlayer?.id || (game.gameMode === 'solitaire' && myPlayer?.solitairePartnerId === priorityPlayer.id) ? 'You have' : `${priorityPlayer.name} has`} priority
           </span>
         )}
       </div>

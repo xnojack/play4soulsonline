@@ -11,25 +11,77 @@ interface BoardBottomSectionProps {
 }
 
 /**
- * Bottom 1/3: local player's expanded panel only.
+ * Bottom section: local player's expanded panel.
+ * In solitaire/co-op: split layout with both characters side-by-side.
  * The BottomBar is rendered as a sibling outside the 3-band layout in GameBoard.
  */
 export function BoardBottomSection({ myPlayer }: BoardBottomSectionProps) {
+  const game = useGameStore((s) => s.game);
+  const gameMode = game?.gameMode ?? 'competitive';
+  const isSplitMode = gameMode === 'solitaire' || gameMode === 'coop';
+  const activePlayerId = game?.turn.activePlayerId ?? null;
+
+  // Find partner player for split mode
+  const partnerPlayer = isSplitMode
+    ? game?.players.find((p) => p.id === myPlayer?.solitairePartnerId && !p.isSpectator) ?? null
+    : null;
+
+  if (!myPlayer) {
+    return (
+      <div className="h-full min-h-0 px-4 py-2 pb-3 flex items-center justify-center text-fs-parchment/40 text-xl italic">
+        Spectating
+      </div>
+    );
+  }
+
+  if (isSplitMode && partnerPlayer) {
+    const isMyActive = activePlayerId === myPlayer.id;
+    const isPartnerActive = activePlayerId === partnerPlayer.id;
+    return (
+      <div className="h-full min-h-0 px-2 py-2 pb-3 flex gap-2">
+        {/* My character panel */}
+        <div className={`flex-1 min-h-0 min-w-0 rounded-lg border-2 p-1 transition-colors ${
+          isMyActive
+            ? 'border-fs-gold/70 bg-fs-gold/10'
+            : 'border-fs-gold/20 bg-fs-darker/30'
+        }`}>
+          <PlayerExpandedPanel
+            player={myPlayer}
+            isMe
+            showHand
+            label="YOU"
+            labelColor="gold"
+            compact
+          />
+        </div>
+        {/* Partner character panel */}
+        <div className={`flex-1 min-h-0 min-w-0 rounded-lg border-2 p-1 transition-colors ${
+          isPartnerActive
+            ? 'border-fs-gold/70 bg-fs-gold/10'
+            : 'border-fs-gold/20 bg-fs-darker/30'
+        }`}>
+          <PlayerExpandedPanel
+            player={partnerPlayer}
+            isMe={gameMode === 'solitaire'}
+            showHand={gameMode === 'solitaire'}
+            label={gameMode === 'solitaire' ? 'GHOST' : partnerPlayer.name.toUpperCase()}
+            labelColor={gameMode === 'solitaire' ? 'gold' : 'purple'}
+            compact
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full min-h-0 px-4 py-2 pb-3">
-      {myPlayer ? (
-        <PlayerExpandedPanel
-          player={myPlayer}
-          isMe
-          showHand
-          label="YOU"
-          labelColor="gold"
-        />
-      ) : (
-        <div className="h-full flex items-center justify-center text-fs-parchment/40 text-xl italic">
-          Spectating
-        </div>
-      )}
+      <PlayerExpandedPanel
+        player={myPlayer}
+        isMe
+        showHand
+        label="YOU"
+        labelColor="gold"
+      />
     </div>
   );
 }

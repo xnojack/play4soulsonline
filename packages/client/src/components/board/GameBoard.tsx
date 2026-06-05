@@ -42,6 +42,8 @@ export function GameBoard() {
 
   if (!game) return null;
 
+  const isSplitMode = game.gameMode === 'solitaire' || game.gameMode === 'coop';
+
   // During eden_pick / sad_vote the board overlay modals handle interaction;
   // render a simple waiting screen so we don't try to map over uninitialized slots.
   const boardReady = game.phase === 'active' || game.phase === 'ended';
@@ -81,13 +83,15 @@ export function GameBoard() {
               <div className="flex-1" />
             ) : (
               <>
-                {/* Top 1/3 */}
-                <div className="h-[30%] min-h-0 relative">
-                  <BoardTopSection myPlayerId={game.myPlayerId} />
-                </div>
+                {/* Top 1/3 — hidden in solitaire/co-op (players are at bottom) */}
+                {!isSplitMode && (
+                  <div className="h-[30%] min-h-0 relative">
+                    <BoardTopSection myPlayerId={game.myPlayerId} />
+                  </div>
+                )}
 
                 {/* Middle — takes remaining space */}
-                <div className="flex-1 min-h-0 relative border-t-2 border-b-2 border-fs-gold/10">
+                <div className={`${isSplitMode ? 'flex-[2]' : 'flex-1'} min-h-0 relative border-t-2 border-b-2 border-fs-gold/10`}>
                   <BoardMiddleSection />
                   {/* D8 Timer overlay — centered at top of middle section */}
                   {game.d8Timer !== null && (
@@ -97,8 +101,8 @@ export function GameBoard() {
                   )}
                 </div>
 
-                {/* Bottom 1/4 — player panel */}
-                <div className="h-1/4 min-h-0 relative">
+                {/* Bottom — player panel (expanded in solitaire/co-op) */}
+                <div className={`${isSplitMode ? 'flex-[2]' : 'h-1/4'} min-h-0 relative`}>
                   <BoardBottomSection myPlayer={myPlayer} />
                 </div>
               </>

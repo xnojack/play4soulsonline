@@ -9,7 +9,12 @@ export function useMyPlayer() {
 export function useIsMyTurn() {
   const game = useGameStore((s) => s.game);
   if (!game) return false;
-  return game.turn.activePlayerId === game.myPlayerId;
+  if (game.turn.activePlayerId === game.myPlayerId) return true;
+  const myPlayer = game.players.find((p) => p.id === game.myPlayerId);
+  if (game.gameMode === 'solitaire' && myPlayer?.solitairePartnerId === game.turn.activePlayerId) {
+    return true;
+  }
+  return false;
 }
 
 export function useHasPriority() {
