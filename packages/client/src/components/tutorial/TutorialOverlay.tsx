@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBoardScale } from '../../context/BoardScaleContext';
+import { useGameStore } from '../../store/gameStore';
 
 const STORAGE_KEY = 'fs_tutorial_seen';
 
@@ -75,6 +76,8 @@ export function TutorialOverlay() {
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const animFrameRef = useRef<number>(0);
   const { resetView } = useBoardScale();
+  const showTutorial = useGameStore((s) => s.showTutorial);
+  const setShowTutorial = useGameStore((s) => s.setShowTutorial);
 
   useEffect(() => {
     const hasSeen = localStorage.getItem(STORAGE_KEY);
@@ -82,6 +85,15 @@ export function TutorialOverlay() {
       setVisible(true);
     }
   }, []);
+
+  // Watch for manual re-show request
+  useEffect(() => {
+    if (showTutorial) {
+      setCurrentStep(0);
+      setVisible(true);
+      setShowTutorial(false);
+    }
+  }, [showTutorial, setShowTutorial]);
 
 const updateSpotlight = useCallback(() => {
     const step = TUTORIAL_STEPS[currentStep];

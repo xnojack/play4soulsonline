@@ -39,6 +39,7 @@ export function BottomBar() {
   const setCardSearchOpen = useGameStore((s) => s.setCardSearchOpen);
   const showLog = useGameStore((s) => s.showLog);
   const setShowLog = useGameStore((s) => s.setShowLog);
+  const setShowTutorial = useGameStore((s) => s.setShowTutorial);
   const isHost = useIsHost();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const shortcutsRef = useRef<HTMLDivElement>(null);
@@ -170,6 +171,15 @@ export function BottomBar() {
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-1.5">
+          {game?.phase === 'active' && (
+            <button
+              onClick={() => setShowTutorial(true)}
+              className="text-xs w-6 h-6 rounded-full border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors font-bold leading-none"
+              title="Show tutorial"
+            >
+              ?
+            </button>
+          )}
           <button
             onClick={() => setShowLog(!showLog)}
             className="text-xs px-2 py-0.5 rounded border border-fs-gold/30 text-fs-parchment/60 hover:text-fs-parchment hover:border-fs-gold/60 transition-colors"
