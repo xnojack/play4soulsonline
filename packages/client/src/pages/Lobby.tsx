@@ -4,6 +4,7 @@ import { useGameStore, GameMode } from '../store/gameStore';
 import { connectSocket, getSocket } from '../socket/client';
 import { Button } from '../components/ui/Button';
 import { AttributionFooter } from '../components/ui/AttributionFooter';
+import { HowToPlayModal } from '../components/ui/HowToPlayModal';
 import { useIsHost } from '../hooks/useMyPlayer';
 import { SERVER_URL } from '../config';
 
@@ -197,6 +198,7 @@ export function Lobby() {
     treasure: true,
   });
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
 
   // Fetch available sets from server and default to all selected
   useEffect(() => {
@@ -441,6 +443,13 @@ export function Lobby() {
             className="underline hover:text-fs-link transition-colors"
           >
             Copy lobby link
+          </button>
+          <span className="mx-2 text-fs-parchment/20">·</span>
+          <button
+            onClick={() => setHowToPlayOpen(true)}
+            className="underline hover:text-fs-link transition-colors"
+          >
+            How to Play
           </button>
         </div>
 
@@ -815,6 +824,8 @@ export function Lobby() {
       <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-black/60 backdrop-blur-sm border-t border-fs-gold/10">
         <AttributionFooter compact />
       </div>
+
+      <HowToPlayModal isOpen={howToPlayOpen} onClose={() => setHowToPlayOpen(false)} />
     </div>
   );
 }
