@@ -64,8 +64,6 @@ const TUTORIAL_STEPS: TutorialStep[] = [
 
 function findTargetElement(attr: string): HTMLElement | null {
   if (attr.includes('^=')) {
-    const selector = attr.split('^=')[0];
-    const attrName = selector.replace('data-zone', 'data-zone');
     return document.querySelector(`[data-zone^="${attr.split('^=')[1].replace(/"/g, '')}"]`) as HTMLElement | null;
   }
   return document.querySelector(`[${attr}]`) as HTMLElement | null;
