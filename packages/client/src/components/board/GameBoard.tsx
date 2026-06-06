@@ -13,9 +13,11 @@ import { AttributionFooter } from '../ui/AttributionFooter';
 import { SoundManager } from '../audio/SoundManager';
 import { PriorityBanner } from './PriorityBanner';
 import { D8Timer } from '../ui/D8Timer';
+import { D8Die3D } from '../ui/D8Die3D';
 import { BoardTopSection } from '../player/BoardTopSection';
 import { BoardMiddleSection } from './BoardMiddleSection';
 import { BoardBottomSection, BottomBar } from './BoardBottomSection';
+import { ChallengeRow, FinalBossZone } from './ChallengeBossZone';
 import { BoardScaleProvider } from '../../context/BoardScaleContext';
 import { BoardCanvas } from './BoardCanvas';
 import { useDeckKeyboardShortcuts } from '../../hooks/useDeckKeyboardShortcuts';
@@ -83,18 +85,34 @@ export function GameBoard() {
               <div className="flex-1" />
             ) : (
               <>
-                {/* Top 1/3 — hidden in solitaire/co-op (players are at bottom) */}
-                {!isSplitMode && (
+                {/* Top section */}
+                {!isSplitMode ? (
+                  /* Competitive: full top section with player strip + panes */
                   <div className="h-[30%] min-h-0 relative">
                     <BoardTopSection myPlayerId={game.myPlayerId} />
                   </div>
+                ) : (
+                  /* Solitaire/Co-op: compact top bar with D8 + challenge/boss */
+                  <div className="h-[15%] min-h-0 relative flex items-center justify-center gap-6 px-4">
+                    {game.d8Timer !== null && (
+                      <div className="flex-shrink-0">
+                        <D8Die3D value={game.d8Timer} />
+                      </div>
+                    )}
+                    {game.challengeSlot && (
+                      <ChallengeRow slot={game.challengeSlot} challengeName={game.challengeName} challengeDifficulty={game.challengeDifficulty} />
+                    )}
+                    {game.finalBossSlot && (
+                      <FinalBossZone boss={game.finalBossSlot} challengeName={game.challengeName} challengeDifficulty={game.challengeDifficulty} />
+                    )}
+                  </div>
                 )}
 
-                {/* Middle — takes remaining space */}
+                {/* Middle — table area */}
                 <div className={`${isSplitMode ? 'flex-[2]' : 'flex-1'} min-h-0 relative border-t-2 border-b-2 border-fs-gold/10`}>
                   <BoardMiddleSection />
-                  {/* D8 Timer overlay — centered at top of middle section */}
-                  {game.d8Timer !== null && (
+                  {/* D8 Timer overlay — competitive mode only (solitaire/co-op D8 is in top section) */}
+                  {!isSplitMode && game.d8Timer !== null && (
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
                       <D8Timer value={game.d8Timer} />
                     </div>
