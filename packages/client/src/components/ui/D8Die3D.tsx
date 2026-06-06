@@ -21,19 +21,19 @@ export function D8Die3D({ value }: D8Die3DProps) {
         style={{
           width: 56,
           height: 64,
-          perspective: '200px',
+          perspective: '300px',
         }}
       >
         <motion.div
           className="relative w-full h-full"
           style={{
             transformStyle: 'preserve-3d',
-            transform: 'rotateX(-15deg) rotateY(-25deg)',
+            transform: 'rotateX(-10deg) rotateY(-15deg)',
           }}
           animate={
             isCritical && value > 0
               ? {
-                  rotateY: [-25, -20, -25, -30, -25],
+                  rotateY: [-15, -10, -15, -20, -15],
                 }
               : {}
           }
@@ -49,81 +49,88 @@ export function D8Die3D({ value }: D8Die3DProps) {
         >
           {/* Front face */}
           <div
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(12px)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
-              background: `linear-gradient(180deg, ${faceColor}dd, ${faceColor})`,
-              border: `2px solid ${edgeColor}`,
+              transform: 'translateZ(10px)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+              background: `linear-gradient(180deg, ${faceColor}ee, ${faceColor})`,
               boxShadow: `0 0 ${isCritical ? 16 : isLow ? 10 : 6}px ${glowColor}`,
             }}
           >
-            <span
-              className="text-3xl font-bold font-mono"
-              style={{ color: textColor }}
+            <div
+              className="absolute inset-[6%]"
+              style={{
+                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                border: `2px solid ${edgeColor}`,
+              }}
+            />
+            {/* Number — absolutely centered within the face */}
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ transform: 'translateZ(1px)' }}
             >
-              {value}
-            </span>
+              <span
+                className="text-3xl font-bold font-mono"
+                style={{ color: textColor, textShadow: `0 0 8px ${glowColor}` }}
+              >
+                {value}
+              </span>
+            </div>
           </div>
 
-          {/* Back face (behind) */}
+          {/* Back face */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(-12px) rotateY(180deg)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
+              transform: 'translateZ(-10px) rotateY(180deg)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: faceColor,
-              border: `2px solid ${edgeColor}88`,
             }}
           />
 
-          {/* Left face (side bevel) */}
+          {/* Left bevel */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateY(-30deg) translateX(-8px)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
+              transform: 'translateZ(0px) rotateY(-30deg) translateX(-6px)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}aa`,
-              border: `1px solid ${edgeColor}44`,
             }}
           />
 
-          {/* Right face (side bevel) */}
+          {/* Right bevel */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateY(30deg) translateX(8px)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
+              transform: 'translateZ(0px) rotateY(30deg) translateX(6px)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}aa`,
-              border: `1px solid ${edgeColor}44`,
             }}
           />
 
-          {/* Top face (upper bevel) */}
+          {/* Top bevel */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateX(30deg) translateY(-8px)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
+              transform: 'translateZ(0px) rotateX(30deg) translateY(-6px)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}cc`,
-              border: `1px solid ${edgeColor}66`,
             }}
           />
 
-          {/* Bottom face (lower bevel) */}
+          {/* Bottom bevel */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateX(-30deg) translateY(8px)',
-              clipPath: 'polygon(50% 5%, 95% 30%, 95% 70%, 50% 95%, 5% 70%, 5% 30%)',
+              transform: 'translateZ(0px) rotateX(-30deg) translateY(6px)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}88`,
-              border: `1px solid ${edgeColor}33`,
             }}
           />
         </motion.div>
