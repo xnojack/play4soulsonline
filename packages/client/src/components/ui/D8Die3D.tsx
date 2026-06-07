@@ -19,9 +19,9 @@ export function D8Die3D({ value }: D8Die3DProps) {
       <div
         className="relative"
         style={{
-          width: 56,
-          height: 64,
-          perspective: '300px',
+          width: 80,
+          height: 92,
+          perspective: '400px',
         }}
       >
         <motion.div
@@ -52,7 +52,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(10px)',
+              transform: 'translateZ(14px)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `linear-gradient(180deg, ${faceColor}ee, ${faceColor})`,
               boxShadow: `0 0 ${isCritical ? 16 : isLow ? 10 : 6}px ${glowColor}`,
@@ -71,7 +71,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
               style={{ transform: 'translateZ(1px)' }}
             >
               <span
-                className="text-3xl font-bold font-mono"
+                className="text-4xl font-bold font-mono"
                 style={{ color: textColor, textShadow: `0 0 8px ${glowColor}` }}
               >
                 {value}
@@ -84,7 +84,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(-10px) rotateY(180deg)',
+              transform: 'translateZ(-14px) rotateY(180deg)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: faceColor,
             }}
@@ -95,7 +95,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateY(-30deg) translateX(-6px)',
+              transform: 'translateZ(0px) rotateY(-30deg) translateX(-10px)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}aa`,
             }}
@@ -106,7 +106,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateY(30deg) translateX(6px)',
+              transform: 'translateZ(0px) rotateY(30deg) translateX(10px)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}aa`,
             }}
@@ -117,7 +117,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateX(30deg) translateY(-6px)',
+              transform: 'translateZ(0px) rotateX(30deg) translateY(-10px)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}cc`,
             }}
@@ -128,7 +128,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
             className="absolute inset-0"
             style={{
               transformStyle: 'preserve-3d',
-              transform: 'translateZ(0px) rotateX(-30deg) translateY(6px)',
+              transform: 'translateZ(0px) rotateX(-30deg) translateY(10px)',
               clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
               background: `${faceColor}88`,
             }}
@@ -137,7 +137,7 @@ export function D8Die3D({ value }: D8Die3DProps) {
       </div>
 
       <span
-        className="text-[10px] font-medium uppercase tracking-wider"
+        className="text-xs font-medium uppercase tracking-wider"
         style={{
           color: isCritical ? '#f8717180' : isLow ? '#fb923c80' : '#e5e5e566',
         }}
