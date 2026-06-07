@@ -863,15 +863,17 @@ export function registerHandlers(io: Server, socket: Socket): void {
     if (!room) return;
 
     const state = room.getState();
-    // Allow loot play if player has priority OR is the active player
+    // Allow loot play if player has priority OR can act for the active player
     const hasPriority = state.priorityQueue[0] === ctx.playerId;
-    const isActivePlayer = state.turn.activePlayerId === ctx.playerId;
-    if (!hasPriority && !isActivePlayer)
+    const canAct = canActFor(ctx.playerId, state.turn.activePlayerId, room);
+    if (!hasPriority && !canAct)
       return sendError(socket, "It's not your priority");
 
+    // In solitaire, play from the active player's hand
+    const ownerPlayerId = canAct ? state.turn.activePlayerId : ctx.playerId;
     const { newState, error } = playLootCard(
       state,
-      ctx.playerId,
+      ownerPlayerId,
       payload.cardId,
       isStringArray(payload.targets) ? payload.targets : []
     );
@@ -891,7 +893,12 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
-    room.setState(drawLoot(room.getState(), ctx.playerId, clampInt(payload.count, 1, 10, 1)));
+    const state = room.getState();
+    // In solitaire, draw for the active player (could be ghost)
+    const targetPlayerId = canActFor(ctx.playerId, state.turn.activePlayerId, room)
+      ? state.turn.activePlayerId
+      : ctx.playerId;
+    room.setState(drawLoot(state, targetPlayerId, clampInt(payload.count, 1, 10, 1)));
     broadcastState(io, ctx.roomId);
   }));
 
@@ -916,7 +923,11 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const discardKey = `${deckType}Discard` as keyof typeof state;
     const deck = state[deckKey] as string[];
     const discard = state[discardKey] as string[];
-    const player = state.players.find((p) => p.id === ctx.playerId);
+    // In solitaire, draw for the active player (could be ghost), not the socket player
+    const targetPlayerId = canActFor(ctx.playerId, state.turn.activePlayerId, room)
+      ? state.turn.activePlayerId
+      : ctx.playerId;
+    const player = state.players.find((p) => p.id === targetPlayerId);
 
     let drawn: string[];
     let newDeck: string[];
@@ -941,7 +952,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const log = createLogEntry(
       'card_play',
       `${player?.name ?? 'Someone'} draws ${drawn.length} card${drawn.length !== 1 ? 's' : ''} from the ${deckType} ${fromDiscard ? 'discard' : 'deck'}`,
-      ctx.playerId,
+      targetPlayerId,
     );
 
     room.setState({
@@ -949,7 +960,7 @@ export function registerHandlers(io: Server, socket: Socket): void {
       [deckKey]: newDeck,
       [discardKey]: newDiscard,
       players: state.players.map((p) =>
-        p.id === ctx.playerId ? { ...p, handCardIds: [...p.handCardIds, ...drawn] } : p
+        p.id === targetPlayerId ? { ...p, handCardIds: [...p.handCardIds, ...drawn] } : p
       ),
       log: [...state.log, log],
     });
@@ -1004,7 +1015,11 @@ export function registerHandlers(io: Server, socket: Socket): void {
     const room = gameStore.get(ctx.roomId);
     if (!room) return;
 
-    room.setState(discardLoot(room.getState(), ctx.playerId, payload.cardId));
+    const state = room.getState();
+    const targetPlayerId = canActFor(ctx.playerId, state.turn.activePlayerId, room)
+      ? state.turn.activePlayerId
+      : ctx.playerId;
+    room.setState(discardLoot(state, targetPlayerId, payload.cardId));
     broadcastState(io, ctx.roomId);
   }));
 
@@ -1039,10 +1054,15 @@ export function registerHandlers(io: Server, socket: Socket): void {
       ? clampInt((payload as any).offset, 0, 52, 0)
       : undefined;
 
+    const state = room.getState();
+    // In solitaire, return from the active player's hand
+    const targetPlayerId = (payload.fromHand ?? false) && canActFor(ctx.playerId, state.turn.activePlayerId, room)
+      ? state.turn.activePlayerId
+      : ctx.playerId;
     room.setState(
       returnToDeck(
-        room.getState(),
-        ctx.playerId,
+        state,
+        targetPlayerId,
         payload.cardId,
         payload.deckType,
         payload.position,

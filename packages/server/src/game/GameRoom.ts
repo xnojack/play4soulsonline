@@ -162,7 +162,8 @@ export class GameRoom {
     const clientPlayers: ClientPlayer[] = s.players.map((p) => {
       const isViewer = p.id === viewerId;
       const isShared = p.handSharedWith.includes(viewerId);
-      const canSeeHand = isViewer || isShared;
+      const isSolitairePartner = s.gameMode === 'solitaire' && p.solitairePartnerId === viewerId;
+      const canSeeHand = isViewer || isShared || isSolitairePartner;
 
       const effectiveHp = p.baseHp + p.hpCounters - p.currentDamage;
       const effectiveAtk = p.baseAtk + p.atkCounters;
